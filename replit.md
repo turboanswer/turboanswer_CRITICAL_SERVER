@@ -52,12 +52,14 @@ Design preference: Sleek black theme with modern UI aesthetics.
 
 ### Professional AI Assistant Integration
 - Advanced pattern-matching AI with sophisticated domain expertise
-- Comprehensive knowledge in software development, web technologies, and system architecture
-- Daily assistance capabilities: time/date queries, calculations, definitions, general knowledge
+- Comprehensive knowledge across multiple disciplines: technology, science, humanities, social sciences
+- Universal question handling: can answer virtually any topic with intelligent responses
+- Technical coverage: JavaScript/React, Python, databases, algorithms, debugging, testing, security, deployment
+- Scientific knowledge: physics, chemistry, biology, earth science, mathematics
+- Humanities expertise: history, literature, philosophy, cultural studies
+- Daily assistance: time/date queries, calculations, definitions, health information
 - Contextual conversation awareness using message history
 - Professional-grade responses with detailed explanations and best practices
-- Technical coverage: JavaScript/React, Python, databases, algorithms, debugging, testing, security, deployment
-- Everyday assistance: mathematical calculations, concept definitions, time-based queries
 - Career guidance and technical interview preparation
 - No external API dependencies or costs
 

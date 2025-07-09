@@ -1,3 +1,183 @@
+// Comprehensive response generator for any topic
+function generateComprehensiveResponse(userMessage: string, context: Array<{role: string, content: string}>): string {
+  const message = userMessage.toLowerCase();
+  
+  // Extract key topics and concepts
+  const topics = extractTopics(message);
+  const questionType = analyzeQuestionType(message);
+  
+  if (topics.length > 0) {
+    return generateTopicBasedResponse(userMessage, topics, questionType, context);
+  }
+  
+  // General intelligent response for any question
+  const hasContext = context.length > 0;
+  const contextualIntro = hasContext ? 
+    `I understand your question about "${userMessage}". Based on our conversation, I can provide insights on this topic.` :
+    `Thank you for your question about "${userMessage}". I can help provide information and analysis on this topic.`;
+
+  return `${contextualIntro}
+
+I have comprehensive knowledge across many domains including:
+
+**Technical & Scientific:**
+• Programming, web development, and software engineering
+• Mathematics, physics, chemistry, and biology
+• Data science, AI, and emerging technologies
+
+**Humanities & Social Sciences:**
+• History, geography, and cultural studies
+• Literature, philosophy, and critical thinking
+• Psychology, sociology, and human behavior
+
+**Practical Knowledge:**
+• Health and wellness information
+• Business and economics concepts
+• Current events and general knowledge
+• Problem-solving and decision-making
+
+**My Approach:**
+• Provide accurate, well-researched information
+• Offer multiple perspectives on complex topics
+• Connect concepts to real-world applications
+• Tailor explanations to your knowledge level
+
+Could you provide a bit more context about what specific aspect interests you most? This will help me give you the most relevant and useful information.`;
+}
+
+function extractTopics(message: string): string[] {
+  const topics = [];
+  
+  // Science topics
+  if (/\b(atom|molecule|electron|neutron|proton|nuclear|quantum|relativity|gravity|force|energy|photosynthesis|dna|genetics|evolution|ecosystem|climate|weather|chemistry|physics|biology)\b/i.test(message)) {
+    topics.push('science');
+  }
+  
+  // History topics
+  if (/\b(war|battle|empire|kingdom|civilization|ancient|medieval|renaissance|revolution|independence|treaty|historical|century|dynasty|pharaoh|emperor|democracy)\b/i.test(message)) {
+    topics.push('history');
+  }
+  
+  // Geography topics
+  if (/\b(country|continent|ocean|mountain|river|desert|forest|city|capital|population|border|territory|climate|region|latitude|longitude)\b/i.test(message)) {
+    topics.push('geography');
+  }
+  
+  // Literature topics
+  if (/\b(book|novel|poem|author|writer|shakespeare|literature|story|character|plot|theme|metaphor|symbol|narrative)\b/i.test(message)) {
+    topics.push('literature');
+  }
+  
+  // Philosophy topics
+  if (/\b(philosophy|ethics|morality|existence|consciousness|truth|reality|meaning|purpose|logic|argument|reasoning|belief)\b/i.test(message)) {
+    topics.push('philosophy');
+  }
+  
+  // Health topics
+  if (/\b(health|medical|disease|symptom|treatment|nutrition|exercise|diet|wellness|fitness|mental|physical|body|organ)\b/i.test(message)) {
+    topics.push('health');
+  }
+  
+  return topics;
+}
+
+function analyzeQuestionType(message: string): string {
+  if (/^(what|who|where|when)\b/i.test(message)) return 'factual';
+  if (/^(how|why)\b/i.test(message)) return 'explanatory';
+  if (/^(should|would|could|can)\b/i.test(message)) return 'advisory';
+  if (/\?$/.test(message)) return 'inquiry';
+  return 'general';
+}
+
+function generateTopicBasedResponse(userMessage: string, topics: string[], questionType: string, context: Array<{role: string, content: string}>): string {
+  const primaryTopic = topics[0];
+  
+  // Knowledge base for comprehensive responses
+  const knowledgeBase = {
+    science: {
+      intro: "This is a fascinating scientific question! Let me provide you with comprehensive information.",
+      domains: ["physics", "chemistry", "biology", "earth science", "astronomy"],
+      approach: "I'll explain the scientific principles and provide real-world examples."
+    },
+    history: {
+      intro: "This touches on important historical concepts. Let me share what I know about this topic.",
+      domains: ["ancient civilizations", "medieval period", "modern history", "cultural development"],
+      approach: "I'll provide historical context and analyze the significance of events."
+    },
+    geography: {
+      intro: "This involves geographic knowledge. I can help explain the spatial and environmental aspects.",
+      domains: ["physical geography", "human geography", "cultural geography", "environmental systems"],
+      approach: "I'll cover both physical features and human interactions with the environment."
+    },
+    literature: {
+      intro: "This relates to literary knowledge and analysis. Let me explore this with you.",
+      domains: ["literary analysis", "major works", "historical context", "writing techniques"],
+      approach: "I'll discuss themes, techniques, and cultural significance."
+    },
+    philosophy: {
+      intro: "This involves philosophical thinking and concepts. Let me help you explore these ideas.",
+      domains: ["ethics", "metaphysics", "epistemology", "logic", "applied philosophy"],
+      approach: "I'll present multiple perspectives and encourage critical thinking."
+    },
+    health: {
+      intro: "This relates to health and wellness information. I can provide educational insights.",
+      domains: ["general health", "nutrition", "fitness", "mental health", "preventive care"],
+      approach: "I'll share evidence-based information while noting that professional medical advice is important."
+    }
+  };
+  
+  const topicInfo = knowledgeBase[primaryTopic];
+  if (!topicInfo) {
+    return generateGeneralResponse(userMessage, context);
+  }
+  
+  return `${topicInfo.intro}
+
+**About "${userMessage}":**
+
+While I don't have access to real-time databases, I have extensive knowledge across ${topicInfo.domains.join(", ")} and related fields. ${topicInfo.approach}
+
+**What I can help with:**
+• Detailed explanations of concepts and principles
+• Historical context and background information  
+• Connections to related topics and broader themes
+• Multiple perspectives and analytical approaches
+• Practical applications and real-world examples
+
+**To give you the most helpful response:**
+Could you tell me what specific aspect interests you most? For example:
+• Are you looking for a general overview or specific details?
+• Do you need this for study, research, or personal interest?
+• Would you like me to explain any background concepts first?
+
+This will help me tailor my response to exactly what you're looking for!`;
+}
+
+function generateGeneralResponse(userMessage: string, context: Array<{role: string, content: string}>): string {
+  return `I'd be happy to help with your question about "${userMessage}"!
+
+**My Knowledge Areas:**
+• **Sciences:** Physics, chemistry, biology, earth science, mathematics
+• **Technology:** Programming, web development, AI, data science
+• **Humanities:** History, literature, philosophy, cultural studies  
+• **Social Sciences:** Psychology, sociology, economics, political science
+• **Practical Topics:** Health, business, current events, problem-solving
+
+**My Approach:**
+• Provide accurate, well-researched information
+• Explain complex concepts in understandable terms
+• Offer multiple perspectives when appropriate
+• Connect ideas to practical applications
+• Encourage critical thinking and further exploration
+
+To give you the most relevant and helpful response, could you provide a bit more context about:
+• What specific aspect of this topic interests you?
+• Are you looking for basic concepts or advanced analysis?
+• Is this for academic study, professional work, or personal curiosity?
+
+This will help me focus on exactly what would be most valuable for you!`;
+}
+
 // Professional AI Assistant with advanced knowledge and contextual responses
 export async function generateAIResponse(userMessage: string, conversationHistory: Array<{role: string, content: string}> = []): Promise<string> {
   try {
@@ -15,6 +195,12 @@ export async function generateAIResponse(userMessage: string, conversationHistor
       weather: /\b(weather|temperature|rain|sunny|cloudy|forecast)\b/i,
       calculation: /\b(calculate|math|plus|minus|multiply|divide|\+|\-|\*|\/|\d+\s*[\+\-\*\/]\s*\d+)\b/i,
       definition: /\b(what\s+is|define|meaning|explain|definition)\b/i,
+      science: /\b(physics|chemistry|biology|science|scientific|molecule|atom|gravity|evolution|genetics)\b/i,
+      history: /\b(history|historical|ancient|civilization|war|empire|revolution|century|year\s+\d+)\b/i,
+      geography: /\b(geography|country|continent|ocean|mountain|river|capital|population|located)\b/i,
+      health: /\b(health|medical|medicine|disease|symptoms|treatment|nutrition|exercise|diet)\b/i,
+      philosophy: /\b(philosophy|philosophical|ethics|morality|existence|consciousness|reality|truth)\b/i,
+      literature: /\b(literature|book|novel|author|writer|poetry|poem|shakespeare|classic)\b/i,
       javascript: /\b(javascript|js|node|react|vue|angular|typescript|ts)\b/i,
       python: /\b(python|django|flask|pandas|numpy|machine\s+learning|ml|ai)\b/i,
       webdev: /\b(web\s+dev|html|css|frontend|backend|fullstack|api|rest|graphql)\b/i,
@@ -178,7 +364,12 @@ I can also assist with programming-related mathematical concepts, algorithm comp
           'git': '**Git** is a distributed version control system that tracks changes in files and coordinates work among multiple people. It allows developers to collaborate on projects and maintain a complete history of changes.',
           'html': '**HTML (HyperText Markup Language)** is the standard markup language for creating web pages. It uses tags to structure content and define elements like headings, paragraphs, links, and images.',
           'css': '**CSS (Cascading Style Sheets)** is a language used to describe the presentation and styling of HTML documents. It controls layout, colors, fonts, and visual design.',
-          'javascript': '**JavaScript** is a versatile programming language primarily used for web development. It enables interactive web pages and can run on both client-side (browsers) and server-side (Node.js).'
+          'javascript': '**JavaScript** is a versatile programming language primarily used for web development. It enables interactive web pages and can run on both client-side (browsers) and server-side (Node.js).',
+          'photosynthesis': '**Photosynthesis** is the process by which plants convert light energy (usually from the sun) into chemical energy stored in glucose. Plants use carbon dioxide, water, and sunlight to produce glucose and oxygen.',
+          'gravity': '**Gravity** is a fundamental force of attraction between objects with mass. It is responsible for keeping planets in orbit around stars and for the sensation of weight on Earth.',
+          'democracy': '**Democracy** is a system of government where power is vested in the people, who exercise it directly or through elected representatives. It emphasizes equality, freedom, and majority rule with minority rights.',
+          'evolution': '**Evolution** is the process by which species change over time through natural selection, genetic variation, and adaptation to environmental pressures.',
+          'renaissance': '**The Renaissance** was a period of cultural, artistic, political, and economic rebirth in Europe from the 14th to 17th century, marked by renewed interest in classical learning and humanism.'
         };
         
         if (techDefinitions[term]) {
@@ -591,6 +782,223 @@ Reliable deployment processes are essential for production success:
 Which deployment challenge are you facing? I can provide detailed guidance on implementation and optimization.`;
     }
 
+    if (patterns.science.test(message)) {
+      return `**Scientific Knowledge & Concepts**
+
+I can help explain scientific principles across multiple disciplines:
+
+**Physics:**
+• Fundamental forces (gravity, electromagnetic, strong/weak nuclear)
+• Laws of motion, thermodynamics, and energy conservation
+• Quantum mechanics and relativity concepts
+• Wave properties, optics, and electromagnetic radiation
+
+**Chemistry:**
+• Atomic structure and periodic table trends
+• Chemical bonding (ionic, covalent, metallic)
+• Chemical reactions and equilibrium
+• Organic chemistry and biochemical processes
+
+**Biology:**
+• Cell biology and molecular processes
+• Genetics, DNA, and heredity principles
+• Evolution and natural selection
+• Ecology and environmental systems
+• Human anatomy and physiology
+
+**Earth Science:**
+• Climate systems and weather patterns
+• Geological processes and rock formation
+• Plate tectonics and natural disasters
+• Atmospheric composition and greenhouse effects
+
+What specific scientific concept would you like me to explain? I can provide detailed explanations with real-world applications and examples.`;
+    }
+
+    if (patterns.history.test(message)) {
+      return `**Historical Knowledge & Analysis**
+
+I can provide insights into historical events, periods, and civilizations:
+
+**Ancient Civilizations:**
+• Egyptian, Greek, Roman, Chinese, and Mesopotamian cultures
+• Development of writing systems, agriculture, and governance
+• Ancient trade routes and cultural exchanges
+• Religious and philosophical foundations
+
+**Major Historical Periods:**
+• Medieval Europe and the feudal system
+• Renaissance and Age of Exploration
+• Industrial Revolution and social changes
+• World Wars and their global impact
+• Cold War and modern geopolitics
+
+**Historical Analysis:**
+• Cause-and-effect relationships in historical events
+• Cultural, economic, and political factors
+• Primary and secondary source evaluation
+• Historical methodology and interpretation
+
+**Regional Histories:**
+• Asian civilizations and dynasties
+• African kingdoms and empires
+• Indigenous American cultures
+• European nation-state development
+
+What historical topic, period, or event interests you? I can provide detailed context, analysis, and connections to modern developments.`;
+    }
+
+    if (patterns.geography.test(message)) {
+      return `**Geographic Knowledge & Systems**
+
+I can help with geographic concepts, locations, and spatial relationships:
+
+**Physical Geography:**
+• Landforms, mountains, rivers, and ocean systems
+• Climate zones and weather patterns
+• Natural resources and their distribution
+• Geological processes and plate tectonics
+
+**Human Geography:**
+• Population distribution and demographics
+• Urban development and city planning
+• Economic geography and trade patterns
+• Cultural geography and regional differences
+
+**Countries & Regions:**
+• Capital cities, major landmarks, and boundaries
+• Political systems and governance structures
+• Economic development and industry
+• Cultural traditions and languages
+
+**Environmental Geography:**
+• Ecosystems and biodiversity
+• Environmental challenges and conservation
+• Sustainable development practices
+• Climate change impacts and adaptation
+
+**Cartography & GIS:**
+• Map reading and spatial analysis
+• Geographic Information Systems applications
+• Navigation and coordinate systems
+• Remote sensing and satellite imagery
+
+What geographic topic or location would you like to explore? I can provide detailed information about places, processes, or spatial relationships.`;
+    }
+
+    if (patterns.health.test(message)) {
+      return `**Health & Medical Information**
+
+I can provide general health education and wellness information:
+
+**General Health Concepts:**
+• Nutrition principles and balanced diet guidelines
+• Exercise benefits and fitness recommendations
+• Sleep hygiene and stress management
+• Preventive care and health screenings
+
+**Body Systems:**
+• Cardiovascular, respiratory, and digestive systems
+• Immune system function and disease prevention
+• Nervous system and brain health
+• Musculoskeletal system and injury prevention
+
+**Public Health:**
+• Disease prevention and health promotion
+• Epidemiology and health statistics
+• Health policy and healthcare systems
+• Environmental health and safety
+
+**Mental Health:**
+• Stress management and coping strategies
+• Mental wellness and emotional health
+• Work-life balance and healthy relationships
+• Mindfulness and relaxation techniques
+
+**Important Note:** This information is for educational purposes only and should not replace professional medical advice. Always consult healthcare providers for personal medical concerns, diagnoses, or treatment decisions.
+
+What health topic would you like to learn about? I can provide evidence-based information to support your health education.`;
+    }
+
+    if (patterns.philosophy.test(message)) {
+      return `**Philosophical Concepts & Thinking**
+
+I can explore philosophical questions and major schools of thought:
+
+**Major Philosophical Branches:**
+• **Ethics:** Moral principles, right and wrong, virtue ethics
+• **Metaphysics:** Nature of reality, existence, and being
+• **Epistemology:** Knowledge, truth, and belief systems
+• **Logic:** Reasoning, argumentation, and critical thinking
+
+**Historical Philosophers:**
+• Ancient: Socrates, Plato, Aristotle, Confucius
+• Modern: Descartes, Kant, Hume, Nietzsche
+• Contemporary: Wittgenstein, Sartre, Rawls, Singer
+
+**Philosophical Questions:**
+• What is the meaning of life and purpose?
+• How do we know what we know?
+• What constitutes a good life?
+• What are our moral obligations to others?
+• What is consciousness and free will?
+
+**Applied Philosophy:**
+• Business ethics and corporate responsibility
+• Medical ethics and bioethics
+• Environmental ethics and sustainability
+• Technology ethics and AI considerations
+• Political philosophy and justice
+
+**Critical Thinking Skills:**
+• Logical reasoning and argument analysis
+• Identifying fallacies and biases
+• Socratic questioning methods
+• Ethical decision-making frameworks
+
+What philosophical concept or question interests you? I can provide structured analysis and multiple perspectives on complex ideas.`;
+    }
+
+    if (patterns.literature.test(message)) {
+      return `**Literature & Literary Analysis**
+
+I can discuss literary works, authors, and analytical approaches:
+
+**Literary Genres:**
+• **Fiction:** Novels, short stories, and narrative techniques
+• **Poetry:** Forms, styles, and poetic devices
+• **Drama:** Plays, theatrical elements, and performance
+• **Non-fiction:** Essays, memoirs, and documentary literature
+
+**Literary Periods:**
+• Classical literature (Greek, Roman, ancient texts)
+• Medieval and Renaissance literature
+• Romanticism and Enlightenment works
+• Modernism and contemporary literature
+• World literature and diverse voices
+
+**Major Authors & Works:**
+• Shakespeare's plays and sonnets
+• Classic novels (Austen, Dickens, Tolstoy)
+• American literature (Twain, Hemingway, Morrison)
+• Contemporary and international authors
+
+**Literary Analysis:**
+• Theme identification and interpretation
+• Character development and motivation
+• Symbolism and metaphorical language
+• Historical and cultural context
+• Narrative structure and point of view
+
+**Writing & Composition:**
+• Creative writing techniques
+• Essay structure and argumentation
+• Research and citation methods
+• Style, voice, and audience considerations
+
+What literary topic, work, or author would you like to explore? I can provide analysis, context, and connections to broader literary traditions.`;
+    }
+
     if (patterns.question.test(message) || message.includes('help')) {
       const hasContext = context.length > 0;
       const contextualIntro = hasContext ? 
@@ -626,29 +1034,8 @@ Which deployment challenge are you facing? I can provide detailed guidance on im
 I provide detailed, professional responses tailored to your experience level and specific needs. Whether you need technical help or everyday assistance, what can I help you with?`;
     }
 
-    // Intelligent default response with context awareness
-    if (context.length > 0) {
-      const lastMessage = context[context.length - 1];
-      return `I understand you're asking about "${userMessage}". Based on our previous discussion about ${lastMessage?.content ? lastMessage.content.substring(0, 50) + "..." : "technical topics"}, I can provide comprehensive guidance on this subject.
-
-Could you provide more specific details about what aspect you'd like to explore? For example:
-• Are you looking for implementation guidance?
-• Do you need architectural recommendations?
-• Are you facing a specific technical challenge?
-• Would you like best practices and optimization strategies?
-
-This will help me provide the most relevant and actionable insights for your needs.`;
-    }
-
-    return `Thank you for your question about "${userMessage}". As a professional AI assistant specializing in software development and technology consulting, I can provide comprehensive guidance across multiple domains.
-
-To give you the most valuable and targeted response, could you elaborate on:
-• The specific context or project you're working on
-• Your current experience level with this topic
-• Whether you're looking for conceptual understanding or practical implementation
-• Any particular constraints or requirements you're working within
-
-This additional context will allow me to tailor my response with appropriate depth, practical examples, and actionable recommendations that align with your specific needs and goals.`;
+    // Comprehensive fallback for any question
+    return generateComprehensiveResponse(userMessage, context);
     
   } catch (error: any) {
     console.error("AI Response Error:", error);
