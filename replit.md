@@ -104,10 +104,12 @@ Power preference: Enhanced logo, loading screen, and maximum power branding thro
 - **Enhanced Professional Logo**: Larger TurboLogo (60px) with maximum power styling, gradients, and glow effects
 - **Professional Loading Screen**: 2-second startup with enhanced branding and power indicators
 - **MAXIMUM POWER UI**: Larger layout (max-w-7xl) showing all options in one screen
-- **Enhanced Header**: Bigger logo, "TURBO ANSWER" branding, "Maximum Power AI System" tagline
+- **Integrated Controls**: Upload Doc and AI Model selection directly visible in header - no hidden panels
+- **Enhanced Header**: Two-row design with bigger logo, "TURBO ANSWER" branding, "Maximum Power AI System" tagline
+- **Always Visible Options**: Both "Upload Doc" button and "AI Model" dropdown always accessible without scrolling
 - **Zero Movement**: ALL animations and transitions disabled globally via CSS for complete stability
 - **Fixed Elements**: Header and input areas have fixed positioning with z-index priority
-- **Accessible Settings**: Settings buttons have z-index 50 to remain always clickable
+- **Accessible Settings**: All controls visible and accessible without expanding panels
 - **Stable Layout**: shrink-0 classes prevent layout shifts during content changes
 - **Enhanced Input Area**: Gradient background, larger padding, powerful styling with purple accents
 

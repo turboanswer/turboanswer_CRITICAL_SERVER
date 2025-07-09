@@ -22,7 +22,6 @@ export default function Chat() {
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [showDocumentUpload, setShowDocumentUpload] = useState(false);
   const [selectedAIModel, setSelectedAIModel] = useState("auto");
-  const [showModelSelector, setShowModelSelector] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -319,63 +318,96 @@ export default function Chat() {
 
   return (
     <div className="flex flex-col h-screen max-w-7xl mx-auto bg-black shadow-2xl">
-      {/* Header - Fixed position to prevent movement */}
+      {/* Enhanced Header with Integrated Controls */}
       <header className="bg-zinc-950 border-b border-zinc-800 px-4 py-4 sm:px-6 relative z-40 shrink-0">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <TurboLogo size={60} />
-            <div>
-              <h1 className="text-2xl font-bold text-white tracking-wide">TURBO ANSWER</h1>
-              <p className="text-sm text-purple-300 font-medium">Maximum Power AI System</p>
+        <div className="flex flex-col space-y-4">
+          {/* Top Row: Logo and User Controls */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <TurboLogo size={60} />
+              <div>
+                <h1 className="text-2xl font-bold text-white tracking-wide">TURBO ANSWER</h1>
+                <p className="text-sm text-purple-300 font-medium">Maximum Power AI System</p>
+              </div>
+            </div>
+            <div className="flex items-center space-x-2">
+              {/* User Authentication */}
+              {user ? (
+                <div className="flex items-center gap-2">
+                  <span className="text-sm text-zinc-400">Welcome, {user.username}</span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleLogout}
+                    className="p-2 text-zinc-400 hover:text-red-400"
+                  >
+                    <LogOut size={16} />
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <Link href="/login">
+                    <Button variant="ghost" size="sm" className="text-purple-400 hover:text-purple-300">
+                      Sign In
+                    </Button>
+                  </Link>
+                  <Link href="/register">
+                    <Button size="sm" className="bg-purple-600 hover:bg-purple-700 text-white">
+                      Create Account
+                    </Button>
+                  </Link>
+                </div>
+              )}
             </div>
           </div>
-          <div className="flex items-center space-x-2">
-            {/* User Authentication */}
-            {user ? (
-              <div className="flex items-center gap-2 mr-2">
-                <span className="text-sm text-zinc-400">Welcome, {user.username}</span>
+
+          {/* Second Row: AI Controls Always Visible */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              {/* Document Upload Section */}
+              <div className="flex items-center space-x-2">
                 <Button
-                  variant="ghost"
+                  onClick={() => setShowDocumentUpload(!showDocumentUpload)}
+                  variant={showDocumentUpload ? "default" : "outline"}
                   size="sm"
-                  onClick={handleLogout}
-                  className="p-2 text-zinc-400 hover:text-red-400"
+                  className={showDocumentUpload ? 
+                    "bg-purple-600 hover:bg-purple-700 text-white" : 
+                    "bg-zinc-800 hover:bg-zinc-700 text-zinc-300 border-zinc-700"
+                  }
                 >
-                  <LogOut size={16} />
+                  <FileText className="h-4 w-4 mr-2" />
+                  Upload Doc
                 </Button>
+                {showDocumentUpload && (
+                  <div className="text-xs text-purple-300">• Active</div>
+                )}
               </div>
-            ) : (
-              <div className="flex items-center gap-2 mr-2">
-                <Link href="/login">
-                  <Button variant="ghost" size="sm" className="text-purple-400 hover:text-purple-300">
-                    Sign In
-                  </Button>
-                </Link>
-                <Link href="/register">
-                  <Button size="sm" className="bg-purple-600 hover:bg-purple-700 text-white">
-                    Create Account
-                  </Button>
-                </Link>
+
+              {/* AI Model Selection */}
+              <div className="flex items-center space-x-2">
+                <label className="text-sm text-zinc-300 font-medium">AI Model:</label>
+                <Select value={selectedAIModel} onValueChange={setSelectedAIModel}>
+                  <SelectTrigger className="w-48 bg-zinc-800 border-zinc-700 text-white text-sm">
+                    <SelectValue placeholder="Choose AI model" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-zinc-800 border-zinc-700">
+                    <SelectItem value="auto">🤖 Auto-Select</SelectItem>
+                    <SelectItem value="claude-3-opus">🧠 Claude 3 Opus</SelectItem>
+                    <SelectItem value="gpt-4">🎯 GPT-4</SelectItem>
+                    <SelectItem value="claude-3-sonnet">⚖️ Claude 3 Sonnet</SelectItem>
+                    <SelectItem value="gpt-3.5-turbo">⚡ GPT-3.5 Turbo</SelectItem>
+                    <SelectItem value="gemini-pro">🔬 Gemini Pro</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
-            )}
-            
-            <Button
-              onClick={() => setShowDocumentUpload(!showDocumentUpload)}
-              variant="outline"
-              size="sm"
-              className="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 border-zinc-700"
-            >
-              <FileText className="h-4 w-4 mr-1" />
-              {showDocumentUpload ? 'Hide Upload' : 'Upload Doc'}
-            </Button>
-            <Button
-              onClick={() => setShowModelSelector(!showModelSelector)}
-              variant="outline"
-              size="sm"
-              className="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 border-zinc-700"
-            >
-              <Brain className="h-4 w-4 mr-1" />
-              AI Model
-            </Button>
+            </div>
+
+            {/* Current AI Status */}
+            <div className="flex items-center space-x-2 text-xs text-zinc-400">
+              <Brain className="h-3 w-3" />
+              <span>Current: {selectedAIModel === 'auto' ? 'Auto-Select' : selectedAIModel}</span>
+              <div className="w-2 h-2 bg-green-400 rounded-full" title="AI System Online"></div>
+            </div>
           </div>
         </div>
       </header>
@@ -401,76 +433,7 @@ export default function Chat() {
         </div>
       )}
 
-      {/* AI Model Selector Panel */}
-      {showModelSelector && (
-        <div className="bg-zinc-950 border-b border-zinc-800 px-4 py-4 sm:px-6 relative z-30">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-medium text-white">AI Model Selection</h3>
-            <Button
-              onClick={() => setShowModelSelector(false)}
-              variant="ghost"
-              size="sm"
-              className="text-zinc-400 hover:text-white"
-            >
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
-          
-          <div className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Card className="bg-zinc-800 border-zinc-700 p-4">
-                <h4 className="font-semibold text-white mb-2">🧠 Premium Models</h4>
-                <p className="text-sm text-zinc-400 mb-3">Most powerful AI for complex tasks</p>
-                <div className="space-y-2">
-                  <div className="text-xs text-zinc-300">• Claude 3 Opus (Creative)</div>
-                  <div className="text-xs text-zinc-300">• GPT-4 (Reasoning)</div>
-                  <div className="text-xs text-zinc-300">• Claude 3 Sonnet (Balanced)</div>
-                </div>
-              </Card>
-              
-              <Card className="bg-zinc-800 border-zinc-700 p-4">
-                <h4 className="font-semibold text-white mb-2">⚡ Advanced Models</h4>
-                <p className="text-sm text-zinc-400 mb-3">Fast and intelligent responses</p>
-                <div className="space-y-2">
-                  <div className="text-xs text-zinc-300">• GPT-3.5 Turbo (Speed)</div>
-                  <div className="text-xs text-zinc-300">• Gemini Pro (Multimodal)</div>
-                </div>
-              </Card>
-              
-              <Card className="bg-zinc-800 border-zinc-700 p-4">
-                <h4 className="font-semibold text-white mb-2">🚀 Specialized Models</h4>
-                <p className="text-sm text-zinc-400 mb-3">Optimized for quick responses</p>
-                <div className="space-y-2">
-                  <div className="text-xs text-zinc-300">• Claude Instant (Efficient)</div>
-                </div>
-              </Card>
-            </div>
-            
-            <div className="flex items-center space-x-4">
-              <label className="text-white font-medium">Select AI Model:</label>
-              <Select value={selectedAIModel} onValueChange={setSelectedAIModel}>
-                <SelectTrigger className="w-64 bg-zinc-800 border-zinc-700 text-white">
-                  <SelectValue placeholder="Choose AI model" />
-                </SelectTrigger>
-                <SelectContent className="bg-zinc-800 border-zinc-700">
-                  <SelectItem value="auto">🤖 Auto-Select (Recommended)</SelectItem>
-                  <SelectItem value="claude-3-opus">🧠 Claude 3 Opus (Creative)</SelectItem>
-                  <SelectItem value="gpt-4">🎯 GPT-4 (Reasoning)</SelectItem>
-                  <SelectItem value="claude-3-sonnet">⚖️ Claude 3 Sonnet (Balanced)</SelectItem>
-                  <SelectItem value="gpt-3.5-turbo">⚡ GPT-3.5 Turbo (Speed)</SelectItem>
-                  <SelectItem value="gemini-pro">🔬 Gemini Pro (Multimodal)</SelectItem>
-                  <SelectItem value="claude-instant">🚀 Claude Instant (Efficient)</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div className="text-sm text-zinc-400">
-              <p><strong>Auto-Select:</strong> Automatically chooses the best AI model based on your query complexity and domain.</p>
-              <p><strong>Manual Selection:</strong> Use a specific model for all responses until changed.</p>
-            </div>
-          </div>
-        </div>
-      )}
+
 
       {/* Messages - Stable container */}
       <div className="flex-1 overflow-y-auto bg-zinc-900 relative z-10">
@@ -487,7 +450,7 @@ export default function Chat() {
                   </p>
                   <div className="mt-3 flex items-center space-x-2 text-xs text-zinc-400">
                     <Brain className="h-3 w-3" />
-                    <span>Current Model: {selectedAIModel === 'auto' ? 'Auto-Select (Intelligent Routing)' : selectedAIModel}</span>
+                    <span>AI Model: {selectedAIModel === 'auto' ? 'Auto-Select (Intelligent Routing)' : selectedAIModel}</span>
                   </div>
                 </Card>
                 <div className="text-xs text-zinc-500 mt-2 ml-1">
