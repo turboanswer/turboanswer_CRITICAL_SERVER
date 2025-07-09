@@ -228,3 +228,99 @@ export function extractLocation(message: string): string | null {
   
   return null;
 }
+
+export function isTimeZoneQuery(message: string): boolean {
+  const timeZoneKeywords = [
+    'timezone', 'time zone', 'utc', 'gmt', 'est', 'pst', 'cst', 'mst',
+    'different time zones', 'world time', 'international time',
+    'time difference', 'offset', 'daylight saving', 'time zones'
+  ];
+  
+  return timeZoneKeywords.some(keyword => 
+    message.toLowerCase().includes(keyword)
+  );
+}
+
+// Comprehensive time zone data
+export const WORLD_TIME_ZONES = {
+  // North America
+  'PST': { name: 'Pacific Standard Time', offset: 'UTC-8', regions: ['Los Angeles', 'San Francisco', 'Seattle', 'Vancouver'] },
+  'PDT': { name: 'Pacific Daylight Time', offset: 'UTC-7', regions: ['Los Angeles', 'San Francisco', 'Seattle', 'Vancouver'] },
+  'MST': { name: 'Mountain Standard Time', offset: 'UTC-7', regions: ['Denver', 'Phoenix', 'Salt Lake City'] },
+  'MDT': { name: 'Mountain Daylight Time', offset: 'UTC-6', regions: ['Denver', 'Salt Lake City'] },
+  'CST': { name: 'Central Standard Time', offset: 'UTC-6', regions: ['Chicago', 'Dallas', 'Mexico City'] },
+  'CDT': { name: 'Central Daylight Time', offset: 'UTC-5', regions: ['Chicago', 'Dallas'] },
+  'EST': { name: 'Eastern Standard Time', offset: 'UTC-5', regions: ['New York', 'Miami', 'Toronto'] },
+  'EDT': { name: 'Eastern Daylight Time', offset: 'UTC-4', regions: ['New York', 'Miami', 'Toronto'] },
+  
+  // Europe & Africa
+  'UTC': { name: 'Coordinated Universal Time', offset: 'UTC+0', regions: ['London (winter)', 'Dublin', 'Lisbon'] },
+  'GMT': { name: 'Greenwich Mean Time', offset: 'UTC+0', regions: ['London (winter)', 'Dublin'] },
+  'BST': { name: 'British Summer Time', offset: 'UTC+1', regions: ['London (summer)'] },
+  'CET': { name: 'Central European Time', offset: 'UTC+1', regions: ['Paris', 'Berlin', 'Rome', 'Madrid'] },
+  'CEST': { name: 'Central European Summer Time', offset: 'UTC+2', regions: ['Paris', 'Berlin', 'Rome', 'Madrid'] },
+  'EET': { name: 'Eastern European Time', offset: 'UTC+2', regions: ['Helsinki', 'Athens', 'Cairo'] },
+  'EEST': { name: 'Eastern European Summer Time', offset: 'UTC+3', regions: ['Helsinki', 'Athens'] },
+  
+  // Asia
+  'JST': { name: 'Japan Standard Time', offset: 'UTC+9', regions: ['Tokyo', 'Osaka', 'Seoul'] },
+  'CST_CHINA': { name: 'China Standard Time', offset: 'UTC+8', regions: ['Beijing', 'Shanghai', 'Hong Kong'] },
+  'IST': { name: 'India Standard Time', offset: 'UTC+5:30', regions: ['Mumbai', 'Delhi', 'Bangalore'] },
+  'MSK': { name: 'Moscow Standard Time', offset: 'UTC+3', regions: ['Moscow', 'St. Petersburg'] },
+  
+  // Australia & Oceania
+  'AEST': { name: 'Australian Eastern Standard Time', offset: 'UTC+10', regions: ['Sydney', 'Melbourne'] },
+  'AEDT': { name: 'Australian Eastern Daylight Time', offset: 'UTC+11', regions: ['Sydney', 'Melbourne'] },
+  'AWST': { name: 'Australian Western Standard Time', offset: 'UTC+8', regions: ['Perth'] },
+  'NZST': { name: 'New Zealand Standard Time', offset: 'UTC+12', regions: ['Auckland', 'Wellington'] },
+  'NZDT': { name: 'New Zealand Daylight Time', offset: 'UTC+13', regions: ['Auckland', 'Wellington'] },
+  
+  // South America
+  'BRT': { name: 'Brasília Time', offset: 'UTC-3', regions: ['São Paulo', 'Rio de Janeiro'] },
+  'ART': { name: 'Argentina Time', offset: 'UTC-3', regions: ['Buenos Aires'] },
+  'CLT': { name: 'Chile Standard Time', offset: 'UTC-4', regions: ['Santiago'] },
+};
+
+export function getTimeZoneInfo(): string {
+  const zones = Object.entries(WORLD_TIME_ZONES);
+  let info = "🌍 **WORLD TIME ZONES REFERENCE**\n\n";
+  
+  info += "**NORTH AMERICA:**\n";
+  const northAmerica = zones.filter(([key]) => ['PST', 'PDT', 'MST', 'MDT', 'CST', 'CDT', 'EST', 'EDT'].includes(key));
+  northAmerica.forEach(([code, data]) => {
+    info += `• **${code}** - ${data.name} (${data.offset})\n  Major cities: ${data.regions.join(', ')}\n`;
+  });
+  
+  info += "\n**EUROPE & AFRICA:**\n";
+  const europe = zones.filter(([key]) => ['UTC', 'GMT', 'BST', 'CET', 'CEST', 'EET', 'EEST'].includes(key));
+  europe.forEach(([code, data]) => {
+    info += `• **${code}** - ${data.name} (${data.offset})\n  Major cities: ${data.regions.join(', ')}\n`;
+  });
+  
+  info += "\n**ASIA:**\n";
+  const asia = zones.filter(([key]) => ['JST', 'CST_CHINA', 'IST', 'MSK'].includes(key));
+  asia.forEach(([code, data]) => {
+    info += `• **${code}** - ${data.name} (${data.offset})\n  Major cities: ${data.regions.join(', ')}\n`;
+  });
+  
+  info += "\n**AUSTRALIA & OCEANIA:**\n";
+  const oceania = zones.filter(([key]) => ['AEST', 'AEDT', 'AWST', 'NZST', 'NZDT'].includes(key));
+  oceania.forEach(([code, data]) => {
+    info += `• **${code}** - ${data.name} (${data.offset})\n  Major cities: ${data.regions.join(', ')}\n`;
+  });
+  
+  info += "\n**SOUTH AMERICA:**\n";
+  const southAmerica = zones.filter(([key]) => ['BRT', 'ART', 'CLT'].includes(key));
+  southAmerica.forEach(([code, data]) => {
+    info += `• **${code}** - ${data.name} (${data.offset})\n  Major cities: ${data.regions.join(', ')}\n`;
+  });
+  
+  info += "\n**💡 KEY FACTS:**\n";
+  info += "• UTC (Coordinated Universal Time) is the world's time standard\n";
+  info += "• Daylight Saving Time (DST) shifts clocks forward 1 hour in summer\n";
+  info += "• Time zones are typically 1 hour apart, but some are 30 or 45 minutes\n";
+  info += "• The International Date Line roughly follows 180° longitude\n";
+  info += "• There are 24 main time zones, but over 400 time zone regions worldwide\n";
+  
+  return info;
+}

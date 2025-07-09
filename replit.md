@@ -89,6 +89,7 @@ Performance priority: AI responses must be fast - removed top-right icons and st
 - **Scientific Expertise**: Advanced mathematics, research methodology, data analysis
 - **Creative Problem-Solving**: Innovation strategies and multi-domain synthesis
 - **Professional Applications**: Business analysis, strategic planning, optimization
+- **World Time Zone Intelligence**: Complete knowledge of global time zones, UTC offsets, DST rules, and major cities
 
 #### API Requirements
 - GEMINI_API_KEY for Google AI services (primary AI provider)

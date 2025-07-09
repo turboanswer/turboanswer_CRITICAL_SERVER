@@ -9,7 +9,9 @@ import {
   formatLocationReport,
   isWeatherQuery,
   isLocationQuery,
-  extractLocation 
+  isTimeZoneQuery,
+  extractLocation,
+  getTimeZoneInfo
 } from "./weather-location";
 
 export const AI_MODELS = {
@@ -198,6 +200,12 @@ export async function generateAIResponse(
           additionalContext = `\n\nLocation data unavailable: ${error.message}`;
         }
       }
+    }
+    
+    // Time Zone Intelligence - Comprehensive world time zone knowledge
+    else if (isTimeZoneQuery(userMessage)) {
+      additionalContext = `\n\nCOMPREHENSIVE TIME ZONE KNOWLEDGE:\n${getTimeZoneInfo()}`;
+      enhancedMessage = `${userMessage}\n\n[Complete time zone reference provided - use this comprehensive data]`;
     }
     
     // Check available API keys and select appropriate model
