@@ -13,6 +13,7 @@ import NotFound from "@/pages/not-found";
 import Register from "@/pages/register";
 import Login from "@/pages/login";
 import Pricing from "@/pages/pricing";
+import Support from "@/pages/support";
 
 function Router() {
   return (
@@ -23,6 +24,7 @@ function Router() {
       <Route path="/login" component={Login} />
       <Route path="/subscribe" component={Subscribe} />
       <Route path="/pricing" component={Pricing} />
+      <Route path="/support" component={Support} />
       <Route component={NotFound} />
     </Switch>
   );

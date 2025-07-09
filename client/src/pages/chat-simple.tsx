@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
-import { Send, Mic, Plus } from 'lucide-react';
+import { Send, Mic, Plus, HelpCircle, DollarSign } from 'lucide-react';
+import { Link } from 'wouter';
 
 interface Message {
   id: number;
@@ -147,22 +148,63 @@ export default function ChatSimple() {
           </div>
         </div>
         
-        <button
-          onClick={() => {
-            console.log('New conversation button clicked');
-            createNewConversation();
-          }}
-          style={{
-            padding: '8px',
-            backgroundColor: '#1a1a1a',
-            border: 'none',
-            borderRadius: '8px',
-            color: 'white',
-            cursor: 'pointer'
-          }}
-        >
-          <Plus size={16} />
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <Link href="/pricing">
+            <button
+              style={{
+                padding: '8px',
+                backgroundColor: '#1a1a1a',
+                border: 'none',
+                borderRadius: '8px',
+                color: 'white',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+              title="Pricing"
+            >
+              <DollarSign size={16} />
+            </button>
+          </Link>
+          
+          <Link href="/support">
+            <button
+              style={{
+                padding: '8px',
+                backgroundColor: '#1a1a1a',
+                border: 'none',
+                borderRadius: '8px',
+                color: 'white',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+              }}
+              title="Support"
+            >
+              <HelpCircle size={16} />
+            </button>
+          </Link>
+          
+          <button
+            onClick={() => {
+              console.log('New conversation button clicked');
+              createNewConversation();
+            }}
+            style={{
+              padding: '8px',
+              backgroundColor: '#1a1a1a',
+              border: 'none',
+              borderRadius: '8px',
+              color: 'white',
+              cursor: 'pointer'
+            }}
+            title="New Conversation"
+          >
+            <Plus size={16} />
+          </button>
+        </div>
       </div>
 
       {/* Messages */}

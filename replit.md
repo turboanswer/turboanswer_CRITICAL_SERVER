@@ -89,6 +89,7 @@ Subscription preference: Lifetime free premium access through promo code system 
 - **Login Page** (`/login`): User authentication with username/email and password
 - **Pricing Page** (`/pricing`): Modern subscription plans with promo code system for lifetime access
 - **Subscribe Page** (`/subscribe`): Stripe-powered subscription upgrade to Pro plan
+- **Support Page** (`/support`): Comprehensive customer support with contact information (turboaswer@hotmail.com, (201) 691-8466)
 - **404 Page**: Error handling for unknown routes
 
 ### MAXIMUM POWER AI System: The Ultimate AI Assistant (Enhanced 2025)
