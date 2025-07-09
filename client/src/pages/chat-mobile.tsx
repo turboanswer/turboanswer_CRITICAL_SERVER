@@ -23,7 +23,7 @@ export default function ChatMobile() {
   const [isTyping, setIsTyping] = useState(false);
   const [selectedAIModel, setSelectedAIModel] = useState('auto');
   const [isListening, setIsListening] = useState(false);
-  const [isWakeWordListening, setIsWakeWordListening] = useState(false); // Enable Hey Turbo
+  const [isWakeWordListening, setIsWakeWordListening] = useState(true); // Enable Hey Turbo
   const [isSpeaking, setIsSpeaking] = useState(false);
   const recognitionRef = useRef<any>(null);
   const wakeWordRef = useRef<any>(null);
@@ -147,8 +147,10 @@ export default function ChatMobile() {
           };
 
           wakeWordRef.current.onerror = (event: any) => {
-            if (event.error !== 'aborted' && event.error !== 'not-allowed') {
-              console.log('🎤 Wake word error:', event.error);
+            console.log('🎤 Wake word error:', event.error);
+            if (event.error === 'not-allowed') {
+              console.log('🎤 Microphone permission denied - wake word disabled');
+              setIsWakeWordListening(false);
             }
           };
 
@@ -159,8 +161,10 @@ export default function ChatMobile() {
           };
 
           wakeWordRef.current.start();
+          console.log('🎤 Wake word detection started');
         } catch (error) {
           console.log('🎤 Wake word setup error:', error);
+          setIsWakeWordListening(false);
         }
       };
 
@@ -284,12 +288,26 @@ export default function ChatMobile() {
           <div>
             <h1 className="text-lg font-semibold">Turbo</h1>
             {isWakeWordListening && (
-              <p className="text-xs text-green-400">Say "Hey Turbo" to activate</p>
+              <p className="text-xs text-green-400">🎤 Say "Hey Turbo" to activate</p>
+            )}
+            {!isWakeWordListening && (
+              <p className="text-xs text-gray-500">Wake word disabled</p>
             )}
           </div>
         </div>
         
         <div className="flex items-center space-x-2">
+          <button
+            onClick={() => setIsWakeWordListening(!isWakeWordListening)}
+            className={`px-2 py-1 text-xs rounded-lg border ${
+              isWakeWordListening 
+                ? 'bg-green-600 border-green-500' 
+                : 'bg-gray-800 border-gray-700'
+            }`}
+          >
+            {isWakeWordListening ? '🎤 ON' : '🎤 OFF'}
+          </button>
+          
           <select
             value={selectedAIModel}
             onChange={(e) => setSelectedAIModel(e.target.value)}
