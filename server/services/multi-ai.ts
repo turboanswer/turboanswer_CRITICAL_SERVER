@@ -15,6 +15,9 @@ import {
 } from "./weather-location";
 import { emotionalAI } from './emotional-ai';
 import { conversationalAI } from './conversational-ai';
+import { GoogleGenAI } from "@google/genai";
+import OpenAI from "openai";
+import Anthropic from "@anthropic-ai/sdk";
 
 export const AI_MODELS = {
   // Tier 1: MAXIMUM POWER Models (Ultimate Performance)
@@ -104,6 +107,11 @@ export const AI_MODELS = {
     }
   }
 };
+
+// Initialize AI providers for direct access
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY || "" });
+const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY || "" });
 
 // Advanced user intent analysis with complexity scoring
 function analyzeUserIntent(message: string, conversationHistory: Array<{role: string, content: string}>): {
