@@ -344,7 +344,7 @@ export default function ChatMobile() {
             type="text"
             value={message}
             onChange={(e) => setMessage(e.target.value)}
-            placeholder={isListening ? "Listening..." : "Ask Gemini"}
+            placeholder={isListening ? "Listening..." : "Message Turbo"}
             className="flex-1 px-4 py-3 bg-gray-800 border border-gray-700 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
           
@@ -358,7 +358,7 @@ export default function ChatMobile() {
         </form>
         
         <p className="text-xs text-gray-500 text-center mt-2">
-          Turbo can make mistakes, so double-check it
+          Turbo AI can make mistakes, so double-check it
         </p>
       </div>
     </div>
