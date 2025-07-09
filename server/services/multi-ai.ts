@@ -310,7 +310,19 @@ async function generateGeminiResponse(
     });
     
     const data = await response.json();
-    return data.candidates?.[0]?.content?.parts?.[0]?.text || "Unable to generate response";
+    
+    if (data.error) {
+      console.error('[Gemini] API Error:', data.error);
+      throw new Error(`Gemini API Error: ${data.error.message || 'Unknown error'}`);
+    }
+    
+    const content = data.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!content) {
+      console.error('[Gemini] No content in response:', data);
+      throw new Error('No content received from Gemini');
+    }
+    
+    return content;
     
   } catch (error) {
     console.error('[Gemini] Error:', error);
@@ -387,7 +399,19 @@ async function generateOpenAIResponse(
     });
     
     const data = await response.json();
-    return data.choices?.[0]?.message?.content || "Unable to generate response";
+    
+    if (data.error) {
+      console.error('[OpenAI] API Error:', data.error);
+      throw new Error(`OpenAI API Error: ${data.error.message || 'Unknown error'}`);
+    }
+    
+    const content = data.choices?.[0]?.message?.content;
+    if (!content) {
+      console.error('[OpenAI] No content in response:', data);
+      throw new Error('No content received from OpenAI');
+    }
+    
+    return content;
     
   } catch (error) {
     console.error('[OpenAI] Error:', error);
@@ -460,7 +484,19 @@ async function generateAnthropicResponse(
     });
     
     const data = await response.json();
-    return data.content?.[0]?.text || "Unable to generate response";
+    
+    if (data.error) {
+      console.error('[Anthropic] API Error:', data.error);
+      throw new Error(`Anthropic API Error: ${data.error.message || 'Unknown error'}`);
+    }
+    
+    const content = data.content?.[0]?.text;
+    if (!content) {
+      console.error('[Anthropic] No content in response:', data);
+      throw new Error('No content received from Anthropic');
+    }
+    
+    return content;
     
   } catch (error) {
     console.error('[Anthropic] Error:', error);
