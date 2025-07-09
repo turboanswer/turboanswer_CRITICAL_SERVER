@@ -196,9 +196,19 @@ export default function Chat() {
   };
 
   return (
-    <div className="h-screen bg-black text-white flex flex-col">
+    <div className="h-screen bg-gradient-to-br from-purple-900 via-black to-pink-900 text-white flex flex-col relative overflow-hidden">
+      {/* Animated background elements */}
+      <div className="absolute inset-0 opacity-20">
+        <div className="absolute top-20 left-20 w-32 h-32 bg-purple-500 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute top-60 right-40 w-40 h-40 bg-pink-500 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
+        <div className="absolute bottom-40 left-40 w-36 h-36 bg-cyan-500 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }}></div>
+        <div className="absolute bottom-20 right-20 w-28 h-28 bg-orange-500 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '3s' }}></div>
+      </div>
+      
+      {/* Main content with backdrop */}
+      <div className="relative z-10 h-full flex flex-col backdrop-blur-sm">
       {/* Header */}
-      <div className="shrink-0 bg-black border-b border-gray-800 shadow-lg z-50 sticky top-0">
+      <div className="shrink-0 bg-gradient-to-r from-purple-900/80 via-black/80 to-pink-900/80 backdrop-blur-md border-b border-purple-500/30 shadow-lg z-50 sticky top-0">
         <div className="flex items-center justify-between px-4 py-3">
           <div className="flex items-center space-x-4">
             <button className="p-2 rounded-lg hover:bg-gray-800 transition-colors">
@@ -289,11 +299,11 @@ export default function Chat() {
                 
                 {isTyping && (
                   <div className="flex justify-start">
-                    <div className="bg-gray-800 text-gray-100 px-4 py-3 rounded-lg">
+                    <div className="bg-gradient-to-r from-gray-800/90 to-gray-700/90 backdrop-blur-sm border border-purple-500/20 text-gray-100 px-4 py-3 rounded-lg shadow-lg">
                       <div className="flex items-center space-x-2">
-                        <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce"></div>
-                        <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-                        <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                        <div className="w-2 h-2 bg-gradient-to-r from-purple-400 to-pink-400 rounded-full animate-bounce"></div>
+                        <div className="w-2 h-2 bg-gradient-to-r from-cyan-400 to-purple-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                        <div className="w-2 h-2 bg-gradient-to-r from-pink-400 to-cyan-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
                       </div>
                     </div>
                   </div>
@@ -304,7 +314,7 @@ export default function Chat() {
         </div>
 
         {/* Input Area */}
-        <div className="shrink-0 p-4 border-t border-gray-800/50 bg-gradient-to-t from-gray-900/50 to-transparent">
+        <div className="shrink-0 p-4 border-t border-purple-500/30 bg-gradient-to-t from-purple-900/50 via-black/30 to-transparent backdrop-blur-sm">
           <div className="max-w-2xl mx-auto">
             <div className="flex items-center space-x-3 bg-gradient-to-r from-gray-800/80 to-gray-700/80 backdrop-blur-sm border border-purple-500/20 rounded-full px-4 py-3 shadow-xl shadow-purple-500/10">
               <label className="p-2 text-gray-400 hover:text-purple-400 transition-all duration-300 cursor-pointer hover:scale-110">
@@ -364,6 +374,7 @@ export default function Chat() {
             )}
           </div>
         </div>
+      </div>
       </div>
     </div>
   );
