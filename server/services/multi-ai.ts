@@ -222,17 +222,17 @@ Response (under 30 words):`;
           model: "gemini-2.0-flash-exp", // Fastest model
           contents: speedPrompt,
           config: {
-            temperature: 0.3,
-            maxOutputTokens: 40, // Very short for maximum speed
-            topP: 0.7,
-            topK: 15
+            temperature: 0.1, // Even lower for maximum speed
+            maxOutputTokens: 25, // Ultra-short for sub-300ms responses
+            topP: 0.5,
+            topK: 8
           }
         });
 
-        return response.text || "I'm here to help! What can I do for you?";
+        return response.text || "Hey! What's up?";
       } catch (error) {
         console.error('Ultra-fast conversational AI failed:', error);
-        return "I'm having trouble responding quickly. Please try again.";
+        return "Hey! I'm here to help.";
       }
     }
     
@@ -248,57 +248,111 @@ Response (under 30 words):`;
       );
     }
     
-    // Check for weather queries first (before emotional analysis)
+    // Check for weather queries first - ENHANCED GLOBAL WEATHER
     if (isWeatherQuery(userMessage)) {
       console.log(`[Weather] Detected weather query`);
       const location = extractLocation(userMessage);
       if (location) {
         try {
           const weatherData = await getWeatherData(location);
-          return formatWeatherReport(weatherData);
+          const locationData = await getLocationInfo(location);
+          const timeData = await getWorldTimeInfo(location);
+          
+          // Enhanced weather report with location and time
+          const enhancedReport = `🌍 **${locationData.name}, ${locationData.country}**
+📍 Local Time: ${timeData.localTime} (${timeData.timezone})
+🌡️ Temperature: ${weatherData.temperature}°F (feels like ${weatherData.feelsLike}°F)
+☁️ Conditions: ${weatherData.condition}
+💨 Wind: ${weatherData.windSpeed} mph
+💧 Humidity: ${weatherData.humidity}%
+👁️ Visibility: ${weatherData.visibility} miles
+🔆 UV Index: ${weatherData.uvIndex}/10
+📊 Pressure: ${weatherData.pressure} mb
+
+Population: ${locationData.population?.toLocaleString() || 'Unknown'}
+Coordinates: ${locationData.latitude}°, ${locationData.longitude}°`;
+          
+          return enhancedReport;
         } catch (error) {
           console.error("Weather API error:", error);
-          // Fallback to AI response for weather queries when API fails
-          console.log(`[Weather] Falling back to AI response for weather query about ${location}`);
-          return await generateGeminiResponse(
-            userMessage,
-            conversationHistory,
-            "gemini-2.5-flash",
-            { complexity: "simple", domain: "weather", isWeatherQuery: true }
-          );
+          return `I'd love to get the weather for ${location}, but I'm having trouble accessing weather data right now. Please check if you have a weather API key configured!`;
         }
       } else {
-        return "I'd be happy to help with weather information! Please specify a location, like 'weather in New York' or 'what's the weather like in London?'";
+        return "🌍 I can get weather for any location worldwide! Try: 'weather in Tokyo', 'what's the weather in Paris', or 'weather Sydney Australia'";
       }
     }
 
-    // Check for location queries
+    // Check for location queries - ENHANCED GLOBAL TRACKING
     if (isLocationQuery(userMessage)) {
       console.log(`[Location] Detected location query`);
       const location = extractLocation(userMessage);
       if (location) {
         try {
-          const locationData = await getLocationInfo(location);
-          const timeData = await getWorldTimeInfo(location);
-          return formatLocationReport(locationData, timeData);
+          const [locationData, timeData, weatherData] = await Promise.allSettled([
+            getLocationInfo(location),
+            getWorldTimeInfo(location),
+            getWeatherData(location)
+          ]);
+          
+          let report = `🌍 **Location Intelligence for ${location}**\n\n`;
+          
+          if (locationData.status === 'fulfilled') {
+            const loc = locationData.value;
+            report += `📍 **${loc.name}, ${loc.region}, ${loc.country}**\n`;
+            report += `🗺️ Coordinates: ${loc.latitude}°N, ${loc.longitude}°E\n`;
+            report += `👥 Population: ${loc.population?.toLocaleString() || 'Unknown'}\n`;
+            if (loc.currency) report += `💰 Currency: ${loc.currency}\n`;
+            if (loc.languages?.length) report += `🗣️ Languages: ${loc.languages.join(', ')}\n`;
+          }
+          
+          if (timeData.status === 'fulfilled') {
+            const time = timeData.value;
+            report += `🕐 Local Time: ${time.localTime}\n`;
+            report += `🌐 Timezone: ${time.timezone} (${time.utcOffset})\n`;
+          }
+          
+          if (weatherData.status === 'fulfilled') {
+            const weather = weatherData.value;
+            report += `🌡️ Current Weather: ${weather.temperature}°F, ${weather.condition}\n`;
+          }
+          
+          return report;
         } catch (error) {
           console.error("Location API error:", error);
-          // Fallback to AI response for location queries when API fails
-          console.log(`[Location] Falling back to AI response for location query about ${location}`);
-          return await generateGeminiResponse(
-            userMessage,
-            conversationHistory,
-            "gemini-2.5-flash",
-            { complexity: "simple", domain: "location", isLocationQuery: true }
-          );
+          return `I'd love to get information about ${location}, but I'm having trouble accessing location data right now. Please check if you have location API keys configured!`;
         }
+      } else {
+        return "🗺️ I can track any location worldwide! Try: 'location info for Tokyo', 'tell me about Paris', or 'where is Sydney Australia'";
       }
     }
 
-    // Check for time zone queries
+    // Check for time zone queries - COMPREHENSIVE WORLD TIME
     if (isTimeZoneQuery(userMessage)) {
       console.log(`[Time Zone] Detected time zone query`);
-      return getTimeZoneInfo();
+      
+      // Check if asking about specific location
+      const location = extractLocation(userMessage);
+      if (location) {
+        try {
+          const timeData = await getWorldTimeInfo(location);
+          const locationData = await getLocationInfo(location);
+          
+          return `🕐 **World Time for ${locationData.name}**
+
+📍 Location: ${locationData.name}, ${locationData.country}
+🌐 Current Time: ${timeData.localTime}
+⏰ Timezone: ${timeData.timezone}
+🌍 UTC Offset: ${timeData.utcOffset}
+🗺️ Coordinates: ${locationData.latitude}°, ${locationData.longitude}°
+
+*Turbo tracks time around the world in real-time!* 🌎`;
+        } catch (error) {
+          console.error("Time zone API error:", error);
+          return getTimeZoneInfo(); // Fallback to general time zone info
+        }
+      } else {
+        return getTimeZoneInfo();
+      }
     }
 
     // Auto-detect conversation type for auto-select - SPEED OPTIMIZED
@@ -310,16 +364,16 @@ Response (under 30 words):`;
       // Ultra-fast direct response for simple messages
       const quickResponse = await ai.models.generateContent({
         model: "gemini-2.0-flash-exp",
-        contents: `User: ${userMessage}\nTurbo (brief response):`,
+        contents: `User: ${userMessage}\nTurbo (very brief):`,
         config: {
-          temperature: 0.3,
-          maxOutputTokens: 30,
-          topP: 0.7,
-          topK: 10
+          temperature: 0.1,
+          maxOutputTokens: 20,
+          topP: 0.5,
+          topK: 6
         }
       });
       
-      return quickResponse.text || "I'm here to help!";
+      return quickResponse.text || "Hey there!";
     }
 
     // For non-emotional queries, continue with standard AI routing
