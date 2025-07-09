@@ -109,3 +109,40 @@
     --tw-ring-color: var(--brand-500);
   }
 }
+
+/* COMPLETE STABILITY - NO MOVEMENT OR ANIMATIONS */
+/* User preference: App must be completely stable with NO moving elements */
+*, *::before, *::after {
+  animation-duration: 0s !important;
+  animation-delay: 0s !important;
+  animation-iteration-count: 1 !important;
+  animation-fill-mode: forwards !important;
+  transition-duration: 0s !important;
+  transition-delay: 0s !important;
+  scroll-behavior: auto !important;
+}
+
+/* Disable all animations and transitions globally */
+.animate-pulse,
+.animate-spin,
+.animate-bounce,
+.animate-ping {
+  animation: none !important;
+}
+
+/* Ensure fixed positioning for critical UI elements */
+header, .input-area {
+  position: relative !important;
+  z-index: 50 !important;
+}
+
+/* Prevent layout shifts */
+.shrink-0 {
+  flex-shrink: 0 !important;
+}
+
+/* Settings buttons always accessible */
+.settings-buttons {
+  z-index: 50 !important;
+  position: relative !important;
+}

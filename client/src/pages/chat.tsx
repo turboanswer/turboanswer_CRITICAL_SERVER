@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Send, Bot, User, Mic, MicOff, Volume2, FileText, X, Brain, Settings, LogOut } from "lucide-react";
 import { Link } from "wouter";
 import { TurboLogo } from "@/components/TurboLogo";
+import { LoadingScreen } from "@/components/LoadingScreen";
 import { useToast } from "@/hooks/use-toast";
 import { DocumentUpload } from "@/components/DocumentUpload";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -23,13 +24,14 @@ export default function Chat() {
   const [selectedAIModel, setSelectedAIModel] = useState("auto");
   const [showModelSelector, setShowModelSelector] = useState(false);
   const [user, setUser] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const recognitionRef = useRef<any>(null);
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
-  // Check for user authentication
+  // Check for user authentication and handle loading
   useEffect(() => {
     const userData = localStorage.getItem('turbo_user');
     if (userData) {
@@ -39,6 +41,13 @@ export default function Chat() {
         localStorage.removeItem('turbo_user');
       }
     }
+    
+    // Show loading screen for 2 seconds
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 2000);
+    
+    return () => clearTimeout(timer);
   }, []);
 
   const handleLogout = () => {
@@ -303,16 +312,21 @@ export default function Chat() {
     return date.toLocaleDateString();
   };
 
+  // Show loading screen on app start
+  if (isLoading) {
+    return <LoadingScreen message="Activating Maximum Power AI System..." />;
+  }
+
   return (
-    <div className="flex flex-col h-screen max-w-5xl mx-auto bg-black shadow-2xl">
+    <div className="flex flex-col h-screen max-w-7xl mx-auto bg-black shadow-2xl">
       {/* Header - Fixed position to prevent movement */}
       <header className="bg-zinc-950 border-b border-zinc-800 px-4 py-4 sm:px-6 relative z-40 shrink-0">
         <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <TurboLogo size={40} />
+          <div className="flex items-center space-x-4">
+            <TurboLogo size={60} />
             <div>
-              <h1 className="text-xl font-semibold text-white">Turbo Answer</h1>
-              <p className="text-sm text-zinc-400">Multi-Model AI Assistant</p>
+              <h1 className="text-2xl font-bold text-white tracking-wide">TURBO ANSWER</h1>
+              <p className="text-sm text-purple-300 font-medium">Maximum Power AI System</p>
             </div>
           </div>
           <div className="flex items-center space-x-2">
@@ -469,7 +483,7 @@ export default function Chat() {
               <div className="flex-1">
                 <Card className="bg-zinc-800 rounded-2xl rounded-tl-md px-4 py-3 shadow-xl border border-zinc-700">
                   <p className="text-zinc-100 leading-relaxed">
-                    Hi! I'm Turbo Answer, the world's most powerful AI assistant. I combine multiple state-of-the-art AI models to give you expert-level responses across all domains. What can I help you with?
+                    🚀 Welcome to <strong>TURBO ANSWER</strong> - The Ultimate AI Assistant! I'm powered by the most advanced AI models available, designed to provide maximum intelligence and comprehensive solutions across all domains. Ready to demonstrate ultimate AI power?
                   </p>
                   <div className="mt-3 flex items-center space-x-2 text-xs text-zinc-400">
                     <Brain className="h-3 w-3" />
@@ -550,9 +564,9 @@ export default function Chat() {
         </div>
       </div>
 
-      {/* Input - Fixed position */}
-      <div className="bg-zinc-950 border-t border-zinc-800 px-4 py-4 sm:px-6 relative z-40 shrink-0">
-        <div className="flex items-end space-x-3">
+      {/* Enhanced Input Area - Fixed position */}
+      <div className="bg-gradient-to-r from-zinc-950 via-zinc-900 to-zinc-950 border-t border-purple-800/30 px-6 py-6 relative z-40 shrink-0 shadow-2xl">
+        <div className="flex items-end space-x-4">
           <div className="flex-1">
             <div className="relative">
               <Textarea
