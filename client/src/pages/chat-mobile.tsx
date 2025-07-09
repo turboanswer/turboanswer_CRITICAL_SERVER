@@ -430,6 +430,5 @@ export default function ChatMobile() {
         </p>
       </div>
     </div>
-    </div>
   );
 }
