@@ -377,6 +377,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Weather and location endpoints
+  app.get("/api/weather/:location", async (req, res) => {
+    try {
+      const { getWeatherData, formatWeatherReport } = await import("./services/weather-location");
+      const location = decodeURIComponent(req.params.location);
+      const weatherData = await getWeatherData(location);
+      const report = formatWeatherReport(weatherData);
+      res.json({ weather: weatherData, report });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.get("/api/location/:location", async (req, res) => {
+    try {
+      const { getLocationInfo, getWorldTimeInfo, formatLocationReport } = await import("./services/weather-location");
+      const location = decodeURIComponent(req.params.location);
+      const [locationInfo, timeInfo] = await Promise.allSettled([
+        getLocationInfo(location),
+        getWorldTimeInfo(location)
+      ]);
+      
+      if (locationInfo.status === 'fulfilled') {
+        const timeData = timeInfo.status === 'fulfilled' ? timeInfo.value : null;
+        const report = formatLocationReport(locationInfo.value, timeData);
+        res.json({ location: locationInfo.value, time: timeData, report });
+      } else {
+        throw new Error(locationInfo.reason?.message || 'Location not found');
+      }
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

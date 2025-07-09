@@ -52,6 +52,8 @@ Performance priority: AI responses must be fast - removed top-right icons and st
 - `POST /api/analyze-document` - Upload and analyze documents with AI
 - `GET /api/analysis-options` - Get available document analysis types
 - `GET /api/supported-file-types` - Get supported file formats for upload
+- `GET /api/weather/:location` - Get real-time weather data for any location
+- `GET /api/location/:location` - Get location information and local time
 - `POST /api/get-or-create-subscription` - Create Stripe subscription for Pro plan
 
 ### Frontend Pages
@@ -59,9 +61,11 @@ Performance priority: AI responses must be fast - removed top-right icons and st
 - **Subscribe Page** (`/subscribe`): Stripe-powered subscription upgrade to Pro plan
 - **404 Page**: Error handling for unknown routes
 
-### Custom AI Integration
-- **Simplified System**: Single custom AI service integration instead of multi-model complexity
-- **Your AI Service**: Configure any OpenAI-compatible API or custom endpoint
+### Custom AI Integration with Weather & Location Intelligence
+- **Smart AI System**: Custom AI service with real-time weather and location data
+- **Weather Intelligence**: Live weather data for any location worldwide via OpenWeatherMap API
+- **Location Knowledge**: Accurate time zones, geographic data, and world information
+- **Smart Detection**: Automatically recognizes weather and location queries
 - **Fast Responses**: Optimized for speed with 500 token limit and minimal context
 - **Fallback Support**: Automatic error handling with graceful degradation
 
@@ -80,9 +84,10 @@ Performance priority: AI responses must be fast - removed top-right icons and st
 - **Professional Applications**: Business analysis, strategic planning, optimization
 
 #### API Requirements
-- GEMINI_API_KEY for Google AI services
-- OPENAI_API_KEY for OpenAI GPT models  
-- ANTHROPIC_API_KEY for Claude models
+- CUSTOM_AI_API_KEY or OPENAI_API_KEY for AI responses
+- WEATHER_API_KEY or OPENWEATHER_API_KEY for weather data (free tier available)
+- GEMINI_API_KEY for Google AI services (optional)
+- ANTHROPIC_API_KEY for Claude models (optional)
 
 ### Completely Stable UI and Professional Branding
 - **Professional Logo**: Static TurboLogo with gradient design and AI indicators
