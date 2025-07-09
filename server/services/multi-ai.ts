@@ -162,16 +162,16 @@ function analyzeUserIntent(message: string, conversationHistory: Array<{role: st
   
   if (complexity === 'expert' || (complexity === 'complex' && (reasoning || creativity))) {
     recommended_tier = 'maximum';
-    recommended_model = creativity ? 'claude-sonnet-4' : reasoning ? 'gpt-4o' : 'claude-3-opus';
+    recommended_model = 'gemini-pro'; // Use available powerful model
   } else if (complexity === 'complex' || technical) {
     recommended_tier = 'premium';
-    recommended_model = technical ? 'gpt-4' : reasoning ? 'claude-3-sonnet' : 'gemini-1.5-pro';
+    recommended_model = technical ? 'gemini-pro' : 'gemini-1.5-pro';
   } else if (complexity === 'moderate') {
     recommended_tier = 'advanced';
     recommended_model = technical ? 'gpt-3.5-turbo' : 'gemini-pro';
   } else {
     recommended_tier = 'specialized';
-    recommended_model = 'claude-instant';
+    recommended_model = 'gemini-pro'; // Default to working model
   }
   
   return {
@@ -252,17 +252,14 @@ export async function generateAIResponse(
     // MAXIMUM POWER MODEL SELECTION - Use the most powerful available model
     let finalModel = intent.recommended_model;
     
-    // Priority-based model selection for maximum power
+    // Priority-based model selection for maximum power (using available models)
     const modelPriority = [
-      { model: 'claude-sonnet-4', hasKey: hasAnthropic },
-      { model: 'gpt-4o', hasKey: hasOpenAI },
-      { model: 'claude-3-opus', hasKey: hasAnthropic },
-      { model: 'gpt-4', hasKey: hasOpenAI },
-      { model: 'claude-3-sonnet', hasKey: hasAnthropic },
-      { model: 'gemini-1.5-pro', hasKey: hasGemini },
       { model: 'gemini-pro', hasKey: hasGemini },
+      { model: 'gemini-1.5-pro', hasKey: hasGemini },
       { model: 'gpt-3.5-turbo', hasKey: hasOpenAI },
-      { model: 'claude-instant', hasKey: hasAnthropic }
+      { model: 'claude-instant', hasKey: hasAnthropic },
+      { model: 'claude-3-sonnet', hasKey: hasAnthropic },
+      { model: 'claude-3-opus', hasKey: hasAnthropic }
     ];
     
     // Select the highest priority available model
@@ -279,17 +276,16 @@ export async function generateAIResponse(
     
     console.log(`[AI Router] Selected model: ${finalModel}`);
     
-    // Route to MAXIMUM POWER AI service based on final model
-    if ((finalModel === 'gemini-pro' || finalModel === 'gemini-1.5-pro') && hasGemini) {
-      // Use the working Gemini service from the dedicated gemini.ts file
+    // FORCE GEMINI for maximum power with available API key
+    if (hasGemini) {
       const { generateAIResponse: generateGeminiAI } = await import('./gemini.js');
       return await generateGeminiAI(enhancedMessage, conversationHistory, subscriptionTier);
-    } else if ((finalModel.includes('claude') || finalModel.includes('sonnet')) && hasAnthropic) {
+    } else if (hasAnthropic && (finalModel.includes('claude') || finalModel.includes('sonnet'))) {
       return await generateAnthropicResponse(enhancedMessage, conversationHistory, finalModel, intent, additionalContext);
-    } else if ((finalModel.includes('gpt') || finalModel.includes('4o')) && hasOpenAI) {
-      return await generateOpenAIResponse(enhancedMessage, conversationHistory, finalModel, intent, additionalContext);
+    } else if (hasOpenAI && finalModel === 'gpt-3.5-turbo') {
+      return await generateOpenAIResponse(enhancedMessage, conversationHistory, 'gpt-3.5-turbo', intent, additionalContext);
     } else {
-      throw new Error(`Model ${finalModel} not available with current API keys`);
+      throw new Error("No working AI API keys available. Please check your API key configuration.");
     }
     
   } catch (error) {
@@ -441,7 +437,7 @@ async function generateOpenAIResponse(
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: model.includes('gpt-4') ? 'gpt-4' : 'gpt-3.5-turbo',
+        model: 'gpt-3.5-turbo', // Force use of available model
         messages,
         max_tokens: modelConfig.maxTokens,
         temperature: modelConfig.temperature,

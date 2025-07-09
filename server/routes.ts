@@ -159,8 +159,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         content: msg.content
       }));
 
-      // Generate AI response using multi-model intelligence
-      const aiResponseContent = await generateAIResponse(content, conversationHistory, "free");
+      // Use working Gemini service directly for maximum power
+      const { generateAIResponse: generateGeminiAI } = await import('./services/gemini.js');
+      const aiResponseContent = await generateGeminiAI(content, conversationHistory, "free");
 
       // Create AI message
       const aiMessage = await storage.createMessage({
