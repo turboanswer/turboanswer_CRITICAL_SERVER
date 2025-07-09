@@ -228,7 +228,14 @@ export async function generateAIResponse(
           return formatWeatherReport(weatherData);
         } catch (error) {
           console.error("Weather API error:", error);
-          return `I'm sorry, I couldn't get weather information for "${location}" right now. Please try again later.`;
+          // Fallback to AI response for weather queries when API fails
+          console.log(`[Weather] Falling back to AI response for weather query about ${location}`);
+          return await generateGeminiResponse(
+            userMessage,
+            conversationHistory,
+            "gemini-2.5-flash",
+            { complexity: "simple", domain: "weather", isWeatherQuery: true }
+          );
         }
       } else {
         return "I'd be happy to help with weather information! Please specify a location, like 'weather in New York' or 'what's the weather like in London?'";
@@ -246,7 +253,14 @@ export async function generateAIResponse(
           return formatLocationReport(locationData, timeData);
         } catch (error) {
           console.error("Location API error:", error);
-          return `I'm sorry, I couldn't get location information for "${location}" right now. Please try again later.`;
+          // Fallback to AI response for location queries when API fails
+          console.log(`[Location] Falling back to AI response for location query about ${location}`);
+          return await generateGeminiResponse(
+            userMessage,
+            conversationHistory,
+            "gemini-2.5-flash",
+            { complexity: "simple", domain: "location", isLocationQuery: true }
+          );
         }
       }
     }

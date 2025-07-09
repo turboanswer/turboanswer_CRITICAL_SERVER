@@ -107,8 +107,8 @@ Consider:
         model: "gemini-2.5-flash", // Use faster model for quicker responses
         config: {
           systemInstruction: emotionalPrompt,
-          temperature: 0.7,
-          maxOutputTokens: 200, // Much shorter responses for natural conversation
+          temperature: 0.8, // More empathetic and natural
+          maxOutputTokens: 150, // Even shorter for quick responses
         },
         contents: [
           ...contextHistory,
