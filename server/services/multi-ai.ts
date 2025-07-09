@@ -200,15 +200,34 @@ export async function generateAIResponse(
       }
     }
     
-    // Model selection with subscription tier restrictions
+    // Check available API keys and select appropriate model
+    const hasOpenAI = !!process.env.OPENAI_API_KEY;
+    const hasAnthropic = !!process.env.ANTHROPIC_API_KEY;
+    const hasGemini = !!process.env.GEMINI_API_KEY;
+    
+    // Model selection with API key availability
     const availableModels = getAvailableModels(subscriptionTier);
     const modelToUse = selectedModel || intent.recommended_model;
     
-    // Fallback to available models based on subscription
+    // Smart fallback based on available API keys
     let finalModel = modelToUse;
-    if (!availableModels[modelToUse]) {
-      const tierModels = Object.keys(availableModels);
-      finalModel = tierModels.length > 0 ? tierModels[0] : 'gpt-3.5-turbo';
+    const modelConfig = availableModels[modelToUse];
+    
+    if (!modelConfig || 
+        (modelConfig.provider === 'anthropic' && !hasAnthropic) ||
+        (modelConfig.provider === 'openai' && !hasOpenAI) ||
+        (modelConfig.provider === 'google' && !hasGemini)) {
+      
+      // Find best available model based on API keys
+      if (hasOpenAI) {
+        finalModel = intent.complexity === 'expert' || intent.complexity === 'complex' ? 'gpt-4' : 'gpt-3.5-turbo';
+      } else if (hasGemini) {
+        finalModel = 'gemini-pro';
+      } else if (hasAnthropic) {
+        finalModel = intent.complexity === 'expert' ? 'claude-3-opus' : 'claude-instant';
+      } else {
+        throw new Error("No AI API keys configured. Please add OPENAI_API_KEY, ANTHROPIC_API_KEY, or GEMINI_API_KEY to your environment.");
+      }
     }
     
     console.log(`[AI Router] Selected model: ${finalModel}`);
@@ -229,6 +248,12 @@ export async function generateAIResponse(
     
   } catch (error) {
     console.error('[AI Router] Error:', error);
+    
+    // Provide helpful error message based on the issue
+    if (error.message?.includes('API key not configured')) {
+      return "I need an AI API key to respond. Please add one of these to your environment:\n\n• OPENAI_API_KEY for GPT models\n• ANTHROPIC_API_KEY for Claude models\n• GEMINI_API_KEY for Gemini models\n\nOnce configured, I'll be able to provide intelligent responses!";
+    }
+    
     return "I'm experiencing technical difficulties. Please try again in a moment.";
   }
 }
@@ -243,7 +268,7 @@ async function generateGeminiResponse(
 ): Promise<string> {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
-    throw new Error("Gemini API key not configured");
+    throw new Error("Gemini API key not configured. Please add GEMINI_API_KEY to your environment.");
   }
   
   const modelConfig = AI_MODELS.advanced[model] || AI_MODELS.advanced['gemini-pro'];
@@ -303,7 +328,7 @@ async function generateOpenAIResponse(
 ): Promise<string> {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
-    throw new Error("OpenAI API key not configured");
+    throw new Error("OpenAI API key not configured. Please add OPENAI_API_KEY to your environment.");
   }
   
   const modelConfig = AI_MODELS.premium[model] || AI_MODELS.advanced[model] || AI_MODELS.advanced['gpt-3.5-turbo'];
@@ -380,7 +405,7 @@ async function generateAnthropicResponse(
 ): Promise<string> {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
-    throw new Error("Anthropic API key not configured");
+    throw new Error("Anthropic API key not configured. Please add ANTHROPIC_API_KEY to your environment.");
   }
   
   const modelConfig = AI_MODELS.premium[model] || AI_MODELS.specialized[model] || AI_MODELS.premium['claude-3-sonnet'];
@@ -443,16 +468,37 @@ async function generateAnthropicResponse(
   }
 }
 
-// Get available models based on subscription tier
+// Get available models based on subscription tier and API keys
 export function getAvailableModels(subscriptionTier: string): Record<string, any> {
+  const hasOpenAI = !!process.env.OPENAI_API_KEY;
+  const hasAnthropic = !!process.env.ANTHROPIC_API_KEY;
+  const hasGemini = !!process.env.GEMINI_API_KEY;
+  
+  let allModels: Record<string, any> = {};
+  
   switch (subscriptionTier) {
     case 'pro':
     case 'premium':
-      return { ...AI_MODELS.premium, ...AI_MODELS.advanced, ...AI_MODELS.specialized };
+      allModels = { ...AI_MODELS.premium, ...AI_MODELS.advanced, ...AI_MODELS.specialized };
+      break;
     case 'plus':
-      return { ...AI_MODELS.advanced, ...AI_MODELS.specialized };
+      allModels = { ...AI_MODELS.advanced, ...AI_MODELS.specialized };
+      break;
     case 'free':
     default:
-      return { ...AI_MODELS.advanced, ...AI_MODELS.specialized };
+      allModels = { ...AI_MODELS.advanced, ...AI_MODELS.specialized };
   }
+  
+  // Filter models based on available API keys
+  const availableModels: Record<string, any> = {};
+  
+  for (const [modelName, modelConfig] of Object.entries(allModels)) {
+    if ((modelConfig.provider === 'openai' && hasOpenAI) ||
+        (modelConfig.provider === 'anthropic' && hasAnthropic) ||
+        (modelConfig.provider === 'google' && hasGemini)) {
+      availableModels[modelName] = modelConfig;
+    }
+  }
+  
+  return availableModels;
 }
