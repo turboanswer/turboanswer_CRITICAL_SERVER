@@ -108,50 +108,60 @@ export default function ChatMobile() {
 
   // Create initial conversation - prevent multiple calls
   useEffect(() => {
-    if (conversations.length === 0 && !currentConversationId) {
+    if (conversations.length === 0 && !currentConversationId && !createConversationMutation.isPending) {
       createConversationMutation.mutate();
     } else if (!currentConversationId && conversations.length > 0) {
       setCurrentConversationId(conversations[0].id);
     }
-  }, [conversations.length]);
+  }, [conversations.length, createConversationMutation.isPending]);
 
   // Wake word detection removed for better performance
 
   // Voice recognition setup
   useEffect(() => {
-    if (typeof window !== 'undefined' && 'webkitSpeechRecognition' in window) {
-      const SpeechRecognition = (window as any).webkitSpeechRecognition;
+    if (typeof window !== 'undefined') {
+      // Check for both webkitSpeechRecognition and SpeechRecognition
+      const SpeechRecognition = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
       
-      recognitionRef.current = new SpeechRecognition();
-      recognitionRef.current.continuous = false;
-      recognitionRef.current.interimResults = false;
-      recognitionRef.current.lang = 'en-US';
-      recognitionRef.current.maxAlternatives = 1;
+      if (SpeechRecognition) {
+        recognitionRef.current = new SpeechRecognition();
+        recognitionRef.current.continuous = false;
+        recognitionRef.current.interimResults = false;
+        recognitionRef.current.lang = 'en-US';
+        recognitionRef.current.maxAlternatives = 1;
 
-      recognitionRef.current.onresult = (event: any) => {
-        const transcript = event.results[0][0].transcript;
-        setMessage(transcript);
-        setIsListening(false);
-        
-        // Auto-send after voice input with longer delay
-        setTimeout(() => {
-          if (currentConversationId && transcript.trim()) {
-            setIsTyping(true);
-            sendMessageMutation.mutate({
-              message: transcript.trim(),
-              aiModel: selectedAIModel,
-            });
-          }
-        }, 800);
-      };
+        recognitionRef.current.onresult = (event: any) => {
+          const transcript = event.results[0][0].transcript;
+          setMessage(transcript);
+          setIsListening(false);
+          
+          // Auto-send after voice input with longer delay
+          setTimeout(() => {
+            if (currentConversationId && transcript.trim()) {
+              setIsTyping(true);
+              sendMessageMutation.mutate({
+                message: transcript.trim(),
+                aiModel: selectedAIModel,
+              });
+            }
+          }, 800);
+        };
 
-      recognitionRef.current.onerror = () => {
-        setIsListening(false);
-      };
+        recognitionRef.current.onerror = (event: any) => {
+          console.log('Speech recognition error:', event.error);
+          setIsListening(false);
+        };
 
-      recognitionRef.current.onend = () => {
-        setIsListening(false);
-      };
+        recognitionRef.current.onend = () => {
+          setIsListening(false);
+        };
+
+        recognitionRef.current.onstart = () => {
+          console.log('Speech recognition started');
+        };
+      } else {
+        console.log('Speech recognition not supported in this browser');
+      }
     }
   }, [currentConversationId, selectedAIModel]);
 
@@ -160,21 +170,28 @@ export default function ChatMobile() {
     e.preventDefault();
     const messageText = message.trim();
     
-    if (!messageText || sendMessageMutation.isPending) {
-      console.log('Cannot send - empty message or already pending');
+    console.log('📝 Form submitted:', {
+      messageText,
+      isPending: sendMessageMutation.isPending,
+      isTyping,
+      currentConversationId
+    });
+    
+    if (!messageText || sendMessageMutation.isPending || isTyping) {
+      console.log('❌ Cannot send - empty message, already pending, or typing');
       return;
     }
 
     // Ensure we have a conversation
     if (!currentConversationId) {
-      console.log('No conversation, creating one...');
+      console.log('🔄 No conversation, creating one...');
       // Store the message to send after conversation is created
       setMessage(messageText);
       createConversationMutation.mutate();
       return;
     }
 
-    console.log('Sending message:', messageText, 'to conversation:', currentConversationId);
+    console.log('✅ Sending message:', messageText, 'to conversation:', currentConversationId);
     setIsTyping(true);
     
     sendMessageMutation.mutate({
@@ -185,12 +202,43 @@ export default function ChatMobile() {
 
   // Voice functions
   const startListening = () => {
-    if (recognitionRef.current && !isListening) {
+    console.log('🎤 Start listening clicked');
+    if (!recognitionRef.current) {
+      console.log('🎤 No speech recognition available');
+      toast({
+        title: "Speech Recognition Not Available",
+        description: "Your browser doesn't support speech recognition",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (!isListening) {
       try {
-        setIsListening(true);
-        recognitionRef.current.start();
+        // Stop any ongoing recognition first
+        try {
+          recognitionRef.current.stop();
+        } catch (e) {
+          // Ignore errors when stopping
+        }
+        
+        setTimeout(() => {
+          try {
+            console.log('🎤 Starting speech recognition');
+            setIsListening(true);
+            recognitionRef.current.start();
+          } catch (error) {
+            console.log('🎤 Speech recognition start error:', error);
+            setIsListening(false);
+            toast({
+              title: "Microphone Error",
+              description: "Could not start speech recognition",
+              variant: "destructive",
+            });
+          }
+        }, 100);
       } catch (error) {
-        console.log('Speech recognition start error:', error);
+        console.log('🎤 Speech recognition start error:', error);
         setIsListening(false);
       }
     }
@@ -399,10 +447,10 @@ export default function ChatMobile() {
           <button
             type="button"
             onClick={isListening ? stopListening : startListening}
-            className={`p-3 rounded-full ${
+            className={`p-3 rounded-full transition-all ${
               isListening 
-                ? 'bg-red-600' 
-                : 'bg-gray-800'
+                ? 'bg-red-600 hover:bg-red-700 animate-pulse' 
+                : 'bg-gray-800 hover:bg-gray-700'
             }`}
           >
             {isListening ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
@@ -418,8 +466,8 @@ export default function ChatMobile() {
           
           <button
             type="submit"
-            disabled={!message.trim() || sendMessageMutation.isPending}
-            className="p-3 bg-blue-600 disabled:bg-gray-700 rounded-full"
+            disabled={!message.trim() || sendMessageMutation.isPending || isTyping}
+            className="p-3 bg-blue-600 disabled:bg-gray-700 rounded-full hover:bg-blue-700 transition-colors"
           >
             <Send className="w-5 h-5" />
           </button>
