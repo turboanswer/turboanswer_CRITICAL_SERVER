@@ -86,7 +86,7 @@ Voice preference: Voice assistant called "Turbo" with optional wake word detecti
 - **Emotional AI**: Real-life conversational model that understands feelings and emotions with empathetic responses
 - **Priority-Based Routing**: Automatic selection of the most powerful available model
 - **Expert-Level Reasoning**: Multi-layered complex problem-solving with breakthrough insights
-- **Real-Time Intelligence**: Live weather data, world location knowledge, and time zone expertise
+- **Real-Time Intelligence**: Live weather data via OpenMeteo API (no API key required), world location knowledge, and time zone expertise
 - **Adaptive Communication**: Exceeds user expectations with maximum performance
 - **Conversational Intelligence**: Emotional analysis, empathy levels, mood detection, and human-like interactions
 - **Comprehensive Coverage**: Technical mastery, scientific expertise, creative innovation, and general knowledge
@@ -113,7 +113,7 @@ Voice preference: Voice assistant called "Turbo" with optional wake word detecti
 - GEMINI_API_KEY for Google AI services (primary AI provider)
 - OPENAI_API_KEY for GPT models (secondary - quota exceeded)
 - ANTHROPIC_API_KEY for Claude models (optional)
-- WEATHER_API_KEY or OPENWEATHER_API_KEY for weather data (free tier available)
+- No weather API key required - uses free OpenMeteo API for global weather data
 
 ### ChatGPT-Style Mobile Interface Design
 - **Black Background**: Pure black (#000000) interface matching ChatGPT mobile design
