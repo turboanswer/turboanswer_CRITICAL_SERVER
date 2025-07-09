@@ -233,9 +233,9 @@ export async function generateAIResponse(
     console.log(`[AI Router] Selected model: ${finalModel}`);
     
     // Route to appropriate AI service
-    const modelConfig = availableModels[finalModel] || AI_MODELS.advanced['gpt-3.5-turbo'];
+    const finalModelConfig = availableModels[finalModel] || AI_MODELS.advanced['gpt-3.5-turbo'];
     
-    switch (modelConfig.provider) {
+    switch (finalModelConfig.provider) {
       case 'anthropic':
         return await generateAnthropicResponse(enhancedMessage, conversationHistory, finalModel, intent, additionalContext);
       case 'openai':
@@ -243,7 +243,7 @@ export async function generateAIResponse(
       case 'google':
         return await generateGeminiResponse(enhancedMessage, conversationHistory, finalModel, intent, additionalContext);
       default:
-        throw new Error(`Unsupported AI provider: ${modelConfig.provider}`);
+        throw new Error(`Unsupported AI provider: ${finalModelConfig.provider}`);
     }
     
   } catch (error) {
