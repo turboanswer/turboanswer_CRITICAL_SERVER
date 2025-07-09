@@ -53,9 +53,11 @@ Design preference: Sleek black theme with modern UI aesthetics.
 ### Professional AI Assistant Integration
 - Advanced pattern-matching AI with sophisticated domain expertise
 - Comprehensive knowledge in software development, web technologies, and system architecture
+- Daily assistance capabilities: time/date queries, calculations, definitions, general knowledge
 - Contextual conversation awareness using message history
 - Professional-grade responses with detailed explanations and best practices
-- Coverage includes: JavaScript/React, Python, databases, algorithms, debugging, testing, security, deployment
+- Technical coverage: JavaScript/React, Python, databases, algorithms, debugging, testing, security, deployment
+- Everyday assistance: mathematical calculations, concept definitions, time-based queries
 - Career guidance and technical interview preparation
 - No external API dependencies or costs
 

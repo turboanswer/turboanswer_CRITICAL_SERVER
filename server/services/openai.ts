@@ -10,6 +10,11 @@ export async function generateAIResponse(userMessage: string, conversationHistor
     // Advanced pattern matching with contextual awareness
     const patterns = {
       greeting: /\b(hello|hi|hey|greetings|good\s+(morning|afternoon|evening))\b/i,
+      time: /\b(time|clock|what\s+time|current\s+time|now)\b/i,
+      date: /\b(date|today|what\s+day|current\s+date|calendar)\b/i,
+      weather: /\b(weather|temperature|rain|sunny|cloudy|forecast)\b/i,
+      calculation: /\b(calculate|math|plus|minus|multiply|divide|\+|\-|\*|\/|\d+\s*[\+\-\*\/]\s*\d+)\b/i,
+      definition: /\b(what\s+is|define|meaning|explain|definition)\b/i,
       javascript: /\b(javascript|js|node|react|vue|angular|typescript|ts)\b/i,
       python: /\b(python|django|flask|pandas|numpy|machine\s+learning|ml|ai)\b/i,
       webdev: /\b(web\s+dev|html|css|frontend|backend|fullstack|api|rest|graphql)\b/i,
@@ -27,7 +32,176 @@ export async function generateAIResponse(userMessage: string, conversationHistor
     // Contextual response generation
     if (patterns.greeting.test(message)) {
       const timeContext = new Date().getHours() < 12 ? "morning" : new Date().getHours() < 17 ? "afternoon" : "evening";
-      return `Good ${timeContext}! I'm your professional AI assistant specializing in software development, technology consulting, and problem-solving. I have extensive knowledge in programming languages, system architecture, best practices, and industry trends. How may I assist you today?`;
+      return `Good ${timeContext}! I'm your professional AI assistant specializing in software development, technology consulting, and everyday questions. I can help with programming, system architecture, general knowledge, time/date queries, calculations, and much more. How may I assist you today?`;
+    }
+
+    if (patterns.time.test(message)) {
+      const now = new Date();
+      const timeString = now.toLocaleTimeString('en-US', { 
+        hour: '2-digit', 
+        minute: '2-digit', 
+        second: '2-digit',
+        hour12: true 
+      });
+      const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      return `The current time is **${timeString}** (${timezone}). Is there anything else you'd like to know about time zones, scheduling, or time-related calculations?`;
+    }
+
+    if (patterns.date.test(message)) {
+      const now = new Date();
+      const dateString = now.toLocaleDateString('en-US', { 
+        weekday: 'long', 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric' 
+      });
+      const dayOfYear = Math.floor((now - new Date(now.getFullYear(), 0, 0)) / (1000 * 60 * 60 * 24));
+      return `Today is **${dateString}**. This is day ${dayOfYear} of ${now.getFullYear()}. Need help with date calculations, scheduling, or calendar-related tasks?`;
+    }
+
+    if (patterns.weather.test(message)) {
+      return `I'd love to help with weather information, but I don't have access to real-time weather data. For accurate weather forecasts, I recommend:
+
+**Reliable Weather Sources:**
+• **Weather.com** or **AccuWeather** for detailed forecasts
+• **Weather apps** on your phone for location-based updates
+• **National Weather Service** (weather.gov) for official US forecasts
+• **OpenWeatherMap API** if you're building weather features
+
+**Weather Planning Tips:**
+• Check hourly forecasts for outdoor activities
+• Monitor weather alerts and warnings
+• Consider UV index for sun exposure
+• Plan for seasonal weather patterns
+
+Would you like help integrating weather APIs into a project, or do you have other weather-related questions I can assist with?`;
+    }
+
+    if (patterns.calculation.test(message)) {
+      // Extract mathematical expressions
+      const mathExpression = message.match(/(\d+(?:\.\d+)?)\s*([\+\-\*\/])\s*(\d+(?:\.\d+)?)/);
+      if (mathExpression) {
+        const [, num1, operator, num2] = mathExpression;
+        const a = parseFloat(num1);
+        const b = parseFloat(num2);
+        let result;
+        let operation;
+        
+        switch (operator) {
+          case '+':
+            result = a + b;
+            operation = 'addition';
+            break;
+          case '-':
+            result = a - b;
+            operation = 'subtraction';
+            break;
+          case '*':
+            result = a * b;
+            operation = 'multiplication';
+            break;
+          case '/':
+            result = b !== 0 ? a / b : 'undefined (division by zero)';
+            operation = 'division';
+            break;
+          default:
+            result = 'invalid operation';
+        }
+        
+        if (typeof result === 'number') {
+          return `**Mathematical Calculation**
+
+${a} ${operator} ${b} = **${result}**
+
+I can help with various mathematical operations:
+• Basic arithmetic (addition, subtraction, multiplication, division)
+• Percentage calculations
+• Unit conversions
+• Programming-related math (algorithms, data structures)
+• Statistical calculations
+
+What other calculations can I help you with?`;
+        }
+      }
+      
+      return `I can help with mathematical calculations! Please provide the specific calculation you'd like me to perform, such as:
+
+**Examples:**
+• "Calculate 15 + 27"
+• "What's 25% of 200?"
+• "Convert 5 miles to kilometers"
+• "What's the area of a circle with radius 10?"
+
+I can also assist with programming-related mathematical concepts, algorithm complexity calculations, and statistical analysis. What would you like to calculate?`;
+    }
+
+    if (patterns.definition.test(message)) {
+      // Check common definition patterns and extract terms
+      let term = null;
+      
+      // Pattern 1: "What is [term]?"
+      let match = message.match(/what\s+is\s+(?:an?\s+)?(.+?)(?:\?|$)/i);
+      if (match) {
+        term = match[1].trim().toLowerCase();
+      }
+      
+      // Pattern 2: "Define [term]"
+      if (!term) {
+        match = message.match(/define\s+(?:an?\s+)?(.+?)(?:\?|$)/i);
+        if (match) {
+          term = match[1].trim().toLowerCase();
+        }
+      }
+      
+      // Pattern 3: "Explain [term]"
+      if (!term) {
+        match = message.match(/explain\s+(?:an?\s+)?(.+?)(?:\?|$)/i);
+        if (match) {
+          term = match[1].trim().toLowerCase();
+        }
+      }
+      
+      if (term) {
+        // Programming and tech definitions
+        const techDefinitions = {
+          'api': 'An **Application Programming Interface (API)** is a set of protocols and tools that allows different software applications to communicate with each other. APIs define the methods and data formats applications can use to request and exchange information.',
+          'algorithm': 'An **algorithm** is a step-by-step procedure or formula for solving a problem. In programming, algorithms are logical sequences of instructions that computers follow to process data and produce desired outputs.',
+          'database': 'A **database** is an organized collection of structured information or data, typically stored electronically. Databases allow for efficient storage, retrieval, modification, and management of data.',
+          'framework': 'A **framework** is a pre-written code structure that provides a foundation for developing applications. It includes libraries, tools, and conventions that help developers build software more efficiently.',
+          'cloud computing': '**Cloud computing** is the delivery of computing services (servers, storage, databases, networking, software) over the internet, allowing users to access resources on-demand without managing physical infrastructure.',
+          'machine learning': '**Machine Learning** is a subset of artificial intelligence that enables computers to learn and improve from experience without being explicitly programmed for every task.',
+          'responsive design': '**Responsive design** is a web development approach that creates web pages that render well on various devices and screen sizes, automatically adapting layout and content.',
+          'version control': '**Version control** is a system that tracks changes to files over time, allowing multiple people to collaborate on projects and maintain a history of modifications.',
+          'rest': '**REST (Representational State Transfer)** is an architectural style for designing web services. It uses standard HTTP methods (GET, POST, PUT, DELETE) and is stateless, meaning each request contains all necessary information.',
+          'json': '**JSON (JavaScript Object Notation)** is a lightweight, text-based data interchange format. It uses human-readable text to store and transmit data objects consisting of key-value pairs.',
+          'sql': '**SQL (Structured Query Language)** is a programming language designed for managing and manipulating relational databases. It allows you to create, read, update, and delete data.',
+          'git': '**Git** is a distributed version control system that tracks changes in files and coordinates work among multiple people. It allows developers to collaborate on projects and maintain a complete history of changes.',
+          'html': '**HTML (HyperText Markup Language)** is the standard markup language for creating web pages. It uses tags to structure content and define elements like headings, paragraphs, links, and images.',
+          'css': '**CSS (Cascading Style Sheets)** is a language used to describe the presentation and styling of HTML documents. It controls layout, colors, fonts, and visual design.',
+          'javascript': '**JavaScript** is a versatile programming language primarily used for web development. It enables interactive web pages and can run on both client-side (browsers) and server-side (Node.js).'
+        };
+        
+        if (techDefinitions[term]) {
+          return `${techDefinitions[term]}
+
+Would you like me to explain any related concepts or provide examples of how this is used in practice?`;
+        }
+      }
+      
+      return `I can help explain technical concepts, programming terms, and general definitions! Please specify what you'd like me to define or explain, such as:
+
+**Technical Terms:**
+• Programming concepts (API, algorithm, framework)
+• Web development terms (responsive design, REST, SPA)
+• Database concepts (SQL, NoSQL, normalization)
+• Software engineering practices (CI/CD, testing, deployment)
+
+**General Knowledge:**
+• Scientific concepts
+• Business terms
+• Technology trends
+
+What would you like me to explain or define?`;
     }
 
     if (patterns.javascript.test(message)) {
@@ -421,7 +595,7 @@ Which deployment challenge are you facing? I can provide detailed guidance on im
       const hasContext = context.length > 0;
       const contextualIntro = hasContext ? 
         "I see we've been discussing some topics. Let me expand on what I can help you with:" :
-        "I'm a comprehensive AI assistant specializing in software development and technology consulting. Here's how I can assist:";
+        "I'm a comprehensive AI assistant specializing in software development, technology consulting, and everyday questions. Here's how I can assist:";
 
       return `${contextualIntro}
 
@@ -430,6 +604,12 @@ Which deployment challenge are you facing? I can provide detailed guidance on im
 • **Web Development:** Full-stack architecture, API design, database optimization
 • **Software Engineering:** Algorithms, system design, performance optimization
 • **DevOps & Deployment:** CI/CD, cloud platforms, containerization strategies
+
+**Daily Assistance:**
+• **Time & Date:** Current time, date calculations, scheduling help
+• **Mathematics:** Calculations, conversions, problem-solving
+• **Definitions:** Technical terms, concepts, explanations
+• **General Knowledge:** Science, technology, business concepts
 
 **Professional Services:**
 • **Code Review:** Architecture analysis and improvement recommendations
@@ -443,7 +623,7 @@ Which deployment challenge are you facing? I can provide detailed guidance on im
 • **Industry Trends:** Current technologies and future direction insights
 • **Resource Recommendations:** Tools, libraries, and learning materials
 
-I provide detailed, professional responses tailored to your experience level and specific needs. What technical challenge or topic would you like to explore in depth?`;
+I provide detailed, professional responses tailored to your experience level and specific needs. Whether you need technical help or everyday assistance, what can I help you with?`;
     }
 
     // Intelligent default response with context awareness
