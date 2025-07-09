@@ -43,6 +43,16 @@ Power preference: Enhanced logo, loading screen, and maximum power branding thro
 
 ## Key Components
 
+### AI Models Available
+- **Auto-Select**: Intelligent routing to best available model
+- **Conversational AI**: Specialized for natural human conversations with personality matching
+- **Emotional AI**: Deep emotional intelligence with empathetic responses
+- **Claude 3 Opus**: Advanced reasoning and creative tasks
+- **GPT-4**: Multimodal intelligence and coding expertise
+- **Claude 3 Sonnet**: Balanced performance with detailed analysis
+- **GPT-3.5 Turbo**: Fast responses for general queries
+- **Gemini Pro**: Multimodal capabilities and research
+
 ### Database Schema
 - **Users**: User management with subscription support (username, password, email, Stripe customer/subscription IDs, subscription status/tier)
 - **Conversations**: Chat sessions with titles and timestamps (removed thread ID dependency)
@@ -120,9 +130,11 @@ Power preference: Enhanced logo, loading screen, and maximum power branding thro
 ### Voice Command Features
 - **Speech Recognition**: Web Speech API integration for voice input
 - **Text-to-Speech**: Automatic AI response playback with voice synthesis
+- **AI Talks Back**: Conversational and Emotional AI models automatically speak their responses
 - **Interactive Controls**: Microphone button in header and input area
 - **Visual Feedback**: Recording indicators and real-time status updates
 - **Hover Actions**: Click-to-speak buttons on AI messages
+- **Natural Voice Selection**: Prioritizes enhanced, natural, and premium voices
 - **Browser Support**: Works in Chrome, Safari, and other Webkit-based browsers
 - **Error Handling**: Graceful fallbacks for unsupported browsers and permission issues
 

@@ -14,6 +14,7 @@ import {
   getTimeZoneInfo
 } from "./weather-location";
 import { emotionalAI } from './emotional-ai';
+import { conversationalAI } from './conversational-ai';
 
 export const AI_MODELS = {
   // Tier 1: MAXIMUM POWER Models (Ultimate Performance)
@@ -195,20 +196,16 @@ export async function generateAIResponse(
   userId?: string
 ): Promise<string> {
   try {
-    // Check if this is an emotional/conversational query first
+    // Check if this is a human conversation first
+    const isHumanConversation = await conversationalAI.isHumanConversation(userMessage);
     const isEmotional = await emotionalAI.isEmotionalQuery(userMessage);
     
-    if (isEmotional) {
-      console.log(`[Emotional AI] Detected emotional conversation`);
+    if (isHumanConversation || isEmotional) {
+      console.log(`[Conversational AI] Detected human conversation - isHuman: ${isHumanConversation}, isEmotional: ${isEmotional}`);
       
-      // Analyze emotional state
-      const emotionalContext = await emotionalAI.analyzeEmotionalState(userMessage, userId);
-      console.log(`[Emotional AI] Emotions: ${emotionalContext.emotions.join(", ")}, Intensity: ${emotionalContext.intensity}/10`);
-      
-      // Generate empathetic response using emotional AI
-      return await emotionalAI.generateEmpatheticResponse(
+      // Use conversational AI for human-like interactions
+      return await conversationalAI.generateConversationalResponse(
         userMessage,
-        emotionalContext,
         conversationHistory,
         userId
       );

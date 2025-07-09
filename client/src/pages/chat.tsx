@@ -289,6 +289,15 @@ export default function Chat() {
     }
   };
 
+  // Auto-speak AI responses for conversational models
+  const autoSpeakResponse = (text: string) => {
+    if (selectedAIModel === 'conversational' || selectedAIModel === 'emotional') {
+      setTimeout(() => {
+        speakResponse(text);
+      }, 500); // Small delay to ensure message is displayed first
+    }
+  };
+
   const toggleSpeech = () => {
     if (isSpeaking) {
       window.speechSynthesis.cancel();
@@ -392,6 +401,7 @@ export default function Chat() {
                   </SelectTrigger>
                   <SelectContent className="bg-zinc-800 border-zinc-700">
                     <SelectItem value="auto">🤖 Auto-Select</SelectItem>
+                    <SelectItem value="conversational">💬 Conversational AI</SelectItem>
                     <SelectItem value="emotional">❤️ Emotional AI</SelectItem>
                     <SelectItem value="claude-3-opus">🧠 Claude 3 Opus</SelectItem>
                     <SelectItem value="gpt-4">🎯 GPT-4</SelectItem>
@@ -447,7 +457,7 @@ export default function Chat() {
               <div className="flex-1">
                 <Card className="bg-zinc-800 rounded-2xl rounded-tl-md px-4 py-3 shadow-xl border border-zinc-700">
                   <p className="text-zinc-100 leading-relaxed">
-                    🚀 Welcome to <strong>TURBO ANSWER</strong> - The Ultimate AI Assistant! I combine maximum AI power with emotional intelligence to have real conversations and understand how you feel. Ready to chat and experience ultimate AI power?
+                    🚀 Welcome to <strong>TURBO ANSWER</strong> - The Ultimate AI Assistant! I can have natural conversations, understand your emotions, and talk back to you like a real person. Choose "Conversational AI" for natural chat or "Emotional AI" for deep emotional support. Ready to experience ultimate AI power?
                   </p>
                   <div className="mt-3 flex items-center space-x-2 text-xs text-zinc-400">
                     <Brain className="h-3 w-3" />
