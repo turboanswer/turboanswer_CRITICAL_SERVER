@@ -15,6 +15,7 @@ Interface priority: Ensure settings buttons are always accessible and never bloc
 Performance priority: AI responses must be fast - streamlined AI processing with working Gemini service. NO LAG ALLOWED. Maximum performance optimization with conversational AI for live human conversations.
 Power preference: Enhanced logo, loading screen, and maximum power branding throughout the interface.
 Voice preference: Voice assistant called "Turbo" with optional wake word detection (disabled by default for performance).
+Subscription preference: Lifetime free premium access through promo code system for creator access.
 
 ## System Architecture
 
@@ -55,9 +56,15 @@ Voice preference: Voice assistant called "Turbo" with optional wake word detecti
 - **Gemini Pro**: Multimodal capabilities and research
 
 ### Database Schema
-- **Users**: User management with subscription support (username, password, email, Stripe customer/subscription IDs, subscription status/tier)
+- **Users**: User management with subscription support (username, password, email, Stripe customer/subscription IDs, subscription status/tier, preferred AI model)
 - **Conversations**: Chat sessions with titles and timestamps (removed thread ID dependency)
 - **Messages**: Individual messages with conversation references, content, role (user/assistant), and timestamps
+
+### Promo Code System
+- **LIFETIME_FREE**: Grants permanent premium access with no recurring charges
+- **FOUNDER_ACCESS**: Welcome founder code with lifetime premium benefits
+- **PREMIUM_YEAR**: One year of premium access for annual subscribers
+- **Implementation**: Backend validation with database tier upgrades and success messaging
 
 ### API Endpoints
 - `POST /api/register` - Create new user account with username, email, and password
@@ -73,11 +80,14 @@ Voice preference: Voice assistant called "Turbo" with optional wake word detecti
 - `GET /api/weather/:location` - Get real-time weather data for any location
 - `GET /api/location/:location` - Get location information and local time
 - `POST /api/get-or-create-subscription` - Create Stripe subscription for Pro plan
+- `POST /api/create-demo-user` - Create demo user for testing promo codes
+- `POST /api/apply-promo` - Apply promo code for subscription upgrades
 
 ### Frontend Pages
 - **Chat Page** (`/`): Main chat interface with conversation management, document upload, and user authentication
 - **Register Page** (`/register`): User account creation with username, email, and password
 - **Login Page** (`/login`): User authentication with username/email and password
+- **Pricing Page** (`/pricing`): Modern subscription plans with promo code system for lifetime access
 - **Subscribe Page** (`/subscribe`): Stripe-powered subscription upgrade to Pro plan
 - **404 Page**: Error handling for unknown routes
 
