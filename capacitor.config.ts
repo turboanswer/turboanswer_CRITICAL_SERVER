@@ -4,8 +4,10 @@ const config: CapacitorConfig = {
   appId: 'com.turboanswer.app',
   appName: 'Turbo Answer',
   webDir: 'dist/public',
+  bundledWebRuntime: false,
   server: {
-    androidScheme: 'https'
+    androidScheme: 'https',
+    iosScheme: 'https'
   },
   plugins: {
     SplashScreen: {
@@ -13,7 +15,14 @@ const config: CapacitorConfig = {
       launchAutoHide: true,
       backgroundColor: "#000000",
       androidSplashResourceName: "splash",
-      androidScaleType: "CENTER_CROP"
+      androidScaleType: "CENTER_CROP",
+      showSpinner: false,
+      splashFullScreen: true,
+      splashImmersive: true
+    },
+    StatusBar: {
+      style: 'DARK',
+      backgroundColor: '#000000'
     }
   }
 };
