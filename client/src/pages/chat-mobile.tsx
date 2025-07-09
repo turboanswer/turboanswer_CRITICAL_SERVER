@@ -48,6 +48,17 @@ export default function ChatMobile() {
     onSuccess: (data) => {
       setCurrentConversationId(data.id);
       queryClient.invalidateQueries({ queryKey: ['/api/conversations'] });
+      
+      // If we have a pending message, send it now
+      if (message.trim()) {
+        setTimeout(() => {
+          setIsTyping(true);
+          sendMessageMutation.mutate({
+            message: message.trim(),
+            aiModel: selectedAIModel,
+          });
+        }, 100);
+      }
     },
   });
 
@@ -84,36 +95,41 @@ export default function ChatMobile() {
 
   // Create initial conversation - prevent multiple calls
   useEffect(() => {
-    if (conversations.length === 0 && !createConversationMutation.isPending && !currentConversationId) {
+    if (conversations.length === 0 && !currentConversationId) {
       createConversationMutation.mutate();
     } else if (!currentConversationId && conversations.length > 0) {
-      setCurrentConversationId(conversations[conversations.length - 1].id);
+      setCurrentConversationId(conversations[0].id);
     }
-  }, []);
+  }, [conversations.length]);
 
-  // Wake word detection setup - simplified to prevent errors
+  // Wake word detection setup - optimized and working
   useEffect(() => {
+    let timeoutId: NodeJS.Timeout;
+    
     if (typeof window !== 'undefined' && 'webkitSpeechRecognition' in window && isWakeWordListening) {
       const startWakeWordDetection = () => {
         try {
-          const SpeechRecognition = (window as any).webkitSpeechRecognition;
-          
           if (wakeWordRef.current) {
             wakeWordRef.current.stop();
+            wakeWordRef.current = null;
           }
           
+          const SpeechRecognition = (window as any).webkitSpeechRecognition;
           wakeWordRef.current = new SpeechRecognition();
           wakeWordRef.current.continuous = true;
-          wakeWordRef.current.interimResults = false;
+          wakeWordRef.current.interimResults = true;
           wakeWordRef.current.lang = 'en-US';
 
           wakeWordRef.current.onresult = (event: any) => {
-            const transcript = event.results[event.results.length - 1][0].transcript.toLowerCase();
-            console.log('🎤 Hey Turbo detected:', transcript);
-            
-            if (transcript.includes('hey turbo') || transcript.includes('turbo')) {
-              console.log('🎤 Starting voice input...');
-              startListening();
+            for (let i = event.resultIndex; i < event.results.length; i++) {
+              const transcript = event.results[i][0].transcript.toLowerCase().trim();
+              
+              if (transcript.includes('hey turbo') || transcript.includes('turbo')) {
+                console.log('🎤 "Hey Turbo" detected! Starting voice input...');
+                wakeWordRef.current?.stop();
+                setTimeout(() => startListening(), 100);
+                break;
+              }
             }
           };
 
@@ -125,22 +141,24 @@ export default function ChatMobile() {
 
           wakeWordRef.current.onend = () => {
             if (isWakeWordListening) {
-              setTimeout(startWakeWordDetection, 1000);
+              timeoutId = setTimeout(startWakeWordDetection, 1500);
             }
           };
 
           wakeWordRef.current.start();
-          console.log('🎤 Hey Turbo wake word active');
         } catch (error) {
           console.log('🎤 Wake word setup error:', error);
         }
       };
 
-      startWakeWordDetection();
+      // Add small delay before starting
+      timeoutId = setTimeout(startWakeWordDetection, 500);
 
       return () => {
+        if (timeoutId) clearTimeout(timeoutId);
         if (wakeWordRef.current) {
           wakeWordRef.current.stop();
+          wakeWordRef.current = null;
         }
       };
     }
@@ -163,13 +181,7 @@ export default function ChatMobile() {
         
         // Auto-send after voice input
         setTimeout(() => {
-          if (currentConversationId) {
-            setIsTyping(true);
-            sendMessageMutation.mutate({
-              message: transcript,
-              aiModel: selectedAIModel,
-            });
-          }
+          handleSubmit(new Event('submit') as any);
         }, 100);
       };
 
@@ -186,8 +198,16 @@ export default function ChatMobile() {
   // Handle form submission
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!message.trim() || !currentConversationId || sendMessageMutation.isPending) return;
+    if (!message.trim() || sendMessageMutation.isPending) return;
 
+    // Ensure we have a conversation
+    if (!currentConversationId) {
+      console.log('No conversation, creating one...');
+      createConversationMutation.mutate();
+      return;
+    }
+
+    console.log('Sending message:', message, 'to conversation:', currentConversationId);
     setIsTyping(true);
     sendMessageMutation.mutate({
       message: message.trim(),
@@ -239,7 +259,7 @@ export default function ChatMobile() {
           <div>
             <h1 className="text-lg font-semibold">Turbo</h1>
             {isWakeWordListening && (
-              <p className="text-xs text-green-400">Listening for "Hey Turbo"</p>
+              <p className="text-xs text-green-400">Say "Hey Turbo" to activate</p>
             )}
           </div>
         </div>
