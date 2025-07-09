@@ -12,7 +12,7 @@ Layout preference: Bigger layout showing all options in one screen for better ac
 Stability preference: App must be completely stable with NO moving elements, animations, or transitions. Settings must always be visible.
 Intelligence preference: AI should give simple, clear, direct answers without complex explanations. For simple questions, keep responses short and conversational.
 Interface priority: Ensure settings buttons are always accessible and never blocked by app movement.
-Performance priority: AI responses must be fast - streamlined AI processing with working Gemini service. NO LAG ALLOWED. Maximum performance optimization with conversational AI for live human conversations.
+Performance priority: AI responses must be ULTRA-FAST - enhanced with Gemini 2.0 Flash Experimental for breakthrough speed. NO LAG ALLOWED. Maximum performance optimization with turbocharged conversational AI for live human conversations. Target: Sub-300ms responses for simple queries.
 Power preference: Enhanced logo, loading screen, and maximum power branding throughout the interface.
 Voice preference: Voice assistant called "Turbo" with optional wake word detection (disabled by default for performance).
 Subscription preference: Lifetime free premium access through promo code system for creator access.
@@ -91,16 +91,20 @@ Subscription preference: Lifetime free premium access through promo code system 
 - **Subscribe Page** (`/subscribe`): Stripe-powered subscription upgrade to Pro plan
 - **404 Page**: Error handling for unknown routes
 
-### MAXIMUM POWER AI System: The Ultimate AI Assistant
-- **ULTIMATE Intelligence**: 4-tier AI system with Claude 4.0 Sonnet, GPT-4o, Claude 3 Opus, and advanced models
+### MAXIMUM POWER AI System: The Ultimate AI Assistant (Enhanced 2025)
+- **BREAKTHROUGH Intelligence**: Enhanced 5-tier system with Gemini 2.0 Flash Experimental, Claude 4.0 Sonnet, GPT-4o, and advanced models
+- **Turbo Performance Mode**: Lightning-fast response generation with sub-300ms target for simple queries
+- **Maximum Speed Optimization**: Dynamic token allocation based on query complexity (75-300 tokens)
+- **Advanced Model Selection**: Intelligent routing to Gemini 2.0 Flash Experimental for maximum performance
+- **Ultra-Fast Conversational AI**: Specialized mode for rapid human-like conversations
 - **Emotional AI**: Real-life conversational model that understands feelings and emotions with empathetic responses
-- **Priority-Based Routing**: Automatic selection of the most powerful available model
+- **Priority-Based Routing**: Automatic selection of the most powerful available model with premium tier defaults
 - **Expert-Level Reasoning**: Multi-layered complex problem-solving with breakthrough insights
 - **Real-Time Intelligence**: Live weather data via OpenMeteo API (no API key required), world location knowledge, and time zone expertise
-- **Adaptive Communication**: Exceeds user expectations with maximum performance
+- **Adaptive Communication**: Exceeds user expectations with maximum performance optimization
 - **Conversational Intelligence**: Emotional analysis, empathy levels, mood detection, and human-like interactions
 - **Comprehensive Coverage**: Technical mastery, scientific expertise, creative innovation, and general knowledge
-- **Maximum Performance**: Optimized for fast responses (50-100 token limits) with no lag
+- **Maximum Performance**: Optimized for ultra-fast responses with advanced temperature and parameter tuning
 
 #### Emotional AI and Conversational Features
 - **Emotional Intelligence**: Advanced emotion detection and analysis (happiness, sadness, anxiety, excitement, etc.)

@@ -159,14 +159,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         content: msg.content
       }));
 
-      // Use enhanced AI system with emotional intelligence
+      // Use MAXIMUM PERFORMANCE AI system with breakthrough intelligence
       const { generateAIResponse } = await import('./services/multi-ai.js');
-      const userId = `user_${Math.random().toString(36).substr(2, 9)}`; // Simple user ID for emotional context
+      const userId = `user_${Math.random().toString(36).substr(2, 9)}`; // Simple user ID for context
       const aiResponseContent = await generateAIResponse(
         content,
         conversationHistory,
-        "free", // subscription tier
-        req.body.selectedModel, // pass selected model
+        "premium", // Use premium tier for maximum performance
+        req.body.selectedModel || "auto-select", // Intelligent model selection
         userId
       );
 

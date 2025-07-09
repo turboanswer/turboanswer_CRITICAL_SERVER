@@ -22,13 +22,21 @@ import Anthropic from "@anthropic-ai/sdk";
 export const AI_MODELS = {
   // Tier 1: MAXIMUM POWER Models (Ultimate Performance)
   maximum: {
+    "gemini-2.0-flash-exp": {
+      name: "Gemini 2.0 Flash Experimental",
+      provider: "google",
+      strengths: ["Breakthrough intelligence", "Ultra-fast responses", "Advanced reasoning", "Maximum performance"],
+      maxTokens: 8000,
+      temperature: 0.2,
+      priority: 1
+    },
     "claude-sonnet-4": {
       name: "Claude 4.0 Sonnet",
       provider: "anthropic",
       strengths: ["Ultimate reasoning", "Expert-level analysis", "Advanced mathematics", "Complex problem solving"],
       maxTokens: 8000,
       temperature: 0.8,
-      priority: 1
+      priority: 2
     },
     "gpt-4o": {
       name: "GPT-4o",
@@ -36,7 +44,7 @@ export const AI_MODELS = {
       strengths: ["Multimodal intelligence", "Advanced coding", "Scientific analysis", "Creative reasoning"],
       maxTokens: 6000,
       temperature: 0.7,
-      priority: 2
+      priority: 3
     },
     "claude-3-opus": {
       name: "Claude 3 Opus",
@@ -44,7 +52,7 @@ export const AI_MODELS = {
       strengths: ["Complex reasoning", "Creative writing", "Mathematical analysis", "Research"],
       maxTokens: 4000,
       temperature: 0.7,
-      priority: 3
+      priority: 4
     }
   },
   
@@ -166,22 +174,24 @@ function analyzeUserIntent(message: string, conversationHistory: Array<{role: st
   const creativity = msg.includes('creative') || msg.includes('write') || msg.includes('story') || msg.includes('poem') || msg.includes('design');
   const technical = domain === 'technical' || msg.includes('code') || msg.includes('programming');
   
-  // MAXIMUM POWER Model recommendation logic
+  // MAXIMUM POWER Model recommendation logic - Always use best available
   let recommended_tier: 'maximum' | 'premium' | 'advanced' | 'specialized' = 'maximum';
-  let recommended_model = 'claude-sonnet-4';
+  let recommended_model = 'gemini-2.0-flash-exp'; // Always use the fastest, most advanced model
   
+  // For maximum performance, always use Gemini 2.0 Flash Experimental
+  // This provides the best balance of speed, intelligence, and capability
   if (complexity === 'expert' || (complexity === 'complex' && (reasoning || creativity))) {
     recommended_tier = 'maximum';
-    recommended_model = 'gemini-pro'; // Use available powerful model
+    recommended_model = 'gemini-2.0-flash-exp'; // Maximum intelligence
   } else if (complexity === 'complex' || technical) {
-    recommended_tier = 'premium';
-    recommended_model = technical ? 'gemini-pro' : 'gemini-1.5-pro';
+    recommended_tier = 'maximum';
+    recommended_model = 'gemini-2.0-flash-exp'; // High performance for technical tasks
   } else if (complexity === 'moderate') {
-    recommended_tier = 'advanced';
-    recommended_model = technical ? 'gpt-3.5-turbo' : 'gemini-pro';
+    recommended_tier = 'maximum';
+    recommended_model = 'gemini-2.0-flash-exp'; // Fast responses for moderate tasks
   } else {
-    recommended_tier = 'specialized';
-    recommended_model = 'gemini-pro'; // Default to working model
+    recommended_tier = 'maximum';
+    recommended_model = 'gemini-2.0-flash-exp'; // Ultra-fast for simple tasks
   }
   
   return {
@@ -206,7 +216,7 @@ export async function generateAIResponse(
   try {
     // Force conversational AI for selected model - MAXIMUM SPEED MODE
     if (selectedModel === 'conversational') {
-      console.log(`[Conversational AI] Using ULTRA-FAST conversational model`);
+      console.log(`[TURBO CONVERSATIONAL AI] Using maximum performance conversational model`);
       
       // Direct Gemini call with minimal processing for maximum speed
       const shortContext = conversationHistory.slice(-1); // Only last message

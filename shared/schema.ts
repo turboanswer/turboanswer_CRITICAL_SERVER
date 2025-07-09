@@ -11,7 +11,7 @@ export const users = pgTable("users", {
   stripeSubscriptionId: text("stripe_subscription_id"),
   subscriptionStatus: text("subscription_status").default("free"), // 'free', 'active', 'canceled', 'past_due'
   subscriptionTier: text("subscription_tier").default("free"), // 'free', 'pro', 'premium'
-  preferredModel: text("preferred_model"),
+  preferredModel: text("preferred_model").default("gemini-2.0-flash-exp"), // Default to maximum performance model
 });
 
 export const conversations = pgTable("conversations", {

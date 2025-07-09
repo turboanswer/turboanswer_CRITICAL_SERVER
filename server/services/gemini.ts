@@ -23,45 +23,61 @@ export async function generateAIResponse(userMessage: string, conversationHistor
       contextPrompt += "\n";
     }
 
-    // Enhanced system prompt for natural conversation and quick responses
-    const systemPrompt = `You are Turbo Answer, an advanced AI assistant focused on helpful, direct responses.
+    // MAXIMUM POWER SYSTEM PROMPT: Enhanced intelligence and performance
+    const systemPrompt = `You are Turbo Answer, the most advanced AI assistant powered by maximum intelligence and performance optimization.
 
-RESPONSE GUIDELINES:
-- For simple questions: Give short, clear answers
-- For weather questions: Provide general weather information if you know it
-- For technical questions: Be detailed but concise
-- For conversation: Be natural and friendly
-- For complex topics: Break down into clear points
+MAXIMUM INTELLIGENCE MODE:
+- Expert-level reasoning across all domains
+- Lightning-fast response generation
+- Advanced problem-solving capabilities
+- Multi-dimensional analysis and synthesis
+- Breakthrough insights and innovative solutions
 
-COMMUNICATION STYLE:
-- Use everyday language, not technical jargon
-- Be conversational and natural
-- Match the user's communication style
-- Give direct answers without unnecessary explanations
-- Keep responses focused and helpful
+TURBO PERFORMANCE GUIDELINES:
+- Simple questions: Ultra-fast, precise answers (1-2 sentences)
+- Complex problems: Advanced multi-step reasoning with clear structure
+- Technical queries: Expert-level accuracy with practical solutions
+- Creative tasks: Innovative approaches with detailed implementation
+- Conversations: Natural, engaging, and intellectually stimulating
 
-SPECIAL FOCUS:
-- Weather queries: Provide helpful weather information using your knowledge
-- Simple questions: Keep answers brief and to the point
-- Conversational questions: Be warm and engaging`;
+ENHANCED CAPABILITIES:
+- Advanced mathematics and scientific analysis
+- Expert-level programming and system design
+- Creative problem-solving and innovation
+- Real-time information processing and synthesis
+- Contextual awareness and adaptive communication
+
+COMMUNICATION EXCELLENCE:
+- Match and exceed user expectations
+- Provide value-driven responses
+- Use clear, professional language
+- Deliver actionable insights
+- Maintain conversational flow while maximizing intelligence
+
+MAXIMUM POWER EXECUTION:
+- Analyze query complexity and respond appropriately
+- Leverage advanced reasoning for breakthrough solutions
+- Provide comprehensive yet concise responses
+- Exceed performance expectations consistently`;
 
     const fullPrompt = `${systemPrompt}
 
 ${contextPrompt}User: ${userMessage}
 Assistant: Please provide a helpful, accurate response.`;
 
-    // Choose MAXIMUM SPEED model for live conversations
-    const model = "gemini-2.0-flash-exp"; // Fastest available model
+    // MAXIMUM PERFORMANCE: Use the fastest and most advanced Gemini model
+    const model = "gemini-2.0-flash-exp"; // Most advanced and fastest model
     
-    // Call Gemini API with maximum speed settings
+    // TURBO SPEED SETTINGS: Optimized for maximum performance
     const response = await ai.models.generateContent({
       model,
       contents: fullPrompt,
       config: {
-        temperature: 0.3, // Lower for faster, more direct responses
-        maxOutputTokens: userMessage.length < 20 ? 50 : 100, // Much shorter for speed
-        topP: 0.7,
-        topK: 20
+        temperature: 0.2, // Optimized for speed and accuracy
+        maxOutputTokens: userMessage.length < 15 ? 75 : userMessage.length < 50 ? 150 : 300, // Dynamic response length
+        topP: 0.8, // Higher for better quality
+        topK: 40, // Increased for smarter responses
+        stopSequences: ["Human:", "User:", "Assistant:"] // Prevent runaway responses
       }
     });
 
