@@ -72,16 +72,16 @@ export class ConversationalAI {
 
     try {
       const response = await ai.models.generateContent({
-        model: "gemini-2.5-flash", // Use faster model for quicker responses
+        model: "gemini-2.0-flash-exp", // Maximum speed model
         config: {
           systemInstruction: conversationalPrompt,
-          temperature: 0.8, // Higher for more natural conversation
-          maxOutputTokens: 150, // Longer for better conversations
+          temperature: 0.3, // Lower for faster responses
+          maxOutputTokens: 60, // Much shorter for speed
         },
         contents: [
-          ...contextHistory,
+          ...contextHistory.slice(-2), // Only last 2 messages for speed
           `User message: "${userMessage}"`,
-          `Response needed: Keep it very brief and conversational`
+          `Keep response under 50 words and conversational`
         ].join("\n\n")
       });
 

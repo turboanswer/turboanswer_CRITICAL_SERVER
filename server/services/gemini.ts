@@ -50,18 +50,18 @@ SPECIAL FOCUS:
 ${contextPrompt}User: ${userMessage}
 Assistant: Please provide a helpful, accurate response.`;
 
-    // Choose MAXIMUM POWER model based on subscription tier
-    const model = subscriptionTier === "pro" ? "gemini-2.5-pro" : "gemini-2.5-flash";
+    // Choose MAXIMUM SPEED model for live conversations
+    const model = "gemini-2.0-flash-exp"; // Fastest available model
     
-    // Call Gemini API with optimized settings for speed
+    // Call Gemini API with maximum speed settings
     const response = await ai.models.generateContent({
       model,
       contents: fullPrompt,
       config: {
-        temperature: 0.7, // Balanced for natural responses
-        maxOutputTokens: userMessage.length < 30 ? 100 : 200, // Longer for better conversations
-        topP: 0.8,
-        topK: 30
+        temperature: 0.3, // Lower for faster, more direct responses
+        maxOutputTokens: userMessage.length < 20 ? 50 : 100, // Much shorter for speed
+        topP: 0.7,
+        topK: 20
       }
     });
 

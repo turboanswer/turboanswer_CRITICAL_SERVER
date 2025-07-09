@@ -104,14 +104,14 @@ Consider:
 
     try {
       const response = await ai.models.generateContent({
-        model: "gemini-2.5-flash", // Use faster model for quicker responses
+        model: "gemini-2.0-flash-exp", // FASTEST model for maximum speed
         config: {
           systemInstruction: emotionalPrompt,
-          temperature: 0.8, // More empathetic and natural
-          maxOutputTokens: 150, // Even shorter for quick responses
+          temperature: 0.3, // Lower for faster responses
+          maxOutputTokens: 70, // Much shorter for speed
         },
         contents: [
-          ...contextHistory,
+          ...contextHistory.slice(-1), // Only last message for speed
           `Current message: "${userMessage}"`
         ].join("\n\n")
       });

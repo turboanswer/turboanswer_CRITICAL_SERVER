@@ -196,14 +196,36 @@ export async function generateAIResponse(
   userId?: string
 ): Promise<string> {
   try {
-    // Force conversational AI for selected model
+    // Force conversational AI for selected model - MAXIMUM SPEED MODE
     if (selectedModel === 'conversational') {
-      console.log(`[Conversational AI] Using conversational model by user selection`);
-      return await conversationalAI.generateConversationalResponse(
-        userMessage,
-        conversationHistory,
-        userId
-      );
+      console.log(`[Conversational AI] Using ULTRA-FAST conversational model`);
+      
+      // Direct Gemini call with minimal processing for maximum speed
+      const shortContext = conversationHistory.slice(-1); // Only last message
+      const contextText = shortContext.map(m => `${m.role}: ${m.content}`).join('\n');
+      
+      const speedPrompt = `You are Turbo, a friendly AI assistant. Keep responses very short and conversational.
+
+${contextText ? `Context: ${contextText}\n` : ''}User: ${userMessage}
+Response (under 30 words):`;
+
+      try {
+        const response = await ai.models.generateContent({
+          model: "gemini-2.0-flash-exp", // Fastest model
+          contents: speedPrompt,
+          config: {
+            temperature: 0.3,
+            maxOutputTokens: 40, // Very short for maximum speed
+            topP: 0.7,
+            topK: 15
+          }
+        });
+
+        return response.text || "I'm here to help! What can I do for you?";
+      } catch (error) {
+        console.error('Ultra-fast conversational AI failed:', error);
+        return "I'm having trouble responding quickly. Please try again.";
+      }
     }
     
     // Force emotional AI for selected model
@@ -271,22 +293,25 @@ export async function generateAIResponse(
       return getTimeZoneInfo();
     }
 
-    // Auto-detect conversation type for auto-select - prioritize conversational AI
-    const isHumanConversation = await conversationalAI.isHumanConversation(userMessage);
-    const isEmotional = await emotionalAI.isEmotionalQuery(userMessage);
-    
-    // For casual greetings and simple questions, use conversational AI
+    // Auto-detect conversation type for auto-select - SPEED OPTIMIZED
     const isSimpleConversation = /\b(hi|hello|hey|what's up|how are you|thanks|thank you|okay|ok|yes|no|sure|turbo)\b/i.test(userMessage) || userMessage.length < 50;
     
-    if (isHumanConversation || isEmotional || isSimpleConversation) {
-      console.log(`[Conversational AI] Using conversational model - isHuman: ${isHumanConversation}, isEmotional: ${isEmotional}, isSimple: ${isSimpleConversation}`);
+    if (isSimpleConversation) {
+      console.log(`[Speed AI] Using ultra-fast mode for simple conversation`);
       
-      // Use conversational AI for human-like interactions
-      return await conversationalAI.generateConversationalResponse(
-        userMessage,
-        conversationHistory,
-        userId
-      );
+      // Ultra-fast direct response for simple messages
+      const quickResponse = await ai.models.generateContent({
+        model: "gemini-2.0-flash-exp",
+        contents: `User: ${userMessage}\nTurbo (brief response):`,
+        config: {
+          temperature: 0.3,
+          maxOutputTokens: 30,
+          topP: 0.7,
+          topK: 10
+        }
+      });
+      
+      return quickResponse.text || "I'm here to help!";
     }
 
     // For non-emotional queries, continue with standard AI routing
