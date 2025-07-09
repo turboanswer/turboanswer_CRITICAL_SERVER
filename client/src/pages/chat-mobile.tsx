@@ -25,6 +25,7 @@ export default function ChatMobile() {
   const [isListening, setIsListening] = useState(false);
   const [isWakeWordListening, setIsWakeWordListening] = useState(false); // Removed wake word feature
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [hasCreatedInitialConversation, setHasCreatedInitialConversation] = useState(false);
   const recognitionRef = useRef<any>(null);
   const wakeWordRef = useRef<any>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -46,6 +47,7 @@ export default function ChatMobile() {
   const createConversationMutation = useMutation({
     mutationFn: () => apiRequest('POST', '/api/conversations', {}),
     onSuccess: (data) => {
+      console.log('Conversation created successfully:', data.id);
       setCurrentConversationId(data.id);
       queryClient.invalidateQueries({ queryKey: ['/api/conversations'] });
       
@@ -61,6 +63,10 @@ export default function ChatMobile() {
           });
         }, 100);
       }
+    },
+    onError: (error) => {
+      console.error('Failed to create conversation:', error);
+      setHasCreatedInitialConversation(false);
     },
   });
 
@@ -106,14 +112,13 @@ export default function ChatMobile() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isTyping]);
 
-  // Create initial conversation - prevent multiple calls
+  // Set conversation ID when conversations are available
   useEffect(() => {
-    if (conversations.length === 0 && !currentConversationId && !createConversationMutation.isPending) {
-      createConversationMutation.mutate();
-    } else if (!currentConversationId && conversations.length > 0) {
+    if (!currentConversationId && conversations.length > 0) {
+      console.log('Setting conversation ID to first conversation:', conversations[0].id);
       setCurrentConversationId(conversations[0].id);
     }
-  }, [conversations.length, createConversationMutation.isPending]);
+  }, [conversations.length, currentConversationId]);
 
   // Wake word detection removed for better performance
 
