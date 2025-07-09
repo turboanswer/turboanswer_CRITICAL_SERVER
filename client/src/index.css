@@ -2,6 +2,17 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Disable all animations for better performance */
+* {
+  animation: none !important;
+  transition: none !important;
+}
+
+/* Simplify hover effects */
+*:hover {
+  transition: none !important;
+}
+
 :root {
   /* Sleek black theme */
   --background: hsl(0, 0%, 0%);

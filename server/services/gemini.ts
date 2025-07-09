@@ -53,10 +53,16 @@ Assistant: Please provide a helpful, accurate response.`;
     // Choose MAXIMUM POWER model based on subscription tier
     const model = subscriptionTier === "pro" ? "gemini-2.5-pro" : "gemini-2.5-flash";
     
-    // Call Gemini API
+    // Call Gemini API with optimized settings for speed
     const response = await ai.models.generateContent({
       model,
       contents: fullPrompt,
+      config: {
+        temperature: 0.5, // Lower for faster, more direct responses
+        maxOutputTokens: userMessage.length < 50 ? 50 : 100, // Very short for speed
+        topP: 0.8,
+        topK: 20
+      }
     });
 
     const responseText = response.text || "I apologize, but I'm having trouble generating a response right now. Please try asking your question again.";

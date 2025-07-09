@@ -75,15 +75,13 @@ export class ConversationalAI {
         model: "gemini-2.5-flash", // Use faster model for quicker responses
         config: {
           systemInstruction: conversationalPrompt,
-          temperature: 0.8, // More natural conversation
-          maxOutputTokens: 150, // Even shorter for quick responses
+          temperature: 0.5, // Lower for faster responses
+          maxOutputTokens: 50, // Very short for instant responses
         },
         contents: [
           ...contextHistory,
           `User message: "${userMessage}"`,
-          `Emotional context: Feeling ${emotionalContext.emotions.join(" and ")} with ${emotionalContext.intensity}/10 intensity`,
-          `Conversation tone: ${emotionalContext.conversationTone}`,
-          `Response needed: ${this.getResponseGuidance(emotionalContext)}`
+          `Response needed: Keep it very brief and conversational`
         ].join("\n\n")
       });
 

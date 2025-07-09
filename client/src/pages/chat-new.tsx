@@ -13,7 +13,7 @@ export default function Chat() {
   const [selectedAIModel, setSelectedAIModel] = useState('auto');
   const [isListening, setIsListening] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
-  const [isWakeWordListening, setIsWakeWordListening] = useState(true);
+  const [isWakeWordListening, setIsWakeWordListening] = useState(false); // Disabled by default to prevent lag
   const recognitionRef = useRef<any>(null);
   const wakeWordRef = useRef<any>(null);
   const { toast } = useToast();
@@ -89,12 +89,12 @@ export default function Chat() {
 
   // Create initial conversation
   useEffect(() => {
-    if (conversations.length === 0) {
+    if (conversations.length === 0 && !createConversationMutation.isPending && !currentConversationId) {
       createConversationMutation.mutate();
-    } else if (!currentConversationId) {
-      setCurrentConversationId(conversations[0].id);
+    } else if (!currentConversationId && conversations.length > 0) {
+      setCurrentConversationId(conversations[conversations.length - 1].id); // Use the latest conversation
     }
-  }, [conversations]);
+  }, []); // Remove dependencies to prevent re-runs
 
   const createNewConversation = () => {
     createConversationMutation.mutate();
@@ -292,16 +292,16 @@ export default function Chat() {
 
   return (
     <div className="h-screen bg-gradient-to-br from-purple-900 via-black to-pink-900 text-white flex flex-col relative overflow-hidden">
-      {/* Animated background elements */}
+      {/* Static background elements - no animations for better performance */}
       <div className="absolute inset-0 opacity-20">
-        <div className="absolute top-20 left-20 w-32 h-32 bg-purple-500 rounded-full blur-3xl animate-pulse"></div>
-        <div className="absolute top-60 right-40 w-40 h-40 bg-pink-500 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
-        <div className="absolute bottom-40 left-40 w-36 h-36 bg-cyan-500 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '2s' }}></div>
-        <div className="absolute bottom-20 right-20 w-28 h-28 bg-orange-500 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '3s' }}></div>
+        <div className="absolute top-20 left-20 w-32 h-32 bg-purple-500 rounded-full blur-3xl"></div>
+        <div className="absolute top-60 right-40 w-40 h-40 bg-pink-500 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-40 left-40 w-36 h-36 bg-cyan-500 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-20 right-20 w-28 h-28 bg-orange-500 rounded-full blur-3xl"></div>
       </div>
       
-      {/* Main content with backdrop */}
-      <div className="relative z-10 h-full flex flex-col backdrop-blur-sm">
+      {/* Main content */}
+      <div className="relative z-10 h-full flex flex-col">
       {/* Header */}
       <div className="shrink-0 bg-gradient-to-r from-purple-900/80 via-black/80 to-pink-900/80 backdrop-blur-md border-b border-purple-500/30 shadow-lg z-50 sticky top-0">
         <div className="flex items-center justify-between px-4 py-3">
@@ -363,16 +363,16 @@ export default function Chat() {
                 <p className="text-xl text-gray-300 mb-8">
                   {isWakeWordListening ? (
                     <span className="flex items-center justify-center space-x-2">
-                      <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
+                      <span className="w-2 h-2 bg-green-400 rounded-full"></span>
                       <span>Listening for "Hey Turbo"...</span>
                     </span>
                   ) : isListening ? (
                     <span className="flex items-center justify-center space-x-2">
-                      <span className="w-2 h-2 bg-red-400 rounded-full animate-pulse"></span>
+                      <span className="w-2 h-2 bg-red-400 rounded-full"></span>
                       <span>Listening to your voice...</span>
                     </span>
                   ) : (
-                    "Say 'Hey Turbo' or click the mic to start talking"
+                    "Click the mic to start talking"
                   )}
                 </p>
                 <div className="w-32 h-1 bg-gradient-to-r from-purple-500 via-pink-500 to-cyan-500 mx-auto rounded-full opacity-60"></div>
@@ -426,7 +426,7 @@ export default function Chat() {
         {/* Input Area */}
         <div className="shrink-0 p-6 border-t border-purple-500/30 bg-gradient-to-t from-purple-900/50 via-black/30 to-transparent backdrop-blur-sm">
           <div className="max-w-4xl mx-auto">
-            <div className="flex items-center space-x-4 bg-gradient-to-r from-gray-800/80 to-gray-700/80 backdrop-blur-sm border border-purple-500/20 rounded-full px-6 py-4 shadow-xl shadow-purple-500/10">
+            <div className="flex items-center space-x-4 bg-gray-800 border border-purple-500/20 rounded-full px-6 py-4">
               <label className="p-3 text-gray-400 hover:text-purple-400 transition-all duration-300 cursor-pointer hover:scale-110">
                 <FileText className="w-6 h-6" />
                 <input

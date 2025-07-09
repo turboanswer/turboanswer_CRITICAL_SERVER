@@ -12,8 +12,9 @@ Layout preference: Bigger layout showing all options in one screen for better ac
 Stability preference: App must be completely stable with NO moving elements, animations, or transitions. Settings must always be visible.
 Intelligence preference: AI should give simple, clear, direct answers without complex explanations. For simple questions, keep responses short and conversational.
 Interface priority: Ensure settings buttons are always accessible and never blocked by app movement.
-Performance priority: AI responses must be fast - streamlined AI processing with working Gemini service.
+Performance priority: AI responses must be fast - streamlined AI processing with working Gemini service. NO LAG ALLOWED.
 Power preference: Enhanced logo, loading screen, and maximum power branding throughout the interface.
+Voice preference: Voice assistant called "Turbo" with optional wake word detection (disabled by default for performance).
 
 ## System Architecture
 
@@ -89,7 +90,7 @@ Power preference: Enhanced logo, loading screen, and maximum power branding thro
 - **Adaptive Communication**: Exceeds user expectations with maximum performance
 - **Conversational Intelligence**: Emotional analysis, empathy levels, mood detection, and human-like interactions
 - **Comprehensive Coverage**: Technical mastery, scientific expertise, creative innovation, and general knowledge
-- **Maximum Performance**: Optimized for ultimate AI power and capability
+- **Maximum Performance**: Optimized for fast responses (50-100 token limits) with no lag
 
 #### Emotional AI and Conversational Features
 - **Emotional Intelligence**: Advanced emotion detection and analysis (happiness, sadness, anxiety, excitement, etc.)
@@ -129,9 +130,12 @@ Power preference: Enhanced logo, loading screen, and maximum power branding thro
 
 ### Voice Command Features
 - **Speech Recognition**: Web Speech API integration for voice input
+- **Voice Assistant Name**: "Turbo" - responds to user voice commands
+- **Wake Word Detection**: Optional "Hey Turbo" wake word (disabled by default to prevent lag)
+- **Auto-Send**: Voice messages automatically sent after speech detection
 - **Text-to-Speech**: Automatic AI response playback with voice synthesis
 - **AI Talks Back**: Conversational and Emotional AI models automatically speak their responses
-- **Interactive Controls**: Microphone button in header and input area
+- **Interactive Controls**: Large microphone button in input area
 - **Visual Feedback**: Recording indicators and real-time status updates
 - **Hover Actions**: Click-to-speak buttons on AI messages
 - **Natural Voice Selection**: Prioritizes enhanced, natural, and premium voices
