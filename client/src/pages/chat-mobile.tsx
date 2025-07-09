@@ -67,6 +67,9 @@ export default function ChatMobile() {
   // Send message mutation
   const sendMessageMutation = useMutation({
     mutationFn: (messageData: { message: string; aiModel: string }) => {
+      if (!currentConversationId) {
+        throw new Error('No conversation ID available');
+      }
       const requestBody = {
         content: messageData.message,
         selectedModel: messageData.aiModel
@@ -222,6 +225,8 @@ export default function ChatMobile() {
     // Ensure we have a conversation
     if (!currentConversationId) {
       console.log('No conversation, creating one...');
+      // Store the message to send after conversation is created
+      setMessage(messageText);
       createConversationMutation.mutate();
       return;
     }
