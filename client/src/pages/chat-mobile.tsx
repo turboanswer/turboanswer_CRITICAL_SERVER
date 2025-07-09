@@ -146,9 +146,16 @@ export default function ChatMobile() {
                   wakeWordRef.current.stop();
                   wakeWordRef.current = null;
                 }
+                // Stop any existing recognition before starting new one
+                if (recognitionRef.current && isListening) {
+                  recognitionRef.current.stop();
+                  setIsListening(false);
+                }
                 setTimeout(() => {
-                  if (isActive) startListening();
-                }, 200);
+                  if (isActive && !isListening) {
+                    startListening();
+                  }
+                }, 300);
                 return;
               }
             }
@@ -210,10 +217,12 @@ export default function ChatMobile() {
         
         // Auto-send after voice input
         setTimeout(() => {
-          const form = document.querySelector('form');
-          if (form) {
-            const submitEvent = new Event('submit', { bubbles: true, cancelable: true });
-            form.dispatchEvent(submitEvent);
+          if (currentConversationId && transcript.trim()) {
+            setIsTyping(true);
+            sendMessageMutation.mutate({
+              message: transcript.trim(),
+              aiModel: selectedAIModel,
+            });
           }
         }, 200);
       };
@@ -258,16 +267,26 @@ export default function ChatMobile() {
 
   // Voice functions
   const startListening = () => {
-    if (recognitionRef.current) {
-      setIsListening(true);
-      recognitionRef.current.start();
+    if (recognitionRef.current && !isListening) {
+      try {
+        setIsListening(true);
+        recognitionRef.current.start();
+      } catch (error) {
+        console.log('Speech recognition start error:', error);
+        setIsListening(false);
+      }
     }
   };
 
   const stopListening = () => {
-    if (recognitionRef.current) {
-      recognitionRef.current.stop();
-      setIsListening(false);
+    if (recognitionRef.current && isListening) {
+      try {
+        recognitionRef.current.stop();
+        setIsListening(false);
+      } catch (error) {
+        console.log('Speech recognition stop error:', error);
+        setIsListening(false);
+      }
     }
   };
 
