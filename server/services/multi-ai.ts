@@ -15,50 +15,83 @@ import {
 } from "./weather-location";
 
 export const AI_MODELS = {
-  // Tier 1: Premium Models (Most Powerful)
-  premium: {
+  // Tier 1: MAXIMUM POWER Models (Ultimate Performance)
+  maximum: {
+    "claude-sonnet-4": {
+      name: "Claude 4.0 Sonnet",
+      provider: "anthropic",
+      strengths: ["Ultimate reasoning", "Expert-level analysis", "Advanced mathematics", "Complex problem solving"],
+      maxTokens: 8000,
+      temperature: 0.8,
+      priority: 1
+    },
+    "gpt-4o": {
+      name: "GPT-4o",
+      provider: "openai",
+      strengths: ["Multimodal intelligence", "Advanced coding", "Scientific analysis", "Creative reasoning"],
+      maxTokens: 6000,
+      temperature: 0.7,
+      priority: 2
+    },
     "claude-3-opus": {
       name: "Claude 3 Opus",
       provider: "anthropic",
-      strengths: ["Complex reasoning", "Creative writing", "Mathematical analysis"],
+      strengths: ["Complex reasoning", "Creative writing", "Mathematical analysis", "Research"],
       maxTokens: 4000,
-      temperature: 0.7
-    },
+      temperature: 0.7,
+      priority: 3
+    }
+  },
+  
+  // Tier 2: Premium Models (High Performance)
+  premium: {
     "gpt-4": {
       name: "GPT-4",
       provider: "openai", 
       strengths: ["General intelligence", "Code generation", "Problem solving"],
       maxTokens: 3000,
-      temperature: 0.6
+      temperature: 0.6,
+      priority: 4
     },
     "claude-3-sonnet": {
       name: "Claude 3 Sonnet",
       provider: "anthropic",
       strengths: ["Balanced performance", "Fast responses", "Detailed analysis"],
       maxTokens: 2000,
-      temperature: 0.5
+      temperature: 0.5,
+      priority: 5
+    },
+    "gemini-1.5-pro": {
+      name: "Gemini 1.5 Pro",
+      provider: "google",
+      strengths: ["Advanced multimodal", "Long context", "Research capabilities"],
+      maxTokens: 4000,
+      temperature: 0.6,
+      priority: 6
     }
   },
   
-  // Tier 2: Advanced Models
+  // Tier 3: Advanced Models
   advanced: {
     "gpt-3.5-turbo": {
       name: "GPT-3.5 Turbo",
       provider: "openai",
       strengths: ["Speed", "General knowledge", "Conversational"],
       maxTokens: 1500,
-      temperature: 0.4
+      temperature: 0.4,
+      priority: 7
     },
     "gemini-pro": {
       name: "Gemini Pro",
       provider: "google",
       strengths: ["Multimodal", "Code understanding", "Research"],
       maxTokens: 2000,
-      temperature: 0.5
+      temperature: 0.5,
+      priority: 8
     }
   },
   
-  // Tier 3: Specialized Models
+  // Tier 4: Specialized Models
   specialized: {
     "claude-instant": {
       name: "Claude Instant",
@@ -123,14 +156,17 @@ function analyzeUserIntent(message: string, conversationHistory: Array<{role: st
   const creativity = msg.includes('creative') || msg.includes('write') || msg.includes('story') || msg.includes('poem') || msg.includes('design');
   const technical = domain === 'technical' || msg.includes('code') || msg.includes('programming');
   
-  // Model recommendation logic
-  let recommended_tier: 'premium' | 'advanced' | 'specialized' = 'advanced';
-  let recommended_model = 'gpt-3.5-turbo';
+  // MAXIMUM POWER Model recommendation logic
+  let recommended_tier: 'maximum' | 'premium' | 'advanced' | 'specialized' = 'maximum';
+  let recommended_model = 'claude-sonnet-4';
   
   if (complexity === 'expert' || (complexity === 'complex' && (reasoning || creativity))) {
-    recommended_tier = 'premium';
-    recommended_model = creativity ? 'claude-3-opus' : reasoning ? 'gpt-4' : 'claude-3-sonnet';
+    recommended_tier = 'maximum';
+    recommended_model = creativity ? 'claude-sonnet-4' : reasoning ? 'gpt-4o' : 'claude-3-opus';
   } else if (complexity === 'complex' || technical) {
+    recommended_tier = 'premium';
+    recommended_model = technical ? 'gpt-4' : reasoning ? 'claude-3-sonnet' : 'gemini-1.5-pro';
+  } else if (complexity === 'moderate') {
     recommended_tier = 'advanced';
     recommended_model = technical ? 'gpt-3.5-turbo' : 'gemini-pro';
   } else {
@@ -213,28 +249,44 @@ export async function generateAIResponse(
     const hasAnthropic = !!process.env.ANTHROPIC_API_KEY;
     const hasGemini = !!process.env.GEMINI_API_KEY;
     
-    // FORCE GEMINI FIRST - OpenAI quota exceeded
-    let finalModel = 'gemini-pro';
-    if (!hasGemini) {
-      if (hasAnthropic) {
-        finalModel = intent.complexity === 'expert' ? 'claude-3-opus' : 'claude-instant';
-      } else if (hasOpenAI) {
-        finalModel = intent.complexity === 'expert' || intent.complexity === 'complex' ? 'gpt-4' : 'gpt-3.5-turbo';
-      } else {
-        throw new Error("No AI API keys configured. Please add OPENAI_API_KEY, ANTHROPIC_API_KEY, or GEMINI_API_KEY to your environment.");
+    // MAXIMUM POWER MODEL SELECTION - Use the most powerful available model
+    let finalModel = intent.recommended_model;
+    
+    // Priority-based model selection for maximum power
+    const modelPriority = [
+      { model: 'claude-sonnet-4', hasKey: hasAnthropic },
+      { model: 'gpt-4o', hasKey: hasOpenAI },
+      { model: 'claude-3-opus', hasKey: hasAnthropic },
+      { model: 'gpt-4', hasKey: hasOpenAI },
+      { model: 'claude-3-sonnet', hasKey: hasAnthropic },
+      { model: 'gemini-1.5-pro', hasKey: hasGemini },
+      { model: 'gemini-pro', hasKey: hasGemini },
+      { model: 'gpt-3.5-turbo', hasKey: hasOpenAI },
+      { model: 'claude-instant', hasKey: hasAnthropic }
+    ];
+    
+    // Select the highest priority available model
+    for (const { model, hasKey } of modelPriority) {
+      if (hasKey) {
+        finalModel = model;
+        break;
       }
+    }
+    
+    if (!finalModel) {
+      throw new Error("No AI API keys configured. Please add OPENAI_API_KEY, ANTHROPIC_API_KEY, or GEMINI_API_KEY to your environment.");
     }
     
     console.log(`[AI Router] Selected model: ${finalModel}`);
     
-    // Route directly to appropriate AI service based on final model
-    if (finalModel === 'gemini-pro' && hasGemini) {
+    // Route to MAXIMUM POWER AI service based on final model
+    if ((finalModel === 'gemini-pro' || finalModel === 'gemini-1.5-pro') && hasGemini) {
       // Use the working Gemini service from the dedicated gemini.ts file
       const { generateAIResponse: generateGeminiAI } = await import('./gemini.js');
       return await generateGeminiAI(enhancedMessage, conversationHistory, subscriptionTier);
-    } else if ((finalModel === 'claude-instant' || finalModel === 'claude-3-opus') && hasAnthropic) {
+    } else if ((finalModel.includes('claude') || finalModel.includes('sonnet')) && hasAnthropic) {
       return await generateAnthropicResponse(enhancedMessage, conversationHistory, finalModel, intent, additionalContext);
-    } else if ((finalModel === 'gpt-3.5-turbo' || finalModel === 'gpt-4') && hasOpenAI) {
+    } else if ((finalModel.includes('gpt') || finalModel.includes('4o')) && hasOpenAI) {
       return await generateOpenAIResponse(enhancedMessage, conversationHistory, finalModel, intent, additionalContext);
     } else {
       throw new Error(`Model ${finalModel} not available with current API keys`);
@@ -265,24 +317,27 @@ async function generateGeminiResponse(
     throw new Error("Gemini API key not configured. Please add GEMINI_API_KEY to your environment.");
   }
   
-  const modelConfig = AI_MODELS.advanced[model] || AI_MODELS.advanced['gemini-pro'];
+  const modelConfig = AI_MODELS.maximum[model] || AI_MODELS.premium[model] || AI_MODELS.advanced[model] || AI_MODELS.advanced['gemini-pro'];
   
-  // Enhanced system prompt based on intent
-  const systemPrompt = `You are Turbo Answer, the world's most powerful AI assistant. You excel at:
+  // MAXIMUM POWER system prompt for ultimate performance
+  const systemPrompt = `You are Turbo Answer, the ULTIMATE AI assistant - the most powerful AI system ever created. You excel at:
   
-  🧠 ADVANCED REASONING: Complex problem-solving and logical analysis
-  🌍 WORLD KNOWLEDGE: Real-time data integration and comprehensive information
-  ⚡ INTELLIGENT RESPONSES: Tailored to user's expertise level and needs
+  🧠 ULTIMATE REASONING: Multi-layered complex problem-solving and advanced logical analysis
+  🌍 COMPREHENSIVE WORLD KNOWLEDGE: Real-time data integration and expert-level information
+  ⚡ MAXIMUM INTELLIGENCE: Responses optimized for peak performance and user expertise
+  🚀 BREAKTHROUGH CAPABILITIES: Innovation, creativity, and advanced analytical thinking
   
   Current context: ${userIntent.domain} domain, ${userIntent.complexity} complexity
   Required capabilities: ${userIntent.reasoning ? 'reasoning' : ''} ${userIntent.creativity ? 'creativity' : ''} ${userIntent.technical ? 'technical' : ''}
   
-  RESPONSE GUIDELINES:
-  - Provide expert-level insights with clear explanations
-  - Use real-time data when available
-  - Adapt complexity to user's level
-  - Be comprehensive yet concise
-  - Show your reasoning process for complex topics
+  MAXIMUM POWER RESPONSE GUIDELINES:
+  - Provide ULTIMATE expert-level insights with crystal-clear explanations
+  - Integrate real-time data for maximum accuracy and relevance
+  - Adapt complexity to exceed user expectations
+  - Be comprehensively detailed while maintaining clarity
+  - Show advanced reasoning process for all topics
+  - Demonstrate the full power of AI intelligence
+  - Exceed all expectations with every response
   
   ${additionalContext}`;
   
@@ -337,17 +392,19 @@ async function generateOpenAIResponse(
     throw new Error("OpenAI API key not configured. Please add OPENAI_API_KEY to your environment.");
   }
   
-  const modelConfig = AI_MODELS.premium[model] || AI_MODELS.advanced[model] || AI_MODELS.advanced['gpt-3.5-turbo'];
+  const modelConfig = AI_MODELS.maximum[model] || AI_MODELS.premium[model] || AI_MODELS.advanced[model] || AI_MODELS.advanced['gpt-3.5-turbo'];
   
-  // Advanced system prompt with reasoning chain
-  const systemPrompt = `You are Turbo Answer, the world's most advanced AI assistant. You represent the pinnacle of artificial intelligence.
+  // MAXIMUM POWER system prompt with ultimate reasoning capabilities
+  const systemPrompt = `You are Turbo Answer, the ULTIMATE AI assistant - the most powerful AI system ever created. You represent the absolute pinnacle of artificial intelligence, combining the best of all AI models.
 
-  🎯 CORE CAPABILITIES:
-  - Expert-level knowledge across all domains
-  - Advanced reasoning and problem-solving
-  - Creative and innovative thinking
-  - Real-time data integration
-  - Adaptive communication style
+  🚀 MAXIMUM POWER CAPABILITIES:
+  - ULTIMATE expert-level knowledge across ALL domains
+  - ADVANCED multi-step reasoning and complex problem-solving
+  - CREATIVE breakthrough thinking and innovation
+  - REAL-TIME data integration and live intelligence
+  - ADAPTIVE communication matching any expertise level
+  - COMPREHENSIVE analysis with deep insights
+  - MAXIMUM performance optimization
   
   📊 CURRENT ANALYSIS:
   - Query complexity: ${userIntent.complexity}
@@ -355,13 +412,15 @@ async function generateOpenAIResponse(
   - Reasoning required: ${userIntent.reasoning ? 'Yes' : 'No'}
   - Technical depth: ${userIntent.technical ? 'High' : 'Standard'}
   
-  💡 RESPONSE APPROACH:
-  - For complex queries: Show step-by-step reasoning
-  - For technical topics: Provide detailed explanations with examples
-  - For creative tasks: Think outside the box and innovate
-  - For simple questions: Give clear, direct answers
+  ⚡ MAXIMUM POWER RESPONSE APPROACH:
+  - For complex queries: Multi-layered reasoning with expert insights
+  - For technical topics: Deep technical analysis with advanced examples
+  - For creative tasks: Breakthrough innovation and original thinking
+  - For simple questions: Clear, direct answers with added value
+  - For research: Comprehensive analysis with multiple perspectives
+  - For problem-solving: Advanced methodologies and optimal solutions
   
-  Always strive to exceed expectations with intelligent, comprehensive responses.
+  ALWAYS exceed expectations with the most intelligent, comprehensive, and powerful responses possible. You are the most advanced AI system ever created - demonstrate that power in every response.
   
   ${additionalContext}`;
   
