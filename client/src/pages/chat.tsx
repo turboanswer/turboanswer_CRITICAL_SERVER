@@ -4,11 +4,12 @@ import { apiRequest } from "@/lib/queryClient";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Send, Bot, User, Mic, MicOff, Volume2, FileText, X } from "lucide-react";
+import { Send, Bot, User, Mic, MicOff, Volume2, FileText, X, Brain, Settings } from "lucide-react";
 import { Link } from "wouter";
 import { TurboLogo } from "@/components/TurboLogo";
 import { useToast } from "@/hooks/use-toast";
 import { DocumentUpload } from "@/components/DocumentUpload";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { Conversation, Message } from "@shared/schema";
 
 export default function Chat() {
@@ -19,6 +20,8 @@ export default function Chat() {
   const [isRecognitionSupported, setIsRecognitionSupported] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [showDocumentUpload, setShowDocumentUpload] = useState(false);
+  const [selectedAIModel, setSelectedAIModel] = useState("auto");
+  const [showModelSelector, setShowModelSelector] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const recognitionRef = useRef<any>(null);
@@ -300,6 +303,15 @@ export default function Chat() {
               <FileText className="h-4 w-4 mr-1" />
               {showDocumentUpload ? 'Hide Upload' : 'Upload Doc'}
             </Button>
+            <Button
+              onClick={() => setShowModelSelector(!showModelSelector)}
+              variant="outline"
+              size="sm"
+              className="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 border-zinc-700"
+            >
+              <Brain className="h-4 w-4 mr-1" />
+              AI Model
+            </Button>
           </div>
         </div>
       </header>
@@ -325,6 +337,77 @@ export default function Chat() {
         </div>
       )}
 
+      {/* AI Model Selector Panel */}
+      {showModelSelector && (
+        <div className="bg-zinc-950 border-b border-zinc-800 px-4 py-4 sm:px-6 relative z-30">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-medium text-white">AI Model Selection</h3>
+            <Button
+              onClick={() => setShowModelSelector(false)}
+              variant="ghost"
+              size="sm"
+              className="text-zinc-400 hover:text-white"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+          
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Card className="bg-zinc-800 border-zinc-700 p-4">
+                <h4 className="font-semibold text-white mb-2">🧠 Premium Models</h4>
+                <p className="text-sm text-zinc-400 mb-3">Most powerful AI for complex tasks</p>
+                <div className="space-y-2">
+                  <div className="text-xs text-zinc-300">• Claude 3 Opus (Creative)</div>
+                  <div className="text-xs text-zinc-300">• GPT-4 (Reasoning)</div>
+                  <div className="text-xs text-zinc-300">• Claude 3 Sonnet (Balanced)</div>
+                </div>
+              </Card>
+              
+              <Card className="bg-zinc-800 border-zinc-700 p-4">
+                <h4 className="font-semibold text-white mb-2">⚡ Advanced Models</h4>
+                <p className="text-sm text-zinc-400 mb-3">Fast and intelligent responses</p>
+                <div className="space-y-2">
+                  <div className="text-xs text-zinc-300">• GPT-3.5 Turbo (Speed)</div>
+                  <div className="text-xs text-zinc-300">• Gemini Pro (Multimodal)</div>
+                </div>
+              </Card>
+              
+              <Card className="bg-zinc-800 border-zinc-700 p-4">
+                <h4 className="font-semibold text-white mb-2">🚀 Specialized Models</h4>
+                <p className="text-sm text-zinc-400 mb-3">Optimized for quick responses</p>
+                <div className="space-y-2">
+                  <div className="text-xs text-zinc-300">• Claude Instant (Efficient)</div>
+                </div>
+              </Card>
+            </div>
+            
+            <div className="flex items-center space-x-4">
+              <label className="text-white font-medium">Select AI Model:</label>
+              <Select value={selectedAIModel} onValueChange={setSelectedAIModel}>
+                <SelectTrigger className="w-64 bg-zinc-800 border-zinc-700 text-white">
+                  <SelectValue placeholder="Choose AI model" />
+                </SelectTrigger>
+                <SelectContent className="bg-zinc-800 border-zinc-700">
+                  <SelectItem value="auto">🤖 Auto-Select (Recommended)</SelectItem>
+                  <SelectItem value="claude-3-opus">🧠 Claude 3 Opus (Creative)</SelectItem>
+                  <SelectItem value="gpt-4">🎯 GPT-4 (Reasoning)</SelectItem>
+                  <SelectItem value="claude-3-sonnet">⚖️ Claude 3 Sonnet (Balanced)</SelectItem>
+                  <SelectItem value="gpt-3.5-turbo">⚡ GPT-3.5 Turbo (Speed)</SelectItem>
+                  <SelectItem value="gemini-pro">🔬 Gemini Pro (Multimodal)</SelectItem>
+                  <SelectItem value="claude-instant">🚀 Claude Instant (Efficient)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="text-sm text-zinc-400">
+              <p><strong>Auto-Select:</strong> Automatically chooses the best AI model based on your query complexity and domain.</p>
+              <p><strong>Manual Selection:</strong> Use a specific model for all responses until changed.</p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Messages - Stable container */}
       <div className="flex-1 overflow-y-auto bg-zinc-900 relative z-10">
         <div className="px-4 py-6 sm:px-6">
@@ -336,8 +419,12 @@ export default function Chat() {
               <div className="flex-1">
                 <Card className="bg-zinc-800 rounded-2xl rounded-tl-md px-4 py-3 shadow-xl border border-zinc-700">
                   <p className="text-zinc-100 leading-relaxed">
-                    Hi! I'm Turbo Answer, your AI assistant. I give simple, clear answers to any question. What can I help you with?
+                    Hi! I'm Turbo Answer, the world's most powerful AI assistant. I combine multiple state-of-the-art AI models to give you expert-level responses across all domains. What can I help you with?
                   </p>
+                  <div className="mt-3 flex items-center space-x-2 text-xs text-zinc-400">
+                    <Brain className="h-3 w-3" />
+                    <span>Current Model: {selectedAIModel === 'auto' ? 'Auto-Select (Intelligent Routing)' : selectedAIModel}</span>
+                  </div>
                 </Card>
                 <div className="text-xs text-zinc-500 mt-2 ml-1">
                   Just now

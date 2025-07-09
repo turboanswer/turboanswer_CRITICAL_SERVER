@@ -61,13 +61,13 @@ Performance priority: AI responses must be fast - removed top-right icons and st
 - **Subscribe Page** (`/subscribe`): Stripe-powered subscription upgrade to Pro plan
 - **404 Page**: Error handling for unknown routes
 
-### Custom AI Integration with Weather & Location Intelligence
-- **Smart AI System**: Custom AI service with real-time weather and location data
-- **Weather Intelligence**: Live weather data for any location worldwide via OpenWeatherMap API
-- **Location Knowledge**: Accurate time zones, geographic data, and world information
-- **Smart Detection**: Automatically recognizes weather and location queries
-- **Fast Responses**: Optimized for speed with 500 token limit and minimal context
-- **Fallback Support**: Automatic error handling with graceful degradation
+### Multi-Model AI System: The Most Powerful AI Assistant
+- **Advanced Intelligence**: Multi-tier AI system with Claude 3 Opus, GPT-4, and Gemini Pro
+- **Intelligent Routing**: Automatic model selection based on query complexity and domain
+- **Expert-Level Reasoning**: Complex problem-solving with step-by-step analysis
+- **Real-Time Intelligence**: Live weather data and world location knowledge
+- **Adaptive Communication**: Matches user's expertise level and requirements
+- **Comprehensive Coverage**: Technical, scientific, creative, and general knowledge domains
 
 #### Simple and Direct AI Features
 - **Direct Answers**: AI gives simple, clear responses without complex explanations

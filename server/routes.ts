@@ -4,7 +4,7 @@ import Stripe from "stripe";
 import multer from "multer";
 import { storage } from "./storage";
 import { insertConversationSchema, insertMessageSchema } from "@shared/schema";
-import { generateCustomAIResponse } from "./services/custom-ai";
+import { generateAIResponse } from "./services/multi-ai";
 import { 
   extractTextFromFile, 
   analyzeDocument, 
@@ -107,8 +107,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         content: msg.content
       }));
 
-      // Generate AI response using custom AI
-      const aiResponseContent = await generateCustomAIResponse(content, conversationHistory);
+      // Generate AI response using multi-model intelligence
+      const aiResponseContent = await generateAIResponse(content, conversationHistory, "free");
 
       // Create AI message
       const aiMessage = await storage.createMessage({
