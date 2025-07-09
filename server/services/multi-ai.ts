@@ -13,6 +13,7 @@ import {
   extractLocation,
   getTimeZoneInfo
 } from "./weather-location";
+import { emotionalAI } from './emotional-ai';
 
 export const AI_MODELS = {
   // Tier 1: MAXIMUM POWER Models (Ultimate Performance)
@@ -190,9 +191,30 @@ export async function generateAIResponse(
   userMessage: string,
   conversationHistory: Array<{role: string, content: string}> = [],
   subscriptionTier: string = "free",
-  selectedModel?: string
+  selectedModel?: string,
+  userId?: string
 ): Promise<string> {
   try {
+    // Check if this is an emotional/conversational query first
+    const isEmotional = await emotionalAI.isEmotionalQuery(userMessage);
+    
+    if (isEmotional) {
+      console.log(`[Emotional AI] Detected emotional conversation`);
+      
+      // Analyze emotional state
+      const emotionalContext = await emotionalAI.analyzeEmotionalState(userMessage, userId);
+      console.log(`[Emotional AI] Emotions: ${emotionalContext.emotions.join(", ")}, Intensity: ${emotionalContext.intensity}/10`);
+      
+      // Generate empathetic response using emotional AI
+      return await emotionalAI.generateEmpatheticResponse(
+        userMessage,
+        emotionalContext,
+        conversationHistory,
+        userId
+      );
+    }
+
+    // For non-emotional queries, continue with standard AI routing
     // Analyze user intent and complexity
     const intent = analyzeUserIntent(userMessage, conversationHistory);
     console.log(`[AI Router] Intent: ${intent.complexity} ${intent.domain}, Model: ${intent.recommended_model}`);

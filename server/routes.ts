@@ -159,9 +159,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         content: msg.content
       }));
 
-      // Use working Gemini service directly for maximum power
-      const { generateAIResponse: generateGeminiAI } = await import('./services/gemini.js');
-      const aiResponseContent = await generateGeminiAI(content, conversationHistory, "free");
+      // Use enhanced AI system with emotional intelligence
+      const { generateAIResponse } = await import('./services/multi-ai.js');
+      const userId = `user_${Math.random().toString(36).substr(2, 9)}`; // Simple user ID for emotional context
+      const aiResponseContent = await generateAIResponse(
+        content,
+        conversationHistory,
+        "free", // subscription tier
+        undefined, // let AI choose model
+        userId
+      );
 
       // Create AI message
       const aiMessage = await storage.createMessage({
