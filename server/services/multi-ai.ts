@@ -205,26 +205,13 @@ export async function generateAIResponse(
     const hasAnthropic = !!process.env.ANTHROPIC_API_KEY;
     const hasGemini = !!process.env.GEMINI_API_KEY;
     
-    // Model selection with API key availability
-    const availableModels = getAvailableModels(subscriptionTier);
-    const modelToUse = selectedModel || intent.recommended_model;
-    
-    // Smart fallback based on available API keys
-    let finalModel = modelToUse;
-    const modelConfig = availableModels[modelToUse];
-    
-    if (!modelConfig || 
-        (modelConfig.provider === 'anthropic' && !hasAnthropic) ||
-        (modelConfig.provider === 'openai' && !hasOpenAI) ||
-        (modelConfig.provider === 'google' && !hasGemini)) {
-      
-      // Find best available model based on API keys
-      if (hasOpenAI) {
-        finalModel = intent.complexity === 'expert' || intent.complexity === 'complex' ? 'gpt-4' : 'gpt-3.5-turbo';
-      } else if (hasGemini) {
-        finalModel = 'gemini-pro';
-      } else if (hasAnthropic) {
+    // FORCE GEMINI FIRST - OpenAI quota exceeded
+    let finalModel = 'gemini-pro';
+    if (!hasGemini) {
+      if (hasAnthropic) {
         finalModel = intent.complexity === 'expert' ? 'claude-3-opus' : 'claude-instant';
+      } else if (hasOpenAI) {
+        finalModel = intent.complexity === 'expert' || intent.complexity === 'complex' ? 'gpt-4' : 'gpt-3.5-turbo';
       } else {
         throw new Error("No AI API keys configured. Please add OPENAI_API_KEY, ANTHROPIC_API_KEY, or GEMINI_API_KEY to your environment.");
       }
@@ -232,18 +219,17 @@ export async function generateAIResponse(
     
     console.log(`[AI Router] Selected model: ${finalModel}`);
     
-    // Route to appropriate AI service
-    const finalModelConfig = availableModels[finalModel] || AI_MODELS.advanced['gpt-3.5-turbo'];
-    
-    switch (finalModelConfig.provider) {
-      case 'anthropic':
-        return await generateAnthropicResponse(enhancedMessage, conversationHistory, finalModel, intent, additionalContext);
-      case 'openai':
-        return await generateOpenAIResponse(enhancedMessage, conversationHistory, finalModel, intent, additionalContext);
-      case 'google':
-        return await generateGeminiResponse(enhancedMessage, conversationHistory, finalModel, intent, additionalContext);
-      default:
-        throw new Error(`Unsupported AI provider: ${finalModelConfig.provider}`);
+    // Route directly to appropriate AI service based on final model
+    if (finalModel === 'gemini-pro' && hasGemini) {
+      // Use the working Gemini service from the dedicated gemini.ts file
+      const { generateAIResponse: generateGeminiAI } = await import('./gemini.js');
+      return await generateGeminiAI(enhancedMessage, conversationHistory, subscriptionTier);
+    } else if ((finalModel === 'claude-instant' || finalModel === 'claude-3-opus') && hasAnthropic) {
+      return await generateAnthropicResponse(enhancedMessage, conversationHistory, finalModel, intent, additionalContext);
+    } else if ((finalModel === 'gpt-3.5-turbo' || finalModel === 'gpt-4') && hasOpenAI) {
+      return await generateOpenAIResponse(enhancedMessage, conversationHistory, finalModel, intent, additionalContext);
+    } else {
+      throw new Error(`Model ${finalModel} not available with current API keys`);
     }
     
   } catch (error) {
@@ -293,7 +279,7 @@ async function generateGeminiResponse(
   ${additionalContext}`;
   
   try {
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

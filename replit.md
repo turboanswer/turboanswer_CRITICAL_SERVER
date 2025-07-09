@@ -22,12 +22,14 @@ Performance priority: AI responses must be fast - removed top-right icons and st
 - **State Management**: TanStack React Query for server state management
 - **Routing**: Wouter for client-side routing
 - **Form Handling**: React Hook Form with Zod validation
+- **Authentication**: Local authentication with session management
 
 ### Backend Architecture
 - **Framework**: Express.js with TypeScript
 - **Runtime**: Node.js with ES modules
 - **API Style**: RESTful API endpoints
-- **AI Integration**: OpenAI Assistant API with dedicated service layer
+- **AI Integration**: Multi-model AI system with Gemini, OpenAI, and Anthropic support
+- **Authentication**: Session-based authentication with PostgreSQL storage
 - **Middleware**: Express JSON parsing, custom logging middleware
 
 ### Database Strategy
@@ -35,6 +37,7 @@ Performance priority: AI responses must be fast - removed top-right icons and st
 - **Schema Location**: Shared schema definitions in `/shared/schema.ts`
 - **Current Storage**: In-memory storage implementation (`MemStorage`)
 - **Migration Strategy**: Drizzle Kit for schema migrations
+- **Authentication Storage**: User sessions and account data
 
 ## Key Components
 
@@ -88,10 +91,10 @@ Performance priority: AI responses must be fast - removed top-right icons and st
 - **Professional Applications**: Business analysis, strategic planning, optimization
 
 #### API Requirements
-- CUSTOM_AI_API_KEY or OPENAI_API_KEY for AI responses
-- WEATHER_API_KEY or OPENWEATHER_API_KEY for weather data (free tier available)
-- GEMINI_API_KEY for Google AI services (optional)
+- GEMINI_API_KEY for Google AI services (primary AI provider)
+- OPENAI_API_KEY for GPT models (secondary - quota exceeded)
 - ANTHROPIC_API_KEY for Claude models (optional)
+- WEATHER_API_KEY or OPENWEATHER_API_KEY for weather data (free tier available)
 
 ### Completely Stable UI and Professional Branding
 - **Professional Logo**: Static TurboLogo with gradient design and AI indicators
