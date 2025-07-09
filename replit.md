@@ -11,6 +11,7 @@ Design preference: Sleek black theme with modern UI aesthetics.
 Stability preference: App must be completely stable with NO moving elements, animations, or transitions. Settings must always be visible.
 Intelligence preference: AI should give simple, clear, direct answers without complex explanations.
 Interface priority: Ensure settings buttons are always accessible and never blocked by app movement.
+Performance priority: AI responses must be fast - removed top-right icons and streamlined AI processing.
 
 ## System Architecture
 

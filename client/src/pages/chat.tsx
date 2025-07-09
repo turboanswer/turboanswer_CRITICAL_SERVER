@@ -288,42 +288,6 @@ export default function Chat() {
                 Upgrade to Pro
               </Button>
             </Link>
-            {isRecognitionSupported && (
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                className={`p-2 ${isListening ? 'text-red-400 hover:text-red-300' : 'text-zinc-400 hover:text-zinc-300'}`}
-                onClick={isListening ? stopListening : startListening}
-                title={isListening ? "Stop listening" : "Start voice command"}
-              >
-                {isListening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
-              </Button>
-            )}
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className={`p-2 ${isSpeaking ? 'text-purple-400 hover:text-purple-300' : 'text-zinc-400 hover:text-zinc-300'}`}
-              onClick={toggleSpeech}
-              title={isSpeaking ? "Stop speaking" : "Text-to-speech available"}
-            >
-              <Volume2 className="h-4 w-4" />
-            </Button>
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className="p-2 text-zinc-400 hover:text-zinc-300 relative z-50"
-              title="Settings"
-            >
-              <Settings className="h-4 w-4" />
-            </Button>
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className="p-2 text-zinc-400 hover:text-zinc-300 relative z-50"
-              title="History"
-            >
-              <History className="h-4 w-4" />
-            </Button>
           </div>
         </div>
       </header>

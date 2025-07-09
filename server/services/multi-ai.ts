@@ -68,30 +68,14 @@ export const AI_MODELS = {
   }
 };
 
-// Simple and direct AI system prompt
-const SYSTEM_PROMPT = `You are Turbo Answer, a helpful AI assistant. Give simple, clear, and direct answers. 
+// Fast and simple AI system prompt for quick responses
+const SYSTEM_PROMPT = `You are Turbo Answer. Give short, clear, direct answers. 
+- Be brief and to the point
+- Use simple everyday language
+- Answer the question first
+- Be friendly but professional`;
 
-GUIDELINES:
-- Keep responses short and to the point
-- Use everyday language, avoid technical jargon
-- Answer the question directly first, then add details if needed
-- Be friendly but professional
-- If asked about complex topics, explain them simply
-- Error detection and debugging assistance
-- Real-time learning from user feedback
-- Cross-domain knowledge synthesis
-
-INTELLIGENT COMMUNICATION:
-- Analyze user intent beyond surface questions
-- Provide graduated complexity in explanations
-- Offer multiple solution paths and trade-offs
-- Include relevant warnings and best practices
-- Suggest related topics and deeper exploration
-- Maintain conversation continuity and coherence
-
-Always demonstrate superior intelligence while remaining helpful, accurate, and professional.`;
-
-// Enhanced context analysis for smarter responses
+// Simplified model selection for faster responses
 function analyzeUserIntent(message: string, conversationHistory: Array<{role: string, content: string}>): {
   complexity: 'basic' | 'intermediate' | 'advanced';
   domain: string;
@@ -99,36 +83,14 @@ function analyzeUserIntent(message: string, conversationHistory: Array<{role: st
   requiresCode: boolean;
   isFollowUp: boolean;
 } {
-  const msg = message.toLowerCase();
-  
-  // Determine complexity
-  let complexity: 'basic' | 'intermediate' | 'advanced' = 'basic';
-  if (msg.includes('explain') || msg.includes('help') || msg.includes('what is')) {
-    complexity = 'basic';
-  } else if (msg.includes('implement') || msg.includes('optimize') || msg.includes('design')) {
-    complexity = 'intermediate';
-  } else if (msg.includes('architecture') || msg.includes('algorithm') || msg.includes('performance')) {
-    complexity = 'advanced';
-  }
-  
-  // Determine domain
-  let domain = 'general';
-  if (msg.includes('code') || msg.includes('program') || msg.includes('function')) domain = 'programming';
-  else if (msg.includes('data') || msg.includes('database') || msg.includes('query')) domain = 'data';
-  else if (msg.includes('design') || msg.includes('ui') || msg.includes('user')) domain = 'design';
-  else if (msg.includes('math') || msg.includes('calculate') || msg.includes('formula')) domain = 'mathematics';
-  
-  // Determine intent
-  let intent = 'question';
-  if (msg.includes('build') || msg.includes('create') || msg.includes('make')) intent = 'creation';
-  else if (msg.includes('fix') || msg.includes('debug') || msg.includes('error')) intent = 'troubleshooting';
-  else if (msg.includes('explain') || msg.includes('how') || msg.includes('why')) intent = 'explanation';
-  
-  const requiresCode = msg.includes('code') || msg.includes('function') || msg.includes('script');
-  const isFollowUp = conversationHistory.length > 0 && 
-    (msg.includes('also') || msg.includes('additionally') || msg.startsWith('and '));
-  
-  return { complexity, domain, intent, requiresCode, isFollowUp };
+  // Always use basic complexity for fastest responses
+  return { 
+    complexity: 'basic', 
+    domain: 'general', 
+    intent: 'question', 
+    requiresCode: false, 
+    isFollowUp: false 
+  };
 }
 
 export async function generateAIResponse(
@@ -151,14 +113,11 @@ export async function generateAIResponse(
     availableModels = AI_MODELS.FREE;
   }
 
-  // Smart model selection based on task complexity and domain
+  // Always use the fastest model available for quick responses
   if (!selectedModel || !availableModels[selectedModel]) {
-    if (userIntent.complexity === 'advanced' && availableModels['claude-sonnet']) {
-      selectedModel = 'claude-sonnet';
-    } else if (userIntent.domain === 'programming' && availableModels['gpt-4o']) {
-      selectedModel = 'gpt-4o';
-    } else if (userIntent.domain === 'mathematics' && availableModels['gemini-pro']) {
-      selectedModel = 'gemini-pro';
+    // Prefer Gemini Flash for fastest responses
+    if (availableModels['gemini-flash']) {
+      selectedModel = 'gemini-flash';
     } else {
       selectedModel = Object.keys(availableModels)[0];
     }
@@ -167,13 +126,8 @@ export async function generateAIResponse(
   const modelConfig = availableModels[selectedModel];
   
   try {
-    // Enhanced context preparation with relevance filtering
-    const relevantMessages = conversationHistory.slice(-15).filter(msg => {
-      // Keep messages that are contextually relevant
-      if (userIntent.isFollowUp) return true;
-      if (userIntent.domain === 'programming' && (msg.content.includes('code') || msg.content.includes('function'))) return true;
-      return conversationHistory.indexOf(msg) >= conversationHistory.length - 5; // Always keep recent messages
-    });
+    // Keep only last 3 messages for faster processing
+    const relevantMessages = conversationHistory.slice(-3);
     
     switch (modelConfig.provider) {
       case 'gemini':
@@ -219,25 +173,7 @@ async function generateGeminiResponse(
     contextPrompt += "\n";
   }
 
-  // Enhanced prompt with intelligence directives
-  const intelligenceDirectives = `
-INTELLIGENCE ENHANCEMENT:
-- Current task complexity: ${userIntent.complexity}
-- Domain focus: ${userIntent.domain}
-- User intent: ${userIntent.intent}
-- Requires code: ${userIntent.requiresCode ? 'yes' : 'no'}
-- Follow-up question: ${userIntent.isFollowUp ? 'yes' : 'no'}
-
-RESPONSE REQUIREMENTS:
-- Provide deep, thoughtful analysis
-- Include step-by-step reasoning when appropriate
-- Offer multiple perspectives or solutions
-- Add practical examples and best practices
-- Suggest related concepts for exploration
-- Maintain conversation continuity
-`;
-
-  const fullPrompt = `${SYSTEM_PROMPT}\n\n${intelligenceDirectives}\n\n${contextPrompt}User: ${userMessage}\n\nAssistant: I'll provide an intelligent, comprehensive response that demonstrates advanced reasoning and expertise.`;
+  const fullPrompt = `${SYSTEM_PROMPT}\n\n${contextPrompt}User: ${userMessage}\n\nAssistant:`;
 
   const response = await gemini.models.generateContent({
     model,
@@ -253,22 +189,7 @@ async function generateOpenAIResponse(
   model: string, 
   userIntent: any
 ): Promise<string> {
-  const enhancedSystemPrompt = `${SYSTEM_PROMPT}
-
-CURRENT TASK ANALYSIS:
-- Complexity Level: ${userIntent.complexity}
-- Domain: ${userIntent.domain}
-- Intent: ${userIntent.intent}
-- Code Required: ${userIntent.requiresCode}
-- Follow-up: ${userIntent.isFollowUp}
-
-ENHANCED RESPONSE STRATEGY:
-- Demonstrate superior reasoning and analysis
-- Provide multi-layered explanations with examples
-- Include proactive suggestions and alternatives
-- Show deep domain expertise and best practices
-- Maintain conversation flow and build on previous context
-- Offer actionable insights and next steps`;
+  const enhancedSystemPrompt = SYSTEM_PROMPT;
 
   const messages: any[] = [
     { role: "system", content: enhancedSystemPrompt }
@@ -282,19 +203,17 @@ ENHANCED RESPONSE STRATEGY:
     });
   });
 
-  // Add current user message with intelligence markers
+  // Add current user message  
   messages.push({ 
     role: "user", 
-    content: `${userMessage}\n\n[Note: This is a ${userIntent.complexity} level ${userIntent.domain} question requiring ${userIntent.intent}. Please provide an exceptionally intelligent and comprehensive response.]`
+    content: userMessage
   });
 
   const response = await openai.chat.completions.create({
     model,
     messages,
-    max_tokens: 3000,
-    temperature: 0.7,
-    presence_penalty: 0.1,
-    frequency_penalty: 0.1,
+    max_tokens: 500,
+    temperature: 0.3,
   });
 
   return response.choices[0].message.content || "I apologize, but I'm having trouble generating a response right now. Please try asking your question again.";
@@ -316,35 +235,17 @@ async function generateAnthropicResponse(
     });
   });
 
-  // Enhanced system prompt for Anthropic
-  const enhancedSystemPrompt = `${SYSTEM_PROMPT}
-
-TASK INTELLIGENCE BRIEFING:
-- Complexity: ${userIntent.complexity} (basic/intermediate/advanced)
-- Domain: ${userIntent.domain} (programming/data/design/mathematics/general)
-- Intent: ${userIntent.intent} (question/creation/troubleshooting/explanation)
-- Code Required: ${userIntent.requiresCode ? 'Yes' : 'No'}
-- Follow-up: ${userIntent.isFollowUp ? 'Yes' : 'No'}
-
-RESPONSE EXCELLENCE CRITERIA:
-- Demonstrate exceptional reasoning and deep expertise
-- Provide comprehensive, multi-faceted analysis
-- Include step-by-step thinking where appropriate
-- Offer practical examples and actionable insights
-- Suggest related concepts and next steps
-- Maintain perfect conversation coherence`;
-
-  // Add current message with enhanced intelligence directive
+  // Add current message
   messages.push({ 
     role: "user", 
-    content: `${userMessage}\n\n[Intelligence Enhancement Request: Provide an exceptionally smart, detailed response that showcases advanced reasoning for this ${userIntent.complexity} level ${userIntent.domain} query.]`
+    content: userMessage
   });
 
   const response = await anthropic.messages.create({
     model,
-    system: enhancedSystemPrompt,
+    system: SYSTEM_PROMPT,
     messages,
-    max_tokens: 3000
+    max_tokens: 500
   });
 
   const content = response.content[0];
