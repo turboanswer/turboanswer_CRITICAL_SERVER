@@ -208,35 +208,38 @@ export default function Chat() {
             </button>
             <div className="flex items-center space-x-3">
               <TurboLogo className="w-10 h-10 shrink-0" />
-              <h1 className="text-xl font-bold text-white">TurboAnswer</h1>
+              <div className="flex flex-col">
+                <h1 className="text-xl font-bold bg-gradient-to-r from-purple-400 via-pink-400 to-cyan-400 bg-clip-text text-transparent">
+                  TurboAnswer
+                </h1>
+                <div className="flex items-center space-x-3 mt-1">
+                  <Select value={selectedAIModel} onValueChange={setSelectedAIModel}>
+                    <SelectTrigger className="w-40 bg-gradient-to-r from-purple-600/20 to-pink-600/20 backdrop-blur-sm border border-purple-500/30 hover:border-purple-400/50 text-white text-sm h-8 transition-all duration-300 shadow-lg hover:shadow-purple-500/25">
+                      <SelectValue placeholder="AI Model" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-gray-900/95 backdrop-blur-sm border border-purple-500/30 shadow-2xl shadow-purple-500/20">
+                      <SelectItem value="auto" className="hover:bg-gradient-to-r hover:from-purple-600/20 hover:to-pink-600/20 text-white">🤖 Auto-Select</SelectItem>
+                      <SelectItem value="conversational" className="hover:bg-gradient-to-r hover:from-blue-600/20 hover:to-cyan-600/20 text-white">💬 Conversational</SelectItem>
+                      <SelectItem value="emotional" className="hover:bg-gradient-to-r hover:from-pink-600/20 hover:to-red-600/20 text-white">❤️ Emotional</SelectItem>
+                      <SelectItem value="claude-sonnet-4" className="hover:bg-gradient-to-r hover:from-orange-600/20 hover:to-yellow-600/20 text-white">🧠 Claude 4.0</SelectItem>
+                      <SelectItem value="gpt-4o" className="hover:bg-gradient-to-r hover:from-green-600/20 hover:to-emerald-600/20 text-white">⚡ GPT-4o</SelectItem>
+                      <SelectItem value="claude-3-opus" className="hover:bg-gradient-to-r hover:from-indigo-600/20 hover:to-purple-600/20 text-white">🎯 Claude Opus</SelectItem>
+                      <SelectItem value="gpt-4" className="hover:bg-gradient-to-r hover:from-red-600/20 hover:to-pink-600/20 text-white">🔥 GPT-4</SelectItem>
+                      <SelectItem value="claude-3-sonnet" className="hover:bg-gradient-to-r hover:from-cyan-600/20 hover:to-blue-600/20 text-white">📝 Claude Sonnet</SelectItem>
+                      <SelectItem value="gpt-3.5-turbo" className="hover:bg-gradient-to-r hover:from-teal-600/20 hover:to-green-600/20 text-white">🚀 GPT-3.5</SelectItem>
+                      <SelectItem value="gemini-pro" className="hover:bg-gradient-to-r hover:from-violet-600/20 hover:to-purple-600/20 text-white">💎 Gemini</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  
+                  <button
+                    onClick={createNewConversation}
+                    className="px-3 py-1 bg-gradient-to-r from-cyan-500 to-purple-500 hover:from-cyan-400 hover:to-purple-400 text-white rounded-md hover:scale-105 active:scale-95 transition-all duration-300 font-medium text-sm h-8 shadow-lg hover:shadow-cyan-500/25"
+                  >
+                    New Chat
+                  </button>
+                </div>
+              </div>
             </div>
-          </div>
-          
-          <div className="flex items-center space-x-3">
-            <Select value={selectedAIModel} onValueChange={setSelectedAIModel}>
-              <SelectTrigger className="w-48 bg-gray-800 border-gray-700 text-white">
-                <SelectValue placeholder="Select AI Model" />
-              </SelectTrigger>
-              <SelectContent className="bg-gray-800 border-gray-700">
-                <SelectItem value="auto">🤖 Auto-Select (Smart)</SelectItem>
-                <SelectItem value="conversational">💬 Conversational AI</SelectItem>
-                <SelectItem value="emotional">❤️ Emotional AI</SelectItem>
-                <SelectItem value="claude-sonnet-4">🧠 Claude 4.0 Sonnet</SelectItem>
-                <SelectItem value="gpt-4o">⚡ GPT-4o</SelectItem>
-                <SelectItem value="claude-3-opus">🎯 Claude 3 Opus</SelectItem>
-                <SelectItem value="gpt-4">🔥 GPT-4</SelectItem>
-                <SelectItem value="claude-3-sonnet">📝 Claude 3 Sonnet</SelectItem>
-                <SelectItem value="gpt-3.5-turbo">🚀 GPT-3.5 Turbo</SelectItem>
-                <SelectItem value="gemini-pro">💎 Gemini Pro</SelectItem>
-              </SelectContent>
-            </Select>
-            
-            <button
-              onClick={createNewConversation}
-              className="px-4 py-2 bg-white text-black rounded-lg hover:bg-gray-100 transition-colors font-medium"
-            >
-              New Chat
-            </button>
           </div>
         </div>
       </div>
@@ -249,7 +252,10 @@ export default function Chat() {
             {/* Welcome Message */}
             {messages.length === 0 && (
               <div className="text-center mb-8">
-                <h2 className="text-4xl font-bold text-white mb-8">What can I help with?</h2>
+                <h2 className="text-4xl font-bold bg-gradient-to-r from-purple-400 via-pink-400 to-cyan-400 bg-clip-text text-transparent mb-8 animate-pulse">
+                  What can I help with?
+                </h2>
+                <div className="w-32 h-1 bg-gradient-to-r from-purple-500 via-pink-500 to-cyan-500 mx-auto rounded-full opacity-60"></div>
               </div>
             )}
             
@@ -262,10 +268,10 @@ export default function Chat() {
                     className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
                   >
                     <div
-                      className={`max-w-3xl px-4 py-3 rounded-lg ${
+                      className={`max-w-3xl px-4 py-3 rounded-lg transition-all duration-300 ${
                         message.role === 'user'
-                          ? 'bg-purple-600 text-white'
-                          : 'bg-gray-800 text-gray-100'
+                          ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg shadow-purple-500/25'
+                          : 'bg-gradient-to-r from-gray-800 to-gray-700 text-gray-100 border border-purple-500/10 shadow-lg shadow-gray-900/50'
                       }`}
                     >
                       <div className="whitespace-pre-wrap">{message.content}</div>
@@ -298,10 +304,10 @@ export default function Chat() {
         </div>
 
         {/* Input Area */}
-        <div className="shrink-0 p-4 border-t border-gray-800">
+        <div className="shrink-0 p-4 border-t border-gray-800/50 bg-gradient-to-t from-gray-900/50 to-transparent">
           <div className="max-w-2xl mx-auto">
-            <div className="flex items-center space-x-3 bg-gray-800 border border-gray-700 rounded-full px-4 py-3">
-              <label className="p-2 text-gray-400 hover:text-white transition-colors cursor-pointer">
+            <div className="flex items-center space-x-3 bg-gradient-to-r from-gray-800/80 to-gray-700/80 backdrop-blur-sm border border-purple-500/20 rounded-full px-4 py-3 shadow-xl shadow-purple-500/10">
+              <label className="p-2 text-gray-400 hover:text-purple-400 transition-all duration-300 cursor-pointer hover:scale-110">
                 <FileText className="w-5 h-5" />
                 <input
                   type="file"
@@ -328,10 +334,10 @@ export default function Chat() {
               
               <button
                 onClick={toggleListening}
-                className={`p-2 rounded-lg transition-all ${
+                className={`p-2 rounded-lg transition-all duration-300 ${
                   isListening 
-                    ? 'bg-red-600 hover:bg-red-700 text-white' 
-                    : 'text-gray-400 hover:text-white'
+                    ? 'bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-400 hover:to-pink-400 text-white shadow-lg shadow-red-500/25' 
+                    : 'text-gray-400 hover:text-cyan-400 hover:scale-110'
                 }`}
                 title={isListening ? 'Stop listening' : 'Start voice input'}
               >
@@ -341,14 +347,20 @@ export default function Chat() {
               <button
                 onClick={sendMessage}
                 disabled={!messageContent.trim() || isTyping}
-                className="p-2 text-gray-400 hover:text-white disabled:text-gray-600 transition-colors"
+                className={`p-2 rounded-lg transition-all duration-300 ${
+                  messageContent.trim() && !isTyping
+                    ? 'text-cyan-400 hover:text-cyan-300 hover:scale-110 hover:bg-cyan-500/10'
+                    : 'text-gray-600'
+                }`}
               >
                 <Send className="w-5 h-5" />
               </button>
             </div>
             
             {isSpeaking && (
-              <div className="text-center text-green-400 text-sm mt-2">🗣️ Speaking...</div>
+              <div className="text-center text-green-400 text-sm mt-2 animate-pulse">
+                🗣️ <span className="bg-gradient-to-r from-green-400 to-emerald-400 bg-clip-text text-transparent font-medium">Speaking...</span>
+              </div>
             )}
           </div>
         </div>
