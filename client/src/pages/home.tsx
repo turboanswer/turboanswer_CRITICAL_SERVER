@@ -1,9 +1,29 @@
 import { Link } from "wouter";
-import { MessageSquare, Settings, Zap, Brain, Shield } from "lucide-react";
+import { MessageSquare, Settings, Zap, Brain, Shield, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { apiRequest } from '@/lib/queryClient';
 
 export default function Home() {
+  const queryClient = useQueryClient();
+
+  // Logout mutation
+  const logoutMutation = useMutation({
+    mutationFn: () => apiRequest('POST', '/api/logout', {}),
+    onSuccess: () => {
+      localStorage.removeItem('user');
+      localStorage.removeItem('authToken');
+      queryClient.clear();
+      window.location.href = '/login';
+    },
+    onError: () => {
+      localStorage.removeItem('user');
+      localStorage.removeItem('authToken');
+      window.location.href = '/login';
+    },
+  });
+
   return (
     <div className="min-h-screen bg-black text-white p-4">
       <div className="max-w-4xl mx-auto">
@@ -133,6 +153,19 @@ export default function Home() {
               </Button>
             </Link>
           </div>
+        </div>
+
+        {/* Logout Button */}
+        <div className="fixed top-4 right-4">
+          <Button
+            onClick={() => logoutMutation.mutate()}
+            disabled={logoutMutation.isPending}
+            className="bg-red-600 hover:bg-red-700 text-white"
+            size="sm"
+          >
+            <LogOut className="h-4 w-4 mr-2" />
+            {logoutMutation.isPending ? 'Logging out...' : 'Logout'}
+          </Button>
         </div>
       </div>
     </div>

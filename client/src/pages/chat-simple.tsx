@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
-import { Send, Mic, Plus, HelpCircle, DollarSign, Home, Settings, Zap } from 'lucide-react';
+import { Send, Mic, Plus, HelpCircle, DollarSign, Home, Settings, Zap, LogOut } from 'lucide-react';
 import { Link } from 'wouter';
 import { Button } from '@/components/ui/button';
 
@@ -92,6 +92,29 @@ export default function ChatSimple() {
     onError: (error) => {
       console.error('Failed to send message:', error);
       setIsTyping(false);
+    },
+  });
+
+  // Logout mutation
+  const logoutMutation = useMutation({
+    mutationFn: () => apiRequest('POST', '/api/logout', {}),
+    onSuccess: () => {
+      // Clear any stored user data
+      localStorage.removeItem('user');
+      localStorage.removeItem('authToken');
+      
+      // Clear React Query cache
+      queryClient.clear();
+      
+      // Redirect to login page
+      window.location.href = '/login';
+    },
+    onError: (error) => {
+      console.error('Logout failed:', error);
+      // Even if logout fails, clear local data and redirect
+      localStorage.removeItem('user');
+      localStorage.removeItem('authToken');
+      window.location.href = '/login';
     },
   });
 
@@ -215,6 +238,26 @@ export default function ChatSimple() {
               <DollarSign size={16} />
             </button>
           </Link>
+          
+          <button
+            onClick={() => logoutMutation.mutate()}
+            disabled={logoutMutation.isPending}
+            style={{
+              padding: '8px',
+              backgroundColor: '#dc2626',
+              border: 'none',
+              borderRadius: '8px',
+              color: 'white',
+              cursor: logoutMutation.isPending ? 'not-allowed' : 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              opacity: logoutMutation.isPending ? 0.6 : 1
+            }}
+            title={logoutMutation.isPending ? 'Logging out...' : 'Logout'}
+          >
+            <LogOut size={16} />
+          </button>
           
           <button
             onClick={() => {

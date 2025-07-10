@@ -84,6 +84,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post('/api/logout', async (req, res) => {
+    try {
+      // For now, just return success since we're using simple authentication
+      // In a real app, this would destroy the session
+      res.json({ success: true, message: 'Logged out successfully' });
+    } catch (error) {
+      console.error('Logout error:', error);
+      res.status(500).json({ error: 'Logout failed' });
+    }
+  });
+
   // Create a new conversation
   app.post("/api/conversations", async (req, res) => {
     try {
