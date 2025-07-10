@@ -272,7 +272,7 @@ export default function Support() {
                 Review our comprehensive privacy policy and terms of use
               </p>
               <a 
-                href="https://turboanswer.com" 
+                href="https://yourusername.github.io/turboanswer-privacy/" 
                 target="_blank" 
                 rel="noopener noreferrer"
                 style={{
@@ -290,7 +290,7 @@ export default function Support() {
                 onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#2563eb'}
                 onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#3b82f6'}
               >
-                📋 Privacy Policy (turboanswer.com)
+                📋 Privacy Policy (GitHub Pages)
               </a>
               <Link
                 to="/privacy-policy"
