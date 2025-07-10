@@ -89,7 +89,7 @@ export class ImageGenerationService {
       } else if (error.status === 401) {
         return {
           success: false,
-          error: "Invalid OpenAI API key. Please check your credentials."
+          error: "OpenAI API key authentication failed. Please check your OPENAI_API_KEY in Replit Secrets."
         };
       } else {
         return {
@@ -101,7 +101,20 @@ export class ImageGenerationService {
   }
 
   async isImageGenerationRequest(message: string): Promise<boolean> {
-    // Detect image generation requests
+    // First check if it's a video request - if so, don't treat as image
+    const videoKeywords = [
+      /\b(generate|create|make|produce)\s+(a\s+)?(video|movie|clip|animation)\b/i,
+      /\bvideo of\b/i,
+      /\bmovie of\b/i,
+      /\banimation of\b/i
+    ];
+    
+    const isVideoRequest = videoKeywords.some(pattern => pattern.test(message));
+    if (isVideoRequest) {
+      return false; // Don't process as image if it's a video request
+    }
+
+    // Detect image generation requests (only if not a video request)
     const imageKeywords = [
       /\b(generate|create|make|draw|design|build)\s+(an?\s+)?(image|picture|photo|artwork|illustration|drawing|painting|sketch|graphic|visual)\b/i,
       /\b(show me|give me|I want|can you make)\s+.*\b(image|picture|photo|artwork|illustration|drawing|painting)\b/i,
@@ -165,7 +178,15 @@ export class ImageGenerationService {
 
 The image should appear above. If you'd like me to generate another version or make changes, just let me know!`;
     } else {
-      return `I'm sorry, I couldn't generate the image. ${result.error || 'Please try again with a different description.'}`;
+      return `🎨 **Image Generation Request**
+
+I'd love to create an image of "${imagePrompt}" for you!
+
+**Issue:** ${result.error || 'Please try again with a different description.'}
+
+**Note:** Image generation requires a valid OpenAI API key with DALL-E access. Please ensure your OPENAI_API_KEY is properly configured in Replit Secrets.
+
+For now, I can help with text-based responses, analysis, and planning. Would you like me to describe what the image might look like instead?`;
     }
   }
 }

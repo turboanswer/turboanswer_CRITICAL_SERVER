@@ -54,11 +54,11 @@ export class VideoGenerationService {
 
   private async simulateVideoGeneration(request: VideoGenerationRequest): Promise<VideoGenerationResult> {
     // Simulate processing time
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    await new Promise(resolve => setTimeout(resolve, 1000));
 
     // For demonstration, we'll provide information about video generation
     return {
-      success: true,
+      success: false, // Set to false since it's not actually generating a video
       error: "Video generation is currently in development. This feature will be available soon with integration to leading AI video platforms like Runway ML, Stable Video Diffusion, and Pika Labs.",
       provider: "simulation"
     };
