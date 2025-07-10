@@ -3,7 +3,9 @@ import { createServer, type Server } from "http";
 import Stripe from "stripe";
 import multer from "multer";
 import { storage } from "./storage";
-import { insertConversationSchema, insertMessageSchema } from "@shared/schema";
+import { db } from "./db";
+import { insertConversationSchema, insertMessageSchema, users } from "@shared/schema";
+import { eq } from "drizzle-orm";
 import { generateAIResponse } from "./services/multi-ai";
 import { 
   extractTextFromFile, 
@@ -359,6 +361,167 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error('Subscription error:', error);
       return res.status(400).json({ error: { message: error.message } });
+    }
+  });
+
+  // Create demo employee account (for setup purposes)
+  app.post('/api/setup-employee', async (req, res) => {
+    try {
+      const { username, password, email } = req.body;
+      
+      if (!username || !password) {
+        return res.status(400).json({ message: 'Username and password required' });
+      }
+
+      // Check if employee already exists
+      const existingUser = await storage.getUserByUsername(username);
+      if (existingUser) {
+        return res.status(400).json({ message: 'Username already exists' });
+      }
+
+      // Create employee user
+      const employee = await storage.createUser({
+        username,
+        password,
+        email: email || null
+      });
+
+      // Update user to be an employee
+      const [updatedEmployee] = await db
+        .update(users)
+        .set({ isEmployee: true })
+        .where(eq(users.id, employee.id))
+        .returning();
+
+      res.json({ 
+        message: 'Employee account created successfully',
+        employee: {
+          id: updatedEmployee.id,
+          username: updatedEmployee.username,
+          email: updatedEmployee.email
+        }
+      });
+    } catch (error: any) {
+      console.error('Setup employee error:', error);
+      res.status(500).json({ message: 'Failed to create employee account' });
+    }
+  });
+
+  // Employee Authentication Routes
+  app.post('/api/employee/login', async (req, res) => {
+    try {
+      const { username, password } = req.body;
+      
+      if (!username || !password) {
+        return res.status(400).json({ message: 'Username and password required' });
+      }
+
+      const employee = await storage.validateEmployeeCredentials(username, password);
+      
+      if (!employee) {
+        return res.status(401).json({ message: 'Invalid employee credentials' });
+      }
+
+      // In a real app, you'd set up proper session management here
+      res.json({ 
+        message: 'Employee login successful',
+        employee: {
+          id: employee.id,
+          username: employee.username,
+          email: employee.email
+        }
+      });
+    } catch (error: any) {
+      console.error('Employee login error:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  });
+
+  // Get all users (Employee only)
+  app.get('/api/employee/users', async (req, res) => {
+    try {
+      // In a real app, verify employee authentication here
+      const users = await storage.getAllUsers();
+      
+      // Remove sensitive data like passwords
+      const sanitizedUsers = users.map(user => ({
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        subscriptionTier: user.subscriptionTier,
+        subscriptionStatus: user.subscriptionStatus,
+        isBanned: user.isBanned,
+        isFlagged: user.isFlagged,
+        flagReason: user.flagReason,
+        banReason: user.banReason,
+        createdAt: user.createdAt,
+        lastLoginAt: user.lastLoginAt
+      }));
+      
+      res.json(sanitizedUsers);
+    } catch (error: any) {
+      console.error('Get users error:', error);
+      res.status(500).json({ message: 'Failed to fetch users' });
+    }
+  });
+
+  // Ban user (Employee only)
+  app.post('/api/employee/users/:id/ban', async (req, res) => {
+    try {
+      const userId = parseInt(req.params.id);
+      const { reason } = req.body;
+      
+      if (!reason || !reason.trim()) {
+        return res.status(400).json({ message: 'Ban reason is required' });
+      }
+      
+      const user = await storage.banUser(userId, reason.trim());
+      res.json({ message: 'User banned successfully', user: { id: user.id, username: user.username } });
+    } catch (error: any) {
+      console.error('Ban user error:', error);
+      res.status(500).json({ message: error.message || 'Failed to ban user' });
+    }
+  });
+
+  // Unban user (Employee only)
+  app.post('/api/employee/users/:id/unban', async (req, res) => {
+    try {
+      const userId = parseInt(req.params.id);
+      const user = await storage.unbanUser(userId);
+      res.json({ message: 'User unbanned successfully', user: { id: user.id, username: user.username } });
+    } catch (error: any) {
+      console.error('Unban user error:', error);
+      res.status(500).json({ message: error.message || 'Failed to unban user' });
+    }
+  });
+
+  // Flag user (Employee only)
+  app.post('/api/employee/users/:id/flag', async (req, res) => {
+    try {
+      const userId = parseInt(req.params.id);
+      const { reason } = req.body;
+      
+      if (!reason || !reason.trim()) {
+        return res.status(400).json({ message: 'Flag reason is required' });
+      }
+      
+      const user = await storage.flagUser(userId, reason.trim());
+      res.json({ message: 'User flagged successfully', user: { id: user.id, username: user.username } });
+    } catch (error: any) {
+      console.error('Flag user error:', error);
+      res.status(500).json({ message: error.message || 'Failed to flag user' });
+    }
+  });
+
+  // Unflag user (Employee only)
+  app.post('/api/employee/users/:id/unflag', async (req, res) => {
+    try {
+      const userId = parseInt(req.params.id);
+      const user = await storage.unflagUser(userId);
+      res.json({ message: 'User unflagged successfully', user: { id: user.id, username: user.username } });
+    } catch (error: any) {
+      console.error('Unflag user error:', error);
+      res.status(500).json({ message: error.message || 'Failed to unflag user' });
     }
   });
 

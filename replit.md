@@ -83,6 +83,15 @@ Subscription preference: Lifetime free premium access through promo code system 
 - `POST /api/create-demo-user` - Create demo user for testing promo codes
 - `POST /api/apply-promo` - Apply promo code for subscription upgrades
 
+### Employee Management API Endpoints
+- `POST /api/setup-employee` - Create employee account (setup only)
+- `POST /api/employee/login` - Employee authentication
+- `GET /api/employee/users` - Get all platform users (employee only)
+- `POST /api/employee/users/:id/ban` - Ban user with reason (employee only)
+- `POST /api/employee/users/:id/unban` - Remove user ban (employee only)
+- `POST /api/employee/users/:id/flag` - Flag user with reason (employee only)
+- `POST /api/employee/users/:id/unflag` - Remove user flag (employee only)
+
 ### Frontend Pages
 - **Chat Page** (`/`): Main chat interface with conversation management, document upload, and user authentication
 - **Register Page** (`/register`): User account creation with username, email, and password
@@ -90,6 +99,8 @@ Subscription preference: Lifetime free premium access through promo code system 
 - **Pricing Page** (`/pricing`): Modern subscription plans with promo code system for lifetime access
 - **Subscribe Page** (`/subscribe`): Stripe-powered subscription upgrade to Pro plan
 - **Support Page** (`/support`): Comprehensive customer support with contact information (turboaswer@hotmail.com, (201) 691-8466)
+- **Employee Login** (`/employee/login`): Secure employee authentication portal
+- **Employee Dashboard** (`/employee/dashboard`): User management interface with ban/flag capabilities
 - **404 Page**: Error handling for unknown routes
 
 ### MAXIMUM POWER AI System: The Ultimate AI Assistant (Enhanced 2025)

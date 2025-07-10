@@ -12,6 +12,13 @@ export const users = pgTable("users", {
   subscriptionStatus: text("subscription_status").default("free"), // 'free', 'active', 'canceled', 'past_due'
   subscriptionTier: text("subscription_tier").default("free"), // 'free', 'pro', 'premium'
   preferredModel: text("preferred_model").default("gemini-2.0-flash-exp"), // Default to maximum performance model
+  isEmployee: boolean("is_employee").default(false), // Employee access flag
+  isBanned: boolean("is_banned").default(false), // User ban status
+  isFlagged: boolean("is_flagged").default(false), // User flag status
+  flagReason: text("flag_reason"), // Reason for flagging
+  banReason: text("ban_reason"), // Reason for banning
+  createdAt: timestamp("created_at").defaultNow(),
+  lastLoginAt: timestamp("last_login_at"),
 });
 
 export const conversations = pgTable("conversations", {

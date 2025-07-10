@@ -13,6 +13,14 @@ export interface IStorage {
   validateUserCredentials(username: string, password: string): Promise<User | null>;
   applyPromoCode(userId: number, promoCode: string): Promise<{ success: boolean; message: string; user?: User }>;
   
+  // Employee management methods
+  getAllUsers(): Promise<User[]>;
+  banUser(userId: number, reason: string): Promise<User>;
+  unbanUser(userId: number): Promise<User>;
+  flagUser(userId: number, reason: string): Promise<User>;
+  unflagUser(userId: number): Promise<User>;
+  validateEmployeeCredentials(username: string, password: string): Promise<User | null>;
+  
   createConversation(conversation: InsertConversation): Promise<Conversation>;
   getConversation(id: number): Promise<Conversation | undefined>;
   updateConversation(id: number, updates: Partial<Conversation>): Promise<Conversation | undefined>;
@@ -191,6 +199,73 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       return { success: false, message: 'Failed to apply promo code' };
     }
+  }
+
+  // Employee management methods implementation
+  async getAllUsers(): Promise<User[]> {
+    return await db.select().from(users).orderBy(users.createdAt);
+  }
+
+  async banUser(userId: number, reason: string): Promise<User> {
+    const [user] = await db
+      .update(users)
+      .set({ 
+        isBanned: true, 
+        banReason: reason,
+        isFlagged: false, // Remove flag when banned
+        flagReason: null
+      })
+      .where(eq(users.id, userId))
+      .returning();
+    if (!user) throw new Error("User not found");
+    return user;
+  }
+
+  async unbanUser(userId: number): Promise<User> {
+    const [user] = await db
+      .update(users)
+      .set({ 
+        isBanned: false, 
+        banReason: null 
+      })
+      .where(eq(users.id, userId))
+      .returning();
+    if (!user) throw new Error("User not found");
+    return user;
+  }
+
+  async flagUser(userId: number, reason: string): Promise<User> {
+    const [user] = await db
+      .update(users)
+      .set({ 
+        isFlagged: true, 
+        flagReason: reason 
+      })
+      .where(eq(users.id, userId))
+      .returning();
+    if (!user) throw new Error("User not found");
+    return user;
+  }
+
+  async unflagUser(userId: number): Promise<User> {
+    const [user] = await db
+      .update(users)
+      .set({ 
+        isFlagged: false, 
+        flagReason: null 
+      })
+      .where(eq(users.id, userId))
+      .returning();
+    if (!user) throw new Error("User not found");
+    return user;
+  }
+
+  async validateEmployeeCredentials(username: string, password: string): Promise<User | null> {
+    const [user] = await db.select().from(users).where(eq(users.username, username));
+    if (user && user.password === password && user.isEmployee) {
+      return user;
+    }
+    return null;
   }
 }
 
