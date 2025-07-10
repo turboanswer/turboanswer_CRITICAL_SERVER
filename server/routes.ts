@@ -305,16 +305,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const trialEndDate = new Date();
       trialEndDate.setDate(trialEndDate.getDate() + 5); // 5 days from now
 
-      await storage.updateUserSubscription(user.id, 'trial_active', 'pro');
+      await storage.updateUserSubscription(user.id, 'trial_active', 'lifetime');
 
       res.json({
         success: true,
-        message: 'Free trial activated! You have 5 days of premium access.',
+        message: 'Free Lifetime Pro trial activated! You have 5 days of full premium access.',
         trialEndDate: trialEndDate.toISOString(),
+        trialType: 'lifetime',
         user: {
           id: user.id,
           username: user.username,
-          subscriptionTier: 'pro',
+          subscriptionTier: 'lifetime',
           subscriptionStatus: 'trial'
         }
       });

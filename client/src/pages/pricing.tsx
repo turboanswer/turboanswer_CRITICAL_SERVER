@@ -60,19 +60,19 @@ const plans: PricingPlan[] = [
   },
   {
     id: 'trial',
-    name: '5-Day Trial',
+    name: '5-Day Lifetime Trial',
     price: 'FREE',
     period: '5 days',
-    description: 'Try Turbo AI Pro features risk-free for 5 days',
+    description: 'Try Lifetime Pro features risk-free for 5 days',
     features: [
-      'Full access to all Pro features',
+      'Full access to Lifetime Pro features',
       'Unlimited messages for 5 days',
-      'All premium AI models',
+      'All premium AI models (GPT-4, Claude Opus, Gemini Pro)',
       'Priority response time',
       'Advanced voice features',
+      'Early access to new AI models',
       'No credit card required',
-      'Cancel anytime',
-      'Upgrade to lifetime after trial'
+      'Upgrade to Lifetime Pro after trial ($159.99)'
     ],
     popular: true
   },
@@ -684,8 +684,8 @@ export default function Pricing() {
                       
                       if (result.success) {
                         toast({
-                          title: "Trial Activated! 🎉",
-                          description: "You now have 5 days of premium access. Enjoy unlimited AI conversations!",
+                          title: "Lifetime Pro Trial Activated! 🎉",
+                          description: "You now have 5 days of full Lifetime Pro access. Enjoy all premium features!",
                         });
                         window.location.href = '/';
                       } else {
