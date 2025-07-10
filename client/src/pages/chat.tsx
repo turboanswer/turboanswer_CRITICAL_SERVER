@@ -797,24 +797,22 @@ export default function Chat() {
                 value={messageContent}
                 onChange={(e) => setMessageContent(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder={isListening ? "Listening..." : "Ask me anything or click the mic to speak..."}
-                className={`w-full px-4 py-3 pr-20 text-zinc-100 placeholder-zinc-500 bg-zinc-900 border border-zinc-700 rounded-2xl resize-none focus:ring-2 focus:ring-purple-500 focus:border-transparent min-h-[48px] ${isListening ? 'ring-2 ring-red-400 border-red-400' : ''}`}
+                placeholder="Ask me anything or click the camera to start live feed..."
+                className={`w-full px-4 py-3 pr-20 text-zinc-100 placeholder-zinc-500 bg-zinc-900 border border-zinc-700 rounded-2xl resize-none focus:ring-2 focus:ring-purple-500 focus:border-transparent min-h-[48px] ${showLiveCamera ? 'ring-2 ring-red-400 border-red-400' : ''}`}
                 rows={1}
               />
-              {isRecognitionSupported && (
-                <Button
-                  onClick={isListening ? stopListening : startListening}
-                  disabled={sendMessageMutation.isPending}
-                  className={`absolute right-11 bottom-2 w-8 h-8 rounded-full flex items-center justify-center focus:ring-2 focus:ring-offset-2 focus:ring-offset-zinc-900 disabled:opacity-50 disabled:cursor-not-allowed p-0 ${
-                    isListening 
-                      ? 'bg-red-500 text-white hover:bg-red-600 focus:ring-red-500' 
-                      : 'bg-zinc-700 text-zinc-300 hover:bg-zinc-600 focus:ring-zinc-500'
-                  }`}
-                  title={isListening ? "Stop listening" : "Start voice input"}
-                >
-                  {isListening ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
-                </Button>
-              )}
+              <Button
+                onClick={() => setShowLiveCamera(!showLiveCamera)}
+                disabled={sendMessageMutation.isPending}
+                className={`absolute right-11 bottom-2 w-8 h-8 rounded-full flex items-center justify-center focus:ring-2 focus:ring-offset-2 focus:ring-offset-zinc-900 disabled:opacity-50 disabled:cursor-not-allowed p-0 ${
+                  showLiveCamera 
+                    ? 'bg-red-500 text-white hover:bg-red-600 focus:ring-red-500' 
+                    : 'bg-zinc-700 text-zinc-300 hover:bg-zinc-600 focus:ring-zinc-500'
+                }`}
+                title={showLiveCamera ? "Stop live camera" : "Start live camera feed"}
+              >
+                <Camera className="h-4 w-4" />
+              </Button>
               <Button
                 onClick={handleSendMessage}
                 disabled={!messageContent.trim() || sendMessageMutation.isPending}
@@ -830,9 +828,7 @@ export default function Chat() {
         <div className="flex items-center justify-between mt-2 px-1">
           <div className="flex items-center space-x-4 text-xs text-gray-500">
             <span>Press Enter to send</span>
-            {isRecognitionSupported && (
-              <span>{isListening ? 'Listening for voice...' : 'Voice commands available'}</span>
-            )}
+            <span>{showLiveCamera ? 'Live camera active...' : 'Live camera available'}</span>
             <span>Secure & Private</span>
           </div>
           <div className="text-xs text-gray-400">
