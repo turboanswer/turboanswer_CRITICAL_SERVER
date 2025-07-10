@@ -59,6 +59,24 @@ const plans: PricingPlan[] = [
     priceId: 'price_monthly_699' // This should be set in Stripe dashboard
   },
   {
+    id: 'trial',
+    name: '5-Day Trial',
+    price: 'FREE',
+    period: '5 days',
+    description: 'Try Turbo AI Pro features risk-free for 5 days',
+    features: [
+      'Full access to all Pro features',
+      'Unlimited messages for 5 days',
+      'All premium AI models',
+      'Priority response time',
+      'Advanced voice features',
+      'No credit card required',
+      'Cancel anytime',
+      'Upgrade to lifetime after trial'
+    ],
+    popular: true
+  },
+  {
     id: 'lifetime',
     name: 'Lifetime Pro',
     price: '$159.99',
@@ -658,11 +676,40 @@ export default function Pricing() {
               </button>
             ) : (
               <button
-                onClick={() => setSelectedPlan(plan)}
+                onClick={async () => {
+                  if (plan.id === 'trial') {
+                    try {
+                      const response = await apiRequest('POST', '/api/start-trial', {});
+                      const result = await response.json();
+                      
+                      if (result.success) {
+                        toast({
+                          title: "Trial Activated! 🎉",
+                          description: "You now have 5 days of premium access. Enjoy unlimited AI conversations!",
+                        });
+                        window.location.href = '/';
+                      } else {
+                        toast({
+                          title: "Trial Error",
+                          description: result.error || "Unable to start trial",
+                          variant: "destructive",
+                        });
+                      }
+                    } catch (error: any) {
+                      toast({
+                        title: "Error",
+                        description: "Failed to activate trial. Please try again.",
+                        variant: "destructive",
+                      });
+                    }
+                  } else {
+                    setSelectedPlan(plan);
+                  }
+                }}
                 style={{
                   width: '100%',
                   padding: '16px',
-                  backgroundColor: plan.popular ? '#3b82f6' : '#2563eb',
+                  backgroundColor: plan.id === 'trial' ? '#10b981' : plan.popular ? '#3b82f6' : '#2563eb',
                   color: 'white',
                   border: 'none',
                   borderRadius: '8px',
@@ -671,7 +718,7 @@ export default function Pricing() {
                   cursor: 'pointer'
                 }}
               >
-                Choose {plan.name}
+                {plan.id === 'trial' ? '🚀 Start Free Trial' : `Choose ${plan.name}`}
               </button>
             )}
           </div>

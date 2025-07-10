@@ -282,6 +282,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // 5-Day Trial Subscription endpoint
+  app.post('/api/start-trial', async (req, res) => {
+    try {
+      // For demo purposes, create a demo user
+      let user = await storage.getUser(1);
+      if (!user) {
+        user = await storage.createUser({
+          username: "trial_user",
+          password: "trial_password",
+          email: "trial@turboAnswer.com"
+        });
+      }
+
+      // Check if user already had a trial
+      if (user.subscriptionTier === 'trial_used' || user.subscriptionStatus === 'trial_expired') {
+        return res.status(400).json({ error: 'Trial already used. Please upgrade to continue.' });
+      }
+
+      // Set trial subscription (no Stripe needed for free trial)
+      const trialStartDate = new Date();
+      const trialEndDate = new Date();
+      trialEndDate.setDate(trialEndDate.getDate() + 5); // 5 days from now
+
+      await storage.updateUserSubscription(user.id, 'trial_active', 'pro');
+
+      res.json({
+        success: true,
+        message: 'Free trial activated! You have 5 days of premium access.',
+        trialEndDate: trialEndDate.toISOString(),
+        user: {
+          id: user.id,
+          username: user.username,
+          subscriptionTier: 'pro',
+          subscriptionStatus: 'trial'
+        }
+      });
+
+    } catch (error: any) {
+      console.error('Trial activation error:', error);
+      return res.status(500).json({ error: error.message });
+    }
+  });
+
   // Legacy Pro plan endpoint
   app.post('/api/get-or-create-subscription', async (req, res) => {
     try {
