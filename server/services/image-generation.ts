@@ -22,10 +22,27 @@ export interface ImageGenerationResult {
 export class ImageGenerationService {
   async generateImage(request: ImageGenerationRequest): Promise<ImageGenerationResult> {
     try {
+      // Clean and validate the prompt
+      const cleanPrompt = request.prompt.trim();
+      if (cleanPrompt.length < 5) {
+        return {
+          success: false,
+          error: "Image prompt is too short. Please provide more details."
+        };
+      }
+
+      // Ensure prompt doesn't exceed OpenAI's limits
+      const maxPromptLength = 1000;
+      const finalPrompt = cleanPrompt.length > maxPromptLength 
+        ? cleanPrompt.substring(0, maxPromptLength) 
+        : cleanPrompt;
+
+      console.log(`[Image Generation] Generating image with prompt: "${finalPrompt}"`);
+
       const response = await openai.images.generate({
         model: "dall-e-3",
-        prompt: request.prompt,
-        n: request.n || 1,
+        prompt: finalPrompt,
+        n: 1, // DALL-E 3 only supports n=1
         size: request.size || "1024x1024",
         quality: request.quality || "standard",
         style: request.style || "vivid",
@@ -33,34 +50,51 @@ export class ImageGenerationService {
 
       const imageData = response.data[0];
       
+      console.log(`[Image Generation] Successfully generated image: ${imageData.url}`);
+      
       return {
         success: true,
         imageUrl: imageData.url,
-        revisedPrompt: imageData.revised_prompt || request.prompt,
+        revisedPrompt: imageData.revised_prompt || finalPrompt,
       };
     } catch (error: any) {
       console.error("Image generation error:", error);
       
       // Handle specific OpenAI API errors
-      if (error.code === 'content_policy_violation') {
+      if (error.type === 'content_policy_violation' || error.code === 'content_policy_violation') {
         return {
           success: false,
           error: "Image request violates content policy. Please try a different prompt."
         };
-      } else if (error.code === 'rate_limit_exceeded') {
+      } else if (error.type === 'rate_limit_exceeded' || error.code === 'rate_limit_exceeded') {
         return {
           success: false,
           error: "Rate limit exceeded. Please try again in a moment."
         };
-      } else if (error.code === 'insufficient_quota') {
+      } else if (error.type === 'insufficient_quota' || error.code === 'insufficient_quota') {
         return {
           success: false,
           error: "API quota exceeded. Please check your OpenAI account."
         };
+      } else if (error.type === 'image_generation_user_error') {
+        return {
+          success: false,
+          error: "Invalid image request. Please try a different prompt or check your settings."
+        };
+      } else if (error.status === 400) {
+        return {
+          success: false,
+          error: "Invalid request format. Please try a simpler prompt."
+        };
+      } else if (error.status === 401) {
+        return {
+          success: false,
+          error: "Invalid OpenAI API key. Please check your credentials."
+        };
       } else {
         return {
           success: false,
-          error: `Image generation failed: ${error.message || 'Unknown error'}`
+          error: `Image generation failed: ${error.message || 'Please try again with a different prompt'}`
         };
       }
     }
