@@ -226,10 +226,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         'price_yearly_14999': {
           amount: 14999, // $149.99
           tier: 'pro'
-        },
-        'price_lifetime_29999': {
-          amount: 29999, // $299.99
-          tier: 'lifetime'
         }
       };
 
@@ -249,43 +245,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         await storage.updateStripeCustomerId(user.id, stripeCustomerId);
       }
 
-      // Create subscription or one-time payment
-      let subscription;
-      if (priceId === 'price_lifetime_29999') {
-        // Create one-time payment for lifetime
-        const paymentIntent = await stripe.paymentIntents.create({
-          amount: priceConfig.amount,
-          currency: 'usd',
-          customer: stripeCustomerId,
-          description: 'Turbo Answer Lifetime Pro',
-        });
-        
-        // Update user to lifetime tier immediately
-        await storage.updateUserSubscription(user.id, 'active', priceConfig.tier);
-        
-        return res.json({
-          clientSecret: paymentIntent.client_secret,
-          isLifetime: true
-        });
-      } else {
-        // Create recurring subscription
-        const interval = priceId.includes('yearly') ? 'year' : 'month';
-        subscription = await stripe.subscriptions.create({
-          customer: stripeCustomerId,
-          items: [{
-            price_data: {
-              currency: 'usd',
-              product: `prod_turbo_answer_${planId}`,
-              unit_amount: priceConfig.amount,
-              recurring: {
-                interval: interval
-              }
+      // Create recurring subscription
+      const interval = priceId.includes('yearly') ? 'year' : 'month';
+      const subscription = await stripe.subscriptions.create({
+        customer: stripeCustomerId,
+        items: [{
+          price_data: {
+            currency: 'usd',
+            product: `prod_turbo_answer_${planId}`,
+            unit_amount: priceConfig.amount,
+            recurring: {
+              interval: interval
             }
-          }],
-          payment_behavior: 'default_incomplete',
-          expand: ['latest_invoice.payment_intent'],
-        });
-      }
+          }
+        }],
+        payment_behavior: 'default_incomplete',
+        expand: ['latest_invoice.payment_intent'],
+      });
 
       // Update user subscription info
       await storage.updateUserStripeInfo(user.id, stripeCustomerId, subscription.id);

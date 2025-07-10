@@ -93,24 +93,6 @@ const plans: PricingPlan[] = [
       'API access (coming soon)'
     ],
     priceId: 'price_yearly_14999' // This should be set in Stripe dashboard
-  },
-  {
-    id: 'lifetime',
-    name: 'Lifetime Pro',
-    price: '$299.99',
-    period: 'one-time',
-    description: 'Ultimate value - pay once, use forever',
-    features: [
-      'Everything in Pro Monthly',
-      'Lifetime access to all features',
-      'No recurring payments ever',
-      'Future feature updates included',
-      'Premium priority support',
-      'Early access to new AI models',
-      'Advanced customization options',
-      'API access (coming soon)'
-    ],
-    priceId: 'price_lifetime_29999' // This should be set in Stripe dashboard
   }
 ];
 
@@ -186,7 +168,7 @@ function SubscribeForm({ plan }: { plan: PricingPlan }) {
       const response = await apiRequest('POST', '/api/create-payment-intent', {
         planId: plan.id,
         priceId: plan.priceId,
-        amount: plan.id === 'monthly' ? 999 : plan.id === 'yearly' ? 14999 : 29999 // Amount in cents
+        amount: plan.id === 'monthly' ? 999 : 14999 // Amount in cents
       });
 
       const { clientSecret } = response;
