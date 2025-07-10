@@ -1040,6 +1040,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Video generation endpoint 
+  app.post("/api/generate-video", async (req, res) => {
+    try {
+      const { prompt, duration = 5, resolution = "1080p", style = "realistic" } = req.body;
+      
+      if (!prompt) {
+        return res.status(400).json({ error: "Video prompt is required" });
+      }
+
+      const { videoGeneration } = await import("./services/video-generation");
+      
+      const result = await videoGeneration.generateVideo({
+        prompt,
+        duration,
+        resolution,
+        style
+      });
+
+      if (result.success) {
+        res.json({
+          success: true,
+          videoUrl: result.videoUrl,
+          thumbnailUrl: result.thumbnailUrl,
+          duration: result.duration,
+          revisedPrompt: result.revisedPrompt,
+          originalPrompt: prompt,
+          provider: result.provider
+        });
+      } else {
+        res.status(400).json({
+          success: false,
+          error: result.error
+        });
+      }
+    } catch (error: any) {
+      console.error("Video generation API error:", error);
+      res.status(500).json({
+        success: false,
+        error: "Video generation failed: " + error.message
+      });
+    }
+  });
+
   const httpServer = createServer(app);
   // Widget API endpoints for business integration
   app.post('/api/widget/conversation', async (req, res) => {

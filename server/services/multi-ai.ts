@@ -16,6 +16,7 @@ import {
 import { emotionalAI } from './emotional-ai';
 import { conversationalAI } from './conversational-ai';
 import { imageGeneration } from './image-generation';
+import { videoGeneration } from './video-generation';
 import { detectLanguage, getLanguageConfig, formatResponseForLanguage } from './language-detector';
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import OpenAI from "openai";
@@ -424,6 +425,12 @@ Coordinates: ${locationData.latitude}°, ${locationData.longitude}°`;
       } else {
         return getTimeZoneInfo();
       }
+    }
+
+    // Check for video generation requests - AI VIDEO CREATION
+    if (await videoGeneration.isVideoGenerationRequest(userMessage)) {
+      console.log(`[Video Generation] Detected video generation request`);
+      return await videoGeneration.generateVideoResponse(userMessage);
     }
 
     // Check for image generation requests - DALL-E POWERED IMAGE CREATION
