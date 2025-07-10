@@ -999,6 +999,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Image generation endpoint using DALL-E
+  app.post("/api/generate-image", async (req, res) => {
+    try {
+      const { prompt, size = "1024x1024", quality = "hd", style = "vivid" } = req.body;
+      
+      if (!prompt) {
+        return res.status(400).json({ error: "Image prompt is required" });
+      }
+
+      const { imageGeneration } = await import("./services/image-generation");
+      
+      const result = await imageGeneration.generateImage({
+        prompt,
+        size,
+        quality,
+        style,
+        n: 1
+      });
+
+      if (result.success) {
+        res.json({
+          success: true,
+          imageUrl: result.imageUrl,
+          revisedPrompt: result.revisedPrompt,
+          originalPrompt: prompt
+        });
+      } else {
+        res.status(400).json({
+          success: false,
+          error: result.error
+        });
+      }
+    } catch (error: any) {
+      console.error("Image generation API error:", error);
+      res.status(500).json({
+        success: false,
+        error: "Image generation failed: " + error.message
+      });
+    }
+  });
+
   const httpServer = createServer(app);
   // Widget API endpoints for business integration
   app.post('/api/widget/conversation', async (req, res) => {

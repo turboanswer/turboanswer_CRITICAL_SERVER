@@ -15,6 +15,7 @@ import {
 } from "./weather-location";
 import { emotionalAI } from './emotional-ai';
 import { conversationalAI } from './conversational-ai';
+import { imageGeneration } from './image-generation';
 import { detectLanguage, getLanguageConfig, formatResponseForLanguage } from './language-detector';
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import OpenAI from "openai";
@@ -423,6 +424,12 @@ Coordinates: ${locationData.latitude}°, ${locationData.longitude}°`;
       } else {
         return getTimeZoneInfo();
       }
+    }
+
+    // Check for image generation requests - DALL-E POWERED IMAGE CREATION
+    if (await imageGeneration.isImageGenerationRequest(userMessage)) {
+      console.log(`[Image Generation] Detected image generation request`);
+      return await imageGeneration.generateImageResponse(userMessage);
     }
     
     // Skip ultra-fast mode for questions that need proper AI responses
