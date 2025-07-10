@@ -81,9 +81,33 @@ export default function Simple() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-gray-600">
-              Add the code to your website before the closing &lt;/body&gt; tag.
-            </p>
+            <div className="space-y-4">
+              <p className="text-gray-600 mb-4">
+                Add the code to your website before the closing &lt;/body&gt; tag:
+              </p>
+              
+              <div className="grid md:grid-cols-2 gap-4">
+                <div className="p-4 border rounded-lg">
+                  <h4 className="font-semibold mb-2">WordPress</h4>
+                  <p className="text-sm text-gray-600">Appearance → Theme Editor → footer.php</p>
+                </div>
+                
+                <div className="p-4 border rounded-lg">
+                  <h4 className="font-semibold mb-2">Shopify</h4>
+                  <p className="text-sm text-gray-600">Online Store → Themes → Edit Code → theme.liquid</p>
+                </div>
+                
+                <div className="p-4 border rounded-lg">
+                  <h4 className="font-semibold mb-2">Squarespace</h4>
+                  <p className="text-sm text-gray-600">Settings → Advanced → Code Injection → Footer</p>
+                </div>
+                
+                <div className="p-4 border rounded-lg">
+                  <h4 className="font-semibold mb-2">Wix</h4>
+                  <p className="text-sm text-gray-600">Settings → Custom Code → Add Custom Code</p>
+                </div>
+              </div>
+            </div>
           </CardContent>
         </Card>
 

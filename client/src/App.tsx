@@ -22,6 +22,7 @@ import PrivacyPolicy from "@/pages/privacy-policy";
 import Business from "@/pages/business";
 import Integration from "@/pages/integration";
 import Simple from "@/pages/simple";
+import WhereToAdd from "@/pages/where-to-add";
 
 function Router() {
   return (
@@ -42,6 +43,7 @@ function Router() {
       <Route path="/business" component={Business} />
       <Route path="/integration" component={Integration} />
       <Route path="/simple" component={Simple} />
+      <Route path="/where-to-add" component={WhereToAdd} />
       <Route component={NotFound} />
     </Switch>
   );
