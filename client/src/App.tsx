@@ -18,6 +18,7 @@ import Pricing from "@/pages/pricing";
 import Support from "@/pages/support";
 import EmployeeLogin from "@/pages/employee-login";
 import EmployeeDashboard from "@/pages/employee-dashboard";
+import PrivacyPolicy from "@/pages/privacy-policy";
 
 function Router() {
   return (
@@ -34,6 +35,7 @@ function Router() {
       <Route path="/support" component={Support} />
       <Route path="/employee/login" component={EmployeeLogin} />
       <Route path="/employee/dashboard" component={EmployeeDashboard} />
+      <Route path="/privacy-policy" component={PrivacyPolicy} />
       <Route component={NotFound} />
     </Switch>
   );

@@ -255,6 +255,40 @@ export default function Support() {
                 Yes, you can cancel anytime. Contact our support team for assistance with subscription management.
               </p>
             </div>
+            
+            {/* Privacy Policy Link */}
+            <div style={{
+              padding: '16px',
+              backgroundColor: '#1a1a1a',
+              borderRadius: '8px',
+              textAlign: 'center',
+              marginTop: '16px'
+            }}>
+              <h4 style={{ color: 'white', marginBottom: '8px', fontSize: '16px', fontWeight: '600' }}>
+                Privacy Policy & Terms
+              </h4>
+              <p style={{ color: '#9ca3af', fontSize: '14px', marginBottom: '12px' }}>
+                Review our comprehensive privacy policy and terms of use
+              </p>
+              <Link
+                to="/privacy-policy"
+                style={{
+                  display: 'inline-block',
+                  padding: '8px 16px',
+                  backgroundColor: '#3b82f6',
+                  color: 'white',
+                  textDecoration: 'none',
+                  borderRadius: '6px',
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  transition: 'background-color 0.2s'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#2563eb'}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#3b82f6'}
+              >
+                📋 View Privacy Policy
+              </Link>
+            </div>
           </div>
         </div>
       </div>
