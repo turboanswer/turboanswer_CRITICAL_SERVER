@@ -29,9 +29,19 @@ export default function Home() {
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8">
-          <div className="flex items-center justify-center mb-4">
-            <Zap className="h-12 w-12 text-blue-500 mr-3" />
-            <h1 className="text-4xl font-bold">Turbo Answer</h1>
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center justify-center flex-1">
+              <Zap className="h-12 w-12 text-blue-500 mr-3" />
+              <h1 className="text-4xl font-bold">Turbo Answer</h1>
+            </div>
+            <button
+              onClick={() => logoutMutation.mutate()}
+              disabled={logoutMutation.isPending}
+              className="flex items-center justify-center p-2 bg-red-600 hover:bg-red-700 rounded-lg transition-colors disabled:opacity-50"
+              title={logoutMutation.isPending ? 'Logging out...' : 'Logout'}
+            >
+              <LogOut size={20} />
+            </button>
           </div>
           <p className="text-gray-400 text-lg">Advanced AI Assistant with Multi-Model Intelligence</p>
         </div>
@@ -155,17 +165,7 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Logout Button */}
-        <div className="fixed bottom-4 right-4">
-          <Button
-            onClick={() => logoutMutation.mutate()}
-            disabled={logoutMutation.isPending}
-            className="bg-red-600 hover:bg-red-700 text-white rounded-full p-4"
-            size="sm"
-          >
-            <LogOut className="h-5 w-5" />
-          </Button>
-        </div>
+
       </div>
     </div>
   );
