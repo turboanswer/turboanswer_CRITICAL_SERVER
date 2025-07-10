@@ -999,30 +999,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Image generation endpoint using DALL-E
+  // Alternative image generation endpoint (no API keys required)
   app.post("/api/generate-image", async (req, res) => {
     try {
-      const { prompt, size = "1024x1024", quality = "hd", style = "vivid" } = req.body;
+      const { prompt, size = "1024x1024", style = "realistic" } = req.body;
       
       if (!prompt) {
         return res.status(400).json({ error: "Image prompt is required" });
       }
 
-      const { imageGeneration } = await import("./services/image-generation");
+      const { alternativeImageGeneration } = await import("./services/alternative-image-generation");
       
-      const result = await imageGeneration.generateImage({
+      const result = await alternativeImageGeneration.generateImage({
         prompt,
         size,
-        quality,
-        style,
-        n: 1
+        style
       });
 
       if (result.success) {
         res.json({
           success: true,
           imageUrl: result.imageUrl,
-          revisedPrompt: result.revisedPrompt,
+          provider: result.provider,
           originalPrompt: prompt
         });
       } else {
@@ -1032,7 +1030,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
     } catch (error: any) {
-      console.error("Image generation API error:", error);
+      console.error("Alternative image generation API error:", error);
       res.status(500).json({
         success: false,
         error: "Image generation failed: " + error.message
@@ -1040,7 +1038,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Video generation endpoint 
+  // Alternative video generation endpoint
   app.post("/api/generate-video", async (req, res) => {
     try {
       const { prompt, duration = 5, resolution = "1080p", style = "realistic" } = req.body;
@@ -1049,9 +1047,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Video prompt is required" });
       }
 
-      const { videoGeneration } = await import("./services/video-generation");
+      const { alternativeVideoGeneration } = await import("./services/alternative-video-generation");
       
-      const result = await videoGeneration.generateVideo({
+      const result = await alternativeVideoGeneration.generateVideo({
         prompt,
         duration,
         resolution,
@@ -1064,18 +1062,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
           videoUrl: result.videoUrl,
           thumbnailUrl: result.thumbnailUrl,
           duration: result.duration,
-          revisedPrompt: result.revisedPrompt,
           originalPrompt: prompt,
           provider: result.provider
         });
       } else {
         res.status(400).json({
           success: false,
-          error: result.error
+          error: result.error,
+          provider: result.provider
         });
       }
     } catch (error: any) {
-      console.error("Video generation API error:", error);
+      console.error("Alternative video generation API error:", error);
       res.status(500).json({
         success: false,
         error: "Video generation failed: " + error.message
