@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 import { Send, Mic, MicOff, Volume2, Settings, Plus, MessageSquare, FileText, Zap } from 'lucide-react';
+import { VoiceInterface, useSpeakText } from '@/components/VoiceInterface';
 
 interface Message {
   id: number;
@@ -22,11 +23,9 @@ export default function ChatClean() {
   const [currentConversationId, setCurrentConversationId] = useState<number | null>(null);
   const [isTyping, setIsTyping] = useState(false);
   const [selectedAIModel, setSelectedAIModel] = useState('auto');
-  const [isListening, setIsListening] = useState(false);
+  const [selectedLanguage, setSelectedLanguage] = useState('en-US');
+  const [voiceGender, setVoiceGender] = useState<'male' | 'female'>('female');
   const [isSpeaking, setIsSpeaking] = useState(false);
-  const [isWakeWordListening, setIsWakeWordListening] = useState(false);
-  const recognitionRef = useRef<any>(null);
-  const wakeWordRef = useRef<any>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -49,6 +48,28 @@ export default function ChatClean() {
       queryClient.invalidateQueries({ queryKey: ['/api/conversations'] });
     },
   });
+
+  // Helper function to send messages
+  const handleSendMessage = async (messageContent: string) => {
+    if (!messageContent.trim() || isTyping) return;
+    
+    if (!currentConversationId) {
+      await createConversationMutation.mutateAsync();
+    }
+    
+    setIsTyping(true);
+    try {
+      await sendMessageMutation.mutateAsync({
+        message: messageContent,
+        aiModel: selectedAIModel
+      });
+      setMessage('');
+    } catch (error) {
+      console.error('Send message error:', error);
+    } finally {
+      setIsTyping(false);
+    }
+  };
 
   // Send message mutation
   const sendMessageMutation = useMutation({
@@ -144,19 +165,8 @@ export default function ChatClean() {
     }
   };
 
-  const speakText = (text: string) => {
-    if ('speechSynthesis' in window) {
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.rate = 0.9;
-      utterance.pitch = 1.0;
-      utterance.volume = 1.0;
-      
-      utterance.onstart = () => setIsSpeaking(true);
-      utterance.onend = () => setIsSpeaking(false);
-      
-      speechSynthesis.speak(utterance);
-    }
-  };
+  // Use the enhanced voice system
+  const speakText = useSpeakText(selectedLanguage, voiceGender);
 
   const stopSpeaking = () => {
     if ('speechSynthesis' in window) {
@@ -275,18 +285,36 @@ export default function ChatClean() {
                 </div>
                 <h2 className="text-3xl font-bold mb-3 bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 bg-clip-text text-transparent">Welcome to TURBOANSWER</h2>
                 <p className="text-cyan-400 mb-8 font-medium text-lg">NEVER STOP INNOVATING</p>
+                {/* Voice Interface Component */}
+                <div className="max-w-4xl mx-auto mb-8">
+                  <VoiceInterface
+                    onMessage={(voiceMessage) => {
+                      setMessage(voiceMessage);
+                      // Auto-send voice messages
+                      if (voiceMessage.trim()) {
+                        handleSendMessage(voiceMessage);
+                      }
+                    }}
+                    isProcessing={isTyping}
+                    selectedLanguage={selectedLanguage}
+                    onLanguageChange={setSelectedLanguage}
+                    voiceGender={voiceGender}
+                    onVoiceGenderChange={setVoiceGender}
+                  />
+                </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-2xl mx-auto">
                   <div className="p-4 bg-slate-800 rounded-lg">
-                    <h3 className="font-semibold mb-2">Voice Commands</h3>
-                    <p className="text-sm text-slate-400">Click the microphone to talk to Turbo</p>
+                    <h3 className="font-semibold mb-2">Hands-Free Voice</h3>
+                    <p className="text-sm text-slate-400">Say "Hey Turbo" for hands-free interaction</p>
                   </div>
                   <div className="p-4 bg-slate-800 rounded-lg">
-                    <h3 className="font-semibold mb-2">Document Analysis</h3>
-                    <p className="text-sm text-slate-400">Upload files for AI analysis</p>
+                    <h3 className="font-semibold mb-2">90+ Languages</h3>
+                    <p className="text-sm text-slate-400">Voice support for every language worldwide</p>
                   </div>
                   <div className="p-4 bg-slate-800 rounded-lg">
-                    <h3 className="font-semibold mb-2">Multi-AI Models</h3>
-                    <p className="text-sm text-slate-400">Choose from 7 powerful AI models</p>
+                    <h3 className="font-semibold mb-2">Male & Female Voices</h3>
+                    <p className="text-sm text-slate-400">Choose your preferred voice personality</p>
                   </div>
                   <div className="p-4 bg-slate-800 rounded-lg">
                     <h3 className="font-semibold mb-2">Emotional Intelligence</h3>
