@@ -4,6 +4,7 @@ import { apiRequest } from '@/lib/queryClient';
 import { Send, Mic, Plus, HelpCircle, DollarSign, Home, Settings, Zap, LogOut } from 'lucide-react';
 import { Link } from 'wouter';
 import { Button } from '@/components/ui/button';
+import { VoiceInterface, useSpeakText } from '@/components/VoiceInterface';
 
 interface Message {
   id: number;
@@ -23,6 +24,8 @@ export default function ChatSimple() {
   const [currentConversationId, setCurrentConversationId] = useState<number | null>(null);
   const [isTyping, setIsTyping] = useState(false);
   const [selectedAIModel, setSelectedAIModel] = useState('auto');
+  const [selectedLanguage, setSelectedLanguage] = useState('en-US');
+  const [voiceGender, setVoiceGender] = useState<'male' | 'female'>('female');
   const queryClient = useQueryClient();
 
   // Load AI model preference
@@ -339,27 +342,35 @@ export default function ChatSimple() {
         )}
       </div>
 
-      {/* Input Area */}
+      {/* Enhanced Voice Interface */}
       <div style={{ padding: '16px', borderTop: '1px solid #1a1a1a' }}>
-        <form onSubmit={handleSubmit} style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <button
-            type="button"
-            onClick={() => {
-              console.log('Microphone button clicked');
-              alert('Microphone feature available in full version');
-            }}
-            style={{
-              padding: '12px',
-              backgroundColor: '#1a1a1a',
-              border: 'none',
-              borderRadius: '50%',
-              color: 'white',
-              cursor: 'pointer'
-            }}
-          >
-            <Mic size={20} />
-          </button>
-          
+        <VoiceInterface
+          onMessage={(voiceMessage) => {
+            setMessage(voiceMessage);
+            // Auto-send voice messages
+            if (voiceMessage.trim()) {
+              if (!currentConversationId) {
+                // Create conversation first, then send
+                setMessage(voiceMessage);
+                createConversationMutation.mutate();
+              } else {
+                setIsTyping(true);
+                sendMessageMutation.mutate({
+                  message: voiceMessage,
+                  aiModel: selectedAIModel,
+                });
+              }
+            }
+          }}
+          isProcessing={isTyping}
+          selectedLanguage={selectedLanguage}
+          onLanguageChange={setSelectedLanguage}
+          voiceGender={voiceGender}
+          onVoiceGenderChange={setVoiceGender}
+        />
+        
+        {/* Text Input */}
+        <form onSubmit={handleSubmit} style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '16px' }}>
           <input
             type="text"
             value={message}
