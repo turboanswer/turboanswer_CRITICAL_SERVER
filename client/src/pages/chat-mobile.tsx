@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 import { Send, Mic, MicOff, Volume2, Plus } from 'lucide-react';
+import { VoiceInterface, useSpeakText } from '@/components/VoiceInterface';
 
 interface Message {
   id: number;
@@ -22,8 +23,8 @@ export default function ChatMobile() {
   const [currentConversationId, setCurrentConversationId] = useState<number | null>(null);
   const [isTyping, setIsTyping] = useState(false);
   const [selectedAIModel, setSelectedAIModel] = useState('auto');
-  const [isListening, setIsListening] = useState(false);
-  const [isWakeWordListening, setIsWakeWordListening] = useState(false); // Removed wake word feature
+  const [selectedLanguage, setSelectedLanguage] = useState('en-US');
+  const [voiceGender, setVoiceGender] = useState<'male' | 'female'>('female');
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [hasCreatedInitialConversation, setHasCreatedInitialConversation] = useState(false);
   const recognitionRef = useRef<any>(null);
@@ -493,8 +494,34 @@ export default function ChatMobile() {
       </div>
       </div>
 
-      {/* Input Area */}
+      {/* Enhanced Voice Interface */}
       <div className="p-4 border-t border-gray-800">
+        <VoiceInterface
+          onMessage={(voiceMessage) => {
+            setMessage(voiceMessage);
+            // Auto-send voice messages
+            if (voiceMessage.trim()) {
+              if (!currentConversationId) {
+                // Create conversation first, then send
+                setMessage(voiceMessage);
+                createConversationMutation.mutate();
+              } else {
+                setIsTyping(true);
+                sendMessageMutation.mutate({
+                  message: voiceMessage,
+                  aiModel: selectedAIModel,
+                });
+              }
+            }
+          }}
+          isProcessing={isTyping}
+          selectedLanguage={selectedLanguage}
+          onLanguageChange={setSelectedLanguage}
+          voiceGender={voiceGender}
+          onVoiceGenderChange={setVoiceGender}
+        />
+        
+        {/* Text Input */}
         <form onSubmit={handleSubmit} className="flex items-center space-x-3">
           <button
             type="button"
