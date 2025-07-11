@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Mic, MicOff, Volume2, VolumeX, Settings, User, UserCheck } from 'lucide-react';
+import { Mic, MicOff, Volume2, VolumeX, Settings, User, UserCheck, Play, Square } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
@@ -172,6 +172,7 @@ export function VoiceInterface({
   const [isListening, setIsListening] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isWakeWordActive, setIsWakeWordActive] = useState(false);
+  const [isContinuousMode, setIsContinuousMode] = useState(false);
   const [voiceEnabled, setVoiceEnabled] = useState(true);
   const [autoSpeak, setAutoSpeak] = useState(true);
   const [showSettings, setShowSettings] = useState(false);
@@ -226,8 +227,8 @@ export function VoiceInterface({
         onMessage(finalTranscript.trim());
         setCurrentTranscript('');
         
-        // Auto-stop listening after receiving message
-        if (recognitionRef.current && !isWakeWordActive) {
+        // Auto-stop listening after receiving message (except in continuous mode)
+        if (recognitionRef.current && !isWakeWordActive && !isContinuousMode) {
           recognitionRef.current.stop();
         }
       }
@@ -250,10 +251,17 @@ export function VoiceInterface({
           startWakeWordListening();
         }, 1000);
       }
+      
+      // Restart if continuous mode is active and not processing
+      if (isContinuousMode && voiceEnabled && !isProcessing) {
+        setTimeout(() => {
+          startListening();
+        }, 2000); // Give a brief pause between conversations
+      }
     };
 
     return recognition;
-  }, [selectedLanguage, onMessage, isWakeWordActive, voiceEnabled]);
+  }, [selectedLanguage, onMessage, isWakeWordActive, voiceEnabled, isContinuousMode, isProcessing]);
 
   // Initialize wake word detection
   const initializeWakeWordDetection = useCallback(() => {
@@ -409,6 +417,14 @@ export function VoiceInterface({
     utterance.onend = () => {
       setIsSpeaking(false);
       console.log('🔊 Speech ended');
+      
+      // Restart listening in continuous mode after AI finishes speaking
+      if (isContinuousMode && voiceEnabled && !isListening) {
+        setTimeout(() => {
+          console.log('🔄 Restarting listening after AI response');
+          startListening();
+        }, 1500); // Brief pause after AI speaks
+      }
     };
 
     utterance.onerror = (event) => {
@@ -418,7 +434,7 @@ export function VoiceInterface({
 
     speechSynthesisRef.current = utterance;
     speechSynthesis.speak(utterance);
-  }, [autoSpeak, voiceEnabled, selectedLanguage, voiceGender, findBestVoice]);
+  }, [autoSpeak, voiceEnabled, selectedLanguage, voiceGender, findBestVoice, isContinuousMode, isListening, startListening]);
 
   // Toggle wake word detection
   const toggleWakeWord = useCallback(() => {
@@ -433,6 +449,26 @@ export function VoiceInterface({
       }
     }
   }, [isWakeWordActive, startWakeWordListening]);
+
+  // Toggle continuous conversation mode
+  const toggleContinuousMode = useCallback(() => {
+    const newState = !isContinuousMode;
+    setIsContinuousMode(newState);
+
+    if (newState) {
+      console.log('🔄 Continuous conversation mode activated');
+      // Start listening immediately when continuous mode is enabled
+      if (!isListening && voiceEnabled) {
+        startListening();
+      }
+    } else {
+      console.log('⏹️ Continuous conversation mode deactivated');
+      // Stop listening when continuous mode is disabled
+      if (isListening) {
+        stopListening();
+      }
+    }
+  }, [isContinuousMode, isListening, voiceEnabled, startListening, stopListening]);
 
   // Language change handler
   const handleLanguageChange = useCallback((language: string) => {
@@ -493,18 +529,38 @@ export function VoiceInterface({
         <div className="relative">
           <Button
             onClick={isListening ? stopListening : startListening}
-            disabled={!voiceEnabled || isProcessing}
+            disabled={!voiceEnabled || isProcessing || isContinuousMode}
             className={`w-12 h-12 rounded-full transition-all duration-300 ${
               isListening 
                 ? 'bg-red-600 hover:bg-red-700 animate-pulse' 
                 : 'bg-blue-600 hover:bg-blue-700'
-            }`}
+            } ${isContinuousMode ? 'opacity-50' : ''}`}
           >
             {isListening ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
           </Button>
           
           {isListening && (
             <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-400 rounded-full animate-ping"></div>
+          )}
+        </div>
+
+        {/* Continuous Conversation Button */}
+        <div className="relative">
+          <Button
+            onClick={toggleContinuousMode}
+            disabled={!voiceEnabled || isProcessing}
+            className={`w-12 h-12 rounded-full transition-all duration-300 ${
+              isContinuousMode 
+                ? 'bg-green-600 hover:bg-green-700 animate-pulse' 
+                : 'bg-purple-600 hover:bg-purple-700'
+            }`}
+            title={isContinuousMode ? 'Stop Continuous Mode' : 'Start Continuous Conversation'}
+          >
+            {isContinuousMode ? <Square className="w-5 h-5" /> : <Play className="w-5 h-5" />}
+          </Button>
+          
+          {isContinuousMode && (
+            <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-400 rounded-full animate-ping"></div>
           )}
         </div>
 
@@ -520,9 +576,15 @@ export function VoiceInterface({
                 Wake Word Active
               </Badge>
             )}
+
+            {isContinuousMode && (
+              <Badge variant="outline" className="border-green-400 text-green-400 animate-pulse">
+                Continuous Mode
+              </Badge>
+            )}
             
             {isSpeaking && (
-              <Badge variant="outline" className="border-green-400 text-green-400">
+              <Badge variant="outline" className="border-orange-400 text-orange-400">
                 Speaking
               </Badge>
             )}
@@ -629,6 +691,15 @@ export function VoiceInterface({
                   onCheckedChange={toggleWakeWord}
                 />
               </div>
+
+              <div className="flex items-center justify-between">
+                <Label htmlFor="continuous-mode" className="text-white">Continuous Conversation</Label>
+                <Switch
+                  id="continuous-mode"
+                  checked={isContinuousMode}
+                  onCheckedChange={toggleContinuousMode}
+                />
+              </div>
               
               <div className="flex items-center justify-between">
                 <Button
@@ -651,6 +722,17 @@ export function VoiceInterface({
                 <p className="text-xs text-blue-200">
                   Say "Hey Turbo", "Hi Turbo", or "Turbo" to activate voice input hands-free.
                   Wake words work in multiple languages!
+                </p>
+              </div>
+            )}
+
+            {/* Continuous Mode Instructions */}
+            {isContinuousMode && (
+              <div className="bg-green-900/20 border border-green-700 rounded-lg p-3">
+                <h4 className="text-sm font-semibold text-green-300 mb-2">Continuous Conversation Active:</h4>
+                <p className="text-xs text-green-200">
+                  Nonstop conversation mode enabled! AI will automatically listen for your next message after each response.
+                  Click the square button or toggle off to end the conversation.
                 </p>
               </div>
             )}
