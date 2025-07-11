@@ -20,6 +20,7 @@ import { videoGeneration } from './video-generation';
 import { alternativeImageGeneration } from './alternative-image-generation';
 import { alternativeVideoGeneration } from './alternative-video-generation';
 import { megaFusionAI } from './mega-fusion-ai';
+import { powerAmplifier } from './power-amplifier';
 import { detectLanguage, getLanguageConfig, formatResponseForLanguage } from './language-detector';
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import OpenAI from "openai";
@@ -111,6 +112,30 @@ export const AI_MODELS = {
       maxTokens: 5000,
       temperature: 0.4,
       priority: 10
+    },
+    "together-llama-405b": {
+      name: "Llama 3.1 405B",
+      provider: "together",
+      strengths: ["Massive parameter count", "Advanced reasoning", "Open-source excellence", "Complex analysis"],
+      maxTokens: 8000,
+      temperature: 0.25,
+      priority: 11
+    },
+    "deepseek-v3": {
+      name: "DeepSeek V3",
+      provider: "deepseek",
+      strengths: ["Coding mastery", "Mathematical reasoning", "Technical precision", "Performance optimization"],
+      maxTokens: 6000,
+      temperature: 0.2,
+      priority: 12
+    },
+    "mistral-large-2": {
+      name: "Mistral Large 2",
+      provider: "mistral",
+      strengths: ["European AI leadership", "Multilingual excellence", "Privacy-focused", "Business applications"],
+      maxTokens: 6000,
+      temperature: 0.3,
+      priority: 13
     }
   },
   
@@ -306,14 +331,18 @@ export async function generateAIResponse(
   userLanguage: string = "en"
 ): Promise<string> {
   try {
+    // Analyze user intent first for all models
+    const intent = analyzeUserIntent(userMessage, conversationHistory);
+    
     // Force Mega Fusion AI for selected model - ULTIMATE INTELLIGENCE
     if (selectedModel === 'mega-fusion') {
-      console.log(`[Mega Fusion AI] Using mega fusion model with 10+ AI systems`);
+      console.log(`[Mega Fusion AI] Using mega fusion model with 20+ AI systems`);
       
-      return await megaFusionAI.generateFusionResponse({
+      // Use Power Amplifier for enhanced capabilities
+      return await powerAmplifier.amplifyResponse({
         userMessage,
-        complexity: intent.complexity,
-        domain: intent.domain,
+        requestedPowerLevel: intent.complexity === 'expert' ? 10 : 8,
+        useUltimateMode: true,
         conversationHistory
       });
     }
@@ -555,8 +584,7 @@ Coordinates: ${locationData.latitude}°, ${locationData.longitude}°`;
     }
 
     // For non-emotional queries, continue with standard AI routing
-    // Analyze user intent and complexity
-    const intent = analyzeUserIntent(userMessage, conversationHistory);
+    // User intent already analyzed above
     console.log(`[AI Router] Intent: ${intent.complexity} ${intent.domain}, Model: ${intent.recommended_model}`);
     
     // Enhanced context with weather/location data
