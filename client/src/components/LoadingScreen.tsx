@@ -11,11 +11,11 @@ export function LoadingScreen({ message = "Initializing Maximum Power AI..." }: 
         {/* Enhanced logo with animation */}
         <div className="relative animate-pulse">
           <img 
-            src="/src/assets/turboanswer-logo.png" 
+            src="/src/assets/file_00000000d40c61f9a186294bbf2c842a_1752206533464.png" 
             alt="TURBOANSWER AI Robot" 
-            className="w-32 h-32 object-contain animate-bounce mx-auto"
+            className="w-32 h-32 object-contain hover:scale-110 transition-all duration-300 mx-auto"
           />
-          <div className="absolute -top-2 -right-2 w-6 h-6 bg-green-400 rounded-full animate-ping"></div>
+          <div className="absolute -top-2 -right-2 w-6 h-6 bg-cyan-400 rounded-full animate-ping"></div>
         </div>
         
         {/* Loading message */}

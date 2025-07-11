@@ -303,11 +303,11 @@ export default function ChatMobile() {
         <div className="flex items-center space-x-3">
           <div className="relative">
             <img 
-              src="/src/assets/turboanswer-logo.png" 
+              src="/src/assets/file_00000000d40c61f9a186294bbf2c842a_1752206533464.png" 
               alt="TURBOANSWER AI Robot" 
-              className="w-10 h-10 object-contain animate-pulse hover:animate-bounce transition-all duration-300"
+              className="w-10 h-10 object-contain hover:scale-110 transition-all duration-300"
             />
-            <div className="absolute -top-1 -right-1 w-2 h-2 bg-green-400 rounded-full animate-ping"></div>
+            <div className="absolute -top-1 -right-1 w-2 h-2 bg-cyan-400 rounded-full animate-ping"></div>
           </div>
           <div>
             <h1 className="text-lg font-semibold bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">TURBOANSWER</h1>
@@ -374,18 +374,18 @@ export default function ChatMobile() {
             {/* Main TURBOANSWER Robot Logo */}
             <div className="relative mx-auto mb-6">
               <img 
-                src="/src/assets/turboanswer-logo.png" 
+                src="/src/assets/file_00000000d40c61f9a186294bbf2c842a_1752206533464.png" 
                 alt="TURBOANSWER AI Robot" 
-                className="w-24 h-24 object-contain animate-pulse hover:animate-bounce transition-all duration-300 mx-auto"
+                className="w-24 h-24 object-contain hover:scale-110 transition-all duration-300 mx-auto"
               />
-              <div className="absolute -top-2 -right-2 w-4 h-4 bg-green-400 rounded-full animate-ping"></div>
+              <div className="absolute -top-2 -right-2 w-3 h-3 bg-cyan-400 rounded-full animate-ping"></div>
             </div>
             
             {/* Welcome Message */}
-            <h1 className="text-2xl font-bold mb-2 bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">
+            <h1 className="text-2xl font-bold mb-3 bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 bg-clip-text text-transparent">
               Welcome to TURBOANSWER
             </h1>
-            <p className="text-gray-400 mb-6 text-lg">NEVER STOP INNOVATING</p>
+            <p className="text-cyan-400 mb-6 font-medium text-lg">NEVER STOP INNOVATING</p>
             
             {/* Features Grid */}
             <div className="grid grid-cols-2 gap-4 mb-6">

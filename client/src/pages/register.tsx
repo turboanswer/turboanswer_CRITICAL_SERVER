@@ -82,11 +82,11 @@ export default function Register() {
           <div className="flex justify-center mb-4">
             <div className="relative">
               <img 
-                src="/src/assets/turboanswer-logo.png" 
+                src="/src/assets/file_00000000d40c61f9a186294bbf2c842a_1752206533464.png" 
                 alt="TURBOANSWER AI Robot" 
-                className="w-12 h-12 object-contain animate-pulse hover:animate-bounce transition-all duration-300"
+                className="w-12 h-12 object-contain hover:scale-110 transition-all duration-300"
               />
-              <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-400 rounded-full animate-ping"></div>
+              <div className="absolute -top-1 -right-1 w-3 h-3 bg-cyan-400 rounded-full animate-ping"></div>
             </div>
           </div>
           <CardTitle className="text-2xl font-bold bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">Join TURBOANSWER</CardTitle>
