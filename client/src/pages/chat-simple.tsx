@@ -25,8 +25,11 @@ export default function ChatSimple() {
   const [isTyping, setIsTyping] = useState(false);
   const [selectedAIModel, setSelectedAIModel] = useState('auto');
   const [selectedLanguage, setSelectedLanguage] = useState('en-US');
-  const [voiceGender, setVoiceGender] = useState<'male' | 'female'>('female');
+  const [voiceGender, setVoiceGender] = useState<'male' | 'female'>('male');
   const queryClient = useQueryClient();
+
+  // Use the voice function
+  const speakText = useSpeakText(selectedLanguage, voiceGender);
 
   // Load AI model preference
   useEffect(() => {
@@ -91,6 +94,11 @@ export default function ChatSimple() {
       queryClient.invalidateQueries({
         queryKey: ['/api/conversations', currentConversationId, 'messages'],
       });
+      
+      // Auto-speak AI response
+      if (data.aiMessage && data.aiMessage.content) {
+        speakText(data.aiMessage.content);
+      }
     },
     onError: (error) => {
       console.error('Failed to send message:', error);

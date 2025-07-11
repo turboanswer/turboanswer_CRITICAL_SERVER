@@ -166,7 +166,7 @@ export function VoiceInterface({
   isProcessing, 
   selectedLanguage = 'en-US', 
   onLanguageChange,
-  voiceGender = 'female',
+  voiceGender = 'male',
   onVoiceGenderChange
 }: VoiceInterfaceProps) {
   const [isListening, setIsListening] = useState(false);
@@ -253,10 +253,10 @@ export function VoiceInterface({
       }
       
       // Restart if continuous mode is active and not processing
-      if (isContinuousMode && voiceEnabled && !isProcessing) {
+      if (isContinuousMode && voiceEnabled) {
         setTimeout(() => {
           startListening();
-        }, 2000); // Give a brief pause between conversations
+        }, 1000); // Quick restart in continuous mode
       }
     };
 
@@ -419,7 +419,7 @@ export function VoiceInterface({
       console.log('🔊 Speech ended');
       
       // Restart listening in continuous mode after AI finishes speaking
-      if (isContinuousMode && voiceEnabled && !isListening) {
+      if (isContinuousMode && voiceEnabled) {
         setTimeout(() => {
           console.log('🔄 Restarting listening after AI response');
           startListening();
@@ -602,49 +602,33 @@ export function VoiceInterface({
           )}
         </div>
 
-        {/* Voice Gender Selector */}
+        {/* Voice Gender - Only Male */}
         <div className="flex items-center space-x-2">
-          <RadioGroup
-            value={voiceGender}
-            onValueChange={(value) => onVoiceGenderChange?.(value as 'male' | 'female')}
-            className="flex space-x-4"
-          >
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="female" id="female" className="border-pink-400 text-pink-400" />
-              <Label htmlFor="female" className="text-pink-400 flex items-center space-x-1">
-                <User className="w-4 h-4" />
-                <span>Female</span>
-              </Label>
-            </div>
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="male" id="male" className="border-blue-400 text-blue-400" />
-              <Label htmlFor="male" className="text-blue-400 flex items-center space-x-1">
-                <UserCheck className="w-4 h-4" />
-                <span>Male</span>
-              </Label>
-            </div>
-          </RadioGroup>
+          <UserCheck className="w-4 h-4 text-blue-400" />
+          <span className="text-blue-400">Male Voice</span>
         </div>
 
-        {/* Language Selector */}
-        <div className="flex items-center space-x-2">
-          <span className="text-2xl">{currentLanguage?.flag}</span>
-          <Select value={selectedLanguage} onValueChange={handleLanguageChange}>
-            <SelectTrigger className="w-40 bg-gray-800 border-gray-600">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent className="max-h-96 bg-gray-800 border-gray-600">
-              {WORLD_LANGUAGES.map((lang) => (
-                <SelectItem key={lang.code} value={lang.code} className="text-white hover:bg-gray-700">
-                  <div className="flex items-center space-x-2">
-                    <span>{lang.flag}</span>
-                    <span>{lang.name}</span>
-                  </div>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+        {/* Language Selector - Only visible in continuous mode */}
+        {isContinuousMode && (
+          <div className="flex items-center space-x-2">
+            <span className="text-2xl">{currentLanguage?.flag}</span>
+            <Select value={selectedLanguage} onValueChange={handleLanguageChange}>
+              <SelectTrigger className="w-40 bg-gray-800 border-gray-600">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="max-h-96 bg-gray-800 border-gray-600">
+                {WORLD_LANGUAGES.map((lang) => (
+                  <SelectItem key={lang.code} value={lang.code} className="text-white hover:bg-gray-700">
+                    <div className="flex items-center space-x-2">
+                      <span>{lang.flag}</span>
+                      <span>{lang.name}</span>
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
 
         {/* Settings Button */}
         <Button
