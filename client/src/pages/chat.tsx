@@ -561,34 +561,218 @@ export default function Chat() {
                 </Button>
               </div>
 
-              {/* AI Model Selection */}
-              <div className="flex items-center space-x-2">
-                <label className="text-sm text-zinc-300 font-medium">AI Model:</label>
-                <Select value={selectedAIModel} onValueChange={setSelectedAIModel}>
-                  <SelectTrigger className="w-48 bg-zinc-800 border-zinc-700 text-white text-sm">
-                    <SelectValue placeholder="Choose AI model" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-zinc-800 border-zinc-700">
-                    <SelectItem value="auto">🤖 Auto-Select</SelectItem>
-                    <SelectItem value="mega-fusion">🚀 Mega Fusion AI (10+ Models)</SelectItem>
-                    <SelectItem value="research-pro">📚 Research Pro Ultra (Premium)</SelectItem>
-                    <SelectItem value="conversational">💬 Conversational AI</SelectItem>
-                    <SelectItem value="emotional">❤️ Emotional AI</SelectItem>
-                    <SelectItem value="claude-3-opus">🧠 Claude 3 Opus</SelectItem>
-                    <SelectItem value="gpt-4">🎯 GPT-4</SelectItem>
-                    <SelectItem value="claude-3-sonnet">⚖️ Claude 3 Sonnet</SelectItem>
-                    <SelectItem value="gpt-3.5-turbo">⚡ GPT-3.5 Turbo</SelectItem>
-                    <SelectItem value="gemini-pro">🔬 Gemini Pro</SelectItem>
-                  </SelectContent>
-                </Select>
+              {/* AI Brain Selector - Enhanced Creative Design */}
+              <div className="flex items-center space-x-3">
+                <div className="flex items-center space-x-2">
+                  <div className="relative">
+                    <Brain className="h-5 w-5 text-cyan-400 animate-pulse" />
+                    <div className="absolute -top-1 -right-1 w-2 h-2 bg-green-400 rounded-full animate-ping"></div>
+                  </div>
+                  <label className="text-sm text-cyan-300 font-medium bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">
+                    AI Brain:
+                  </label>
+                </div>
+                
+                <div className="relative group">
+                  <Select value={selectedAIModel} onValueChange={setSelectedAIModel}>
+                    <SelectTrigger className="w-64 bg-gradient-to-r from-zinc-900 via-zinc-800 to-zinc-900 border border-zinc-600 text-white text-sm hover:border-cyan-500 transition-all duration-300 shadow-lg hover:shadow-cyan-500/20">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-3 h-3 bg-gradient-to-r from-green-400 to-cyan-400 rounded-full animate-pulse shadow-lg shadow-cyan-400/50"></div>
+                        <SelectValue placeholder="🧠 Select Intelligence Level" />
+                        <div className="ml-auto opacity-50 group-hover:opacity-100 transition-opacity">
+                          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                          </svg>
+                        </div>
+                      </div>
+                    </SelectTrigger>
+                    
+                    <SelectContent className="bg-zinc-950 border border-zinc-700 shadow-2xl max-h-80 overflow-y-auto">
+                      {/* Ultimate Power Tier */}
+                      <div className="p-3 border-b border-zinc-800 bg-gradient-to-r from-amber-950/30 to-red-950/30">
+                        <div className="flex items-center space-x-2 mb-2">
+                          <div className="flex space-x-1">
+                            <div className="w-2 h-2 bg-amber-400 rounded-full animate-pulse"></div>
+                            <div className="w-2 h-2 bg-red-400 rounded-full animate-pulse" style={{animationDelay: '0.2s'}}></div>
+                            <div className="w-2 h-2 bg-orange-400 rounded-full animate-pulse" style={{animationDelay: '0.4s'}}></div>
+                          </div>
+                          <span className="text-xs font-bold text-amber-400 tracking-wide">🔥 ULTIMATE POWER</span>
+                        </div>
+                        
+                        <SelectItem value="mega-fusion" className="bg-gradient-to-r from-amber-900/40 to-red-900/40 border border-amber-600/30 mb-2 hover:from-amber-800/50 hover:to-red-800/50">
+                          <div className="flex items-center space-x-3 p-1">
+                            <div className="relative">
+                              <span className="text-2xl animate-bounce">🚀</span>
+                              <div className="absolute -top-1 -right-1 w-2 h-2 bg-amber-400 rounded-full animate-ping"></div>
+                            </div>
+                            <div className="flex-1">
+                              <div className="font-bold text-amber-100 text-sm">Mega Fusion AI</div>
+                              <div className="text-xs text-amber-300">20+ Models • Ultimate Intelligence</div>
+                              <div className="flex items-center space-x-1 mt-1">
+                                <div className="w-1 h-1 bg-amber-400 rounded-full"></div>
+                                <div className="w-1 h-1 bg-red-400 rounded-full"></div>
+                                <div className="w-1 h-1 bg-orange-400 rounded-full"></div>
+                                <span className="text-xs text-amber-400 ml-1">MAX POWER</span>
+                              </div>
+                            </div>
+                          </div>
+                        </SelectItem>
+                        
+                        <SelectItem value="research-pro" className="bg-gradient-to-r from-purple-900/40 to-blue-900/40 border border-purple-600/30 hover:from-purple-800/50 hover:to-blue-800/50">
+                          <div className="flex items-center space-x-3 p-1">
+                            <span className="text-xl text-purple-400">📚</span>
+                            <div className="flex-1">
+                              <div className="font-bold text-purple-100 text-sm">Research Pro Ultra</div>
+                              <div className="text-xs text-purple-300">Premium • Deep Analysis</div>
+                            </div>
+                            <div className="px-2 py-1 bg-purple-600/30 rounded-full text-xs text-purple-200">PRO</div>
+                          </div>
+                        </SelectItem>
+                      </div>
+                      
+                      {/* Specialized Tier */}
+                      <div className="p-3 border-b border-zinc-800">
+                        <div className="flex items-center space-x-2 mb-2">
+                          <div className="w-2 h-2 bg-cyan-400 rounded-full animate-pulse"></div>
+                          <span className="text-xs font-medium text-cyan-400 tracking-wide">⚡ SPECIALIZED</span>
+                        </div>
+                        
+                        <SelectItem value="auto" className="mb-2 bg-zinc-800/50 hover:bg-zinc-700/50">
+                          <div className="flex items-center space-x-3 p-1">
+                            <span className="text-lg">🤖</span>
+                            <div className="flex-1">
+                              <div className="font-medium text-white text-sm">Auto-Select</div>
+                              <div className="text-xs text-zinc-400">Smart Routing • Adaptive</div>
+                            </div>
+                            <div className="text-xs text-cyan-400">AUTO</div>
+                          </div>
+                        </SelectItem>
+                        
+                        <SelectItem value="conversational" className="mb-2 bg-green-900/20 hover:bg-green-800/30">
+                          <div className="flex items-center space-x-3 p-1">
+                            <span className="text-lg text-green-400">💬</span>
+                            <div className="flex-1">
+                              <div className="font-medium text-green-100 text-sm">Conversational AI</div>
+                              <div className="text-xs text-green-400">Ultra-Fast • Human-like</div>
+                            </div>
+                            <div className="text-xs text-green-400">FAST</div>
+                          </div>
+                        </SelectItem>
+                        
+                        <SelectItem value="emotional" className="bg-pink-900/20 hover:bg-pink-800/30">
+                          <div className="flex items-center space-x-3 p-1">
+                            <span className="text-lg text-pink-400 animate-pulse">❤️</span>
+                            <div className="flex-1">
+                              <div className="font-medium text-pink-100 text-sm">Emotional AI</div>
+                              <div className="text-xs text-pink-400">Empathetic • Supportive</div>
+                            </div>
+                            <div className="text-xs text-pink-400">CARE</div>
+                          </div>
+                        </SelectItem>
+                      </div>
+                      
+                      {/* Premium Models Tier */}
+                      <div className="p-3">
+                        <div className="flex items-center space-x-2 mb-2">
+                          <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
+                          <span className="text-xs font-medium text-blue-400 tracking-wide">🎯 PREMIUM MODELS</span>
+                        </div>
+                        
+                        <div className="space-y-1">
+                          <SelectItem value="claude-3-opus" className="hover:bg-zinc-800/50">
+                            <div className="flex items-center space-x-3 p-1">
+                              <span className="text-lg">🧠</span>
+                              <div className="flex-1">
+                                <div className="font-medium text-white text-sm">Claude 3 Opus</div>
+                                <div className="text-xs text-zinc-400">Advanced Reasoning</div>
+                              </div>
+                            </div>
+                          </SelectItem>
+                          
+                          <SelectItem value="gpt-4" className="hover:bg-zinc-800/50">
+                            <div className="flex items-center space-x-3 p-1">
+                              <span className="text-lg">🎯</span>
+                              <div className="flex-1">
+                                <div className="font-medium text-white text-sm">GPT-4</div>
+                                <div className="text-xs text-zinc-400">Multimodal Intelligence</div>
+                              </div>
+                            </div>
+                          </SelectItem>
+                          
+                          <SelectItem value="claude-3-sonnet" className="hover:bg-zinc-800/50">
+                            <div className="flex items-center space-x-3 p-1">
+                              <span className="text-lg">⚖️</span>
+                              <div className="flex-1">
+                                <div className="font-medium text-white text-sm">Claude 3 Sonnet</div>
+                                <div className="text-xs text-zinc-400">Balanced Performance</div>
+                              </div>
+                            </div>
+                          </SelectItem>
+                          
+                          <SelectItem value="gpt-3.5-turbo" className="hover:bg-zinc-800/50">
+                            <div className="flex items-center space-x-3 p-1">
+                              <span className="text-lg">⚡</span>
+                              <div className="flex-1">
+                                <div className="font-medium text-white text-sm">GPT-3.5 Turbo</div>
+                                <div className="text-xs text-zinc-400">Fast & Efficient</div>
+                              </div>
+                            </div>
+                          </SelectItem>
+                          
+                          <SelectItem value="gemini-pro" className="hover:bg-zinc-800/50">
+                            <div className="flex items-center space-x-3 p-1">
+                              <span className="text-lg">🔬</span>
+                              <div className="flex-1">
+                                <div className="font-medium text-white text-sm">Gemini Pro</div>
+                                <div className="text-xs text-zinc-400">Google Advanced</div>
+                              </div>
+                            </div>
+                          </SelectItem>
+                        </div>
+                      </div>
+                    </SelectContent>
+                  </Select>
+                  
+                  {/* Active indicator */}
+                  <div className="absolute -top-1 -right-1 w-3 h-3 bg-gradient-to-r from-green-400 to-cyan-400 rounded-full animate-ping opacity-75"></div>
+                </div>
               </div>
             </div>
 
-            {/* Current AI Status */}
-            <div className="flex items-center space-x-2 text-xs text-zinc-400">
-              <Brain className="h-3 w-3" />
-              <span>Current: {selectedAIModel === 'auto' ? 'Auto-Select' : selectedAIModel}</span>
-              <div className="w-2 h-2 bg-green-400 rounded-full" title="AI System Online"></div>
+            {/* Enhanced AI Status Display */}
+            <div className="flex items-center space-x-3 p-3 bg-gradient-to-r from-zinc-900/50 to-zinc-800/50 rounded-lg border border-zinc-700/50">
+              <div className="flex items-center space-x-2">
+                <div className="relative">
+                  <Brain className="h-4 w-4 text-cyan-400" />
+                  <div className="absolute -top-1 -right-1 w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                </div>
+                <span className="text-sm font-medium text-cyan-300">Active AI:</span>
+              </div>
+              
+              <div className="flex items-center space-x-2">
+                <div className="px-2 py-1 bg-zinc-800 rounded-md border border-zinc-600">
+                  <span className="text-sm font-medium text-white">
+                    {selectedAIModel === 'auto' ? '🤖 Auto-Select' : 
+                     selectedAIModel === 'mega-fusion' ? '🚀 Mega Fusion' :
+                     selectedAIModel === 'research-pro' ? '📚 Research Pro' :
+                     selectedAIModel === 'conversational' ? '💬 Conversational' :
+                     selectedAIModel === 'emotional' ? '❤️ Emotional' :
+                     selectedAIModel}
+                  </span>
+                </div>
+                
+                <div className="flex items-center space-x-1">
+                  <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" title="AI System Online"></div>
+                  <span className="text-xs text-green-400 font-medium">ONLINE</span>
+                </div>
+              </div>
+              
+              {selectedAIModel === 'mega-fusion' && (
+                <div className="flex items-center space-x-1 px-2 py-1 bg-gradient-to-r from-amber-900/30 to-red-900/30 rounded-md border border-amber-600/30">
+                  <div className="w-1 h-1 bg-amber-400 rounded-full animate-pulse"></div>
+                  <span className="text-xs text-amber-400 font-bold">20+ MODELS</span>
+                </div>
+              )}
             </div>
           </div>
         </div>

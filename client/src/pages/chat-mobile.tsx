@@ -311,19 +311,41 @@ export default function ChatMobile() {
         </div>
         
         <div className="flex items-center space-x-2">
-          
-          <select
-            value={selectedAIModel}
-            onChange={(e) => setSelectedAIModel(e.target.value)}
-            className="px-3 py-1 text-xs bg-gray-800 border border-gray-700 rounded-lg"
-          >
-            <option value="auto">Auto</option>
-            <option value="mega-fusion">🚀 Mega Fusion (10+ Models)</option>
-            <option value="conversational">Conversational</option>
-            <option value="emotional">Emotional</option>
-            <option value="claude-3-opus">Claude Opus</option>
-            <option value="gpt-4">GPT-4</option>
-          </select>
+          {/* Enhanced Mobile AI Selector */}
+          <div className="relative">
+            <select
+              value={selectedAIModel}
+              onChange={(e) => setSelectedAIModel(e.target.value)}
+              className="px-3 py-1.5 text-xs bg-gradient-to-r from-gray-900 to-gray-800 border border-gray-600 rounded-lg text-white font-medium hover:border-cyan-500 transition-all duration-200 shadow-lg appearance-none pr-8"
+            >
+              <optgroup label="🔥 ULTIMATE POWER">
+                <option value="mega-fusion">🚀 Mega Fusion (20+ Models)</option>
+                <option value="research-pro">📚 Research Pro Ultra</option>
+              </optgroup>
+              <optgroup label="⚡ SPECIALIZED">
+                <option value="auto">🤖 Auto-Select</option>
+                <option value="conversational">💬 Conversational</option>
+                <option value="emotional">❤️ Emotional</option>
+              </optgroup>
+              <optgroup label="🎯 PREMIUM">
+                <option value="claude-3-opus">🧠 Claude Opus</option>
+                <option value="gpt-4">🎯 GPT-4</option>
+                <option value="claude-3-sonnet">⚖️ Claude Sonnet</option>
+                <option value="gpt-3.5-turbo">⚡ GPT-3.5 Turbo</option>
+                <option value="gemini-pro">🔬 Gemini Pro</option>
+              </optgroup>
+            </select>
+            
+            {/* Custom dropdown arrow */}
+            <div className="absolute right-2 top-1/2 transform -translate-y-1/2 pointer-events-none">
+              <svg className="w-3 h-3 text-cyan-400" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+              </svg>
+            </div>
+            
+            {/* Status indicator */}
+            <div className="absolute -top-1 -right-1 w-2 h-2 bg-green-400 rounded-full animate-ping"></div>
+          </div>
           
           <button
             onClick={(e) => {

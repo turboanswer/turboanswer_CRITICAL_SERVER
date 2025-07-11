@@ -195,21 +195,40 @@ export default function ChatClean() {
               <span>New Chat</span>
             </button>
             
-            <select
-              value={selectedAIModel}
-              onChange={(e) => setSelectedAIModel(e.target.value)}
-              className="px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg border border-slate-600"
-            >
-              <option value="auto">Auto-Select</option>
-              <option value="mega-fusion">🚀 Mega Fusion AI (10+ Models)</option>
-              <option value="conversational">Conversational AI</option>
-              <option value="emotional">Emotional AI</option>
-              <option value="claude-3-opus">Claude 3 Opus</option>
-              <option value="gpt-4">GPT-4</option>
-              <option value="claude-3-sonnet">Claude 3 Sonnet</option>
-              <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
-              <option value="gemini-pro">Gemini Pro</option>
-            </select>
+            <div className="relative group">
+              <select
+                value={selectedAIModel}
+                onChange={(e) => setSelectedAIModel(e.target.value)}
+                className="px-4 py-2 bg-gradient-to-r from-slate-800 to-slate-700 hover:from-slate-700 hover:to-slate-600 rounded-lg border border-slate-500 text-white font-medium appearance-none pr-10 transition-all duration-200 shadow-lg"
+              >
+                <optgroup label="🔥 ULTIMATE POWER" className="bg-slate-900">
+                  <option value="mega-fusion">🚀 Mega Fusion AI (20+ Models)</option>
+                  <option value="research-pro">📚 Research Pro Ultra</option>
+                </optgroup>
+                <optgroup label="⚡ SPECIALIZED" className="bg-slate-900">
+                  <option value="auto">🤖 Auto-Select</option>
+                  <option value="conversational">💬 Conversational AI</option>
+                  <option value="emotional">❤️ Emotional AI</option>
+                </optgroup>
+                <optgroup label="🎯 PREMIUM" className="bg-slate-900">
+                  <option value="claude-3-opus">🧠 Claude 3 Opus</option>
+                  <option value="gpt-4">🎯 GPT-4</option>
+                  <option value="claude-3-sonnet">⚖️ Claude 3 Sonnet</option>
+                  <option value="gpt-3.5-turbo">⚡ GPT-3.5 Turbo</option>
+                  <option value="gemini-pro">🔬 Gemini Pro</option>
+                </optgroup>
+              </select>
+              
+              {/* Custom dropdown arrow */}
+              <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
+                <svg className="w-4 h-4 text-slate-400 group-hover:text-cyan-400 transition-colors" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                </svg>
+              </div>
+              
+              {/* Status indicator */}
+              <div className="absolute -top-1 -right-1 w-2 h-2 bg-green-400 rounded-full animate-ping"></div>
+            </div>
             
             <button className="p-2 bg-slate-700 hover:bg-slate-600 rounded-lg">
               <Settings className="w-5 h-5" />
