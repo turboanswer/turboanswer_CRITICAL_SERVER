@@ -81,6 +81,8 @@ Consider:
     conversationHistory: Array<{role: string, content: string}> = [],
     userId: string = "default"
   ): Promise<string> {
+    console.log(`[Emotional AI] Generating empathetic response for emotions: ${emotionalContext.emotions.join(', ')}, intensity: ${emotionalContext.intensity}`);
+    
     // Get or create conversation memory
     let memory = this.conversationMemory.get(userId) || {
       previousEmotions: [],
@@ -103,6 +105,12 @@ Consider:
     const contextHistory = this.buildContextualHistory(conversationHistory, memory);
 
     try {
+      // Check if Gemini API key is available
+      if (!process.env.GEMINI_API_KEY) {
+        console.log("[Emotional AI] No Gemini API key found, using fallback response");
+        return this.getFallbackEmpatheticResponse(emotionalContext);
+      }
+
       const model = ai.getGenerativeModel({
         model: "gemini-2.0-flash-exp",
         systemInstruction: emotionalPrompt,
@@ -117,10 +125,15 @@ Consider:
         `Current message: "${userMessage}"`
       ].join("\n\n");
 
+      console.log(`[Emotional AI] Sending request to Gemini...`);
       const response = await model.generateContent(contextString);
-      return response.response.text() || "I understand how you're feeling. Could you tell me more about what's on your mind?";
+      const responseText = response.response.text();
+      
+      console.log(`[Emotional AI] Generated response: ${responseText?.substring(0, 50)}...`);
+      return responseText || "I understand how you're feeling. Could you tell me more about what's on your mind?";
     } catch (error) {
-      console.error("Error generating empathetic response:", error);
+      console.error("[Emotional AI] Error generating empathetic response:", error);
+      console.log("[Emotional AI] Using fallback response due to error");
       return this.getFallbackEmpatheticResponse(emotionalContext);
     }
   }
