@@ -19,23 +19,58 @@ import { imageGeneration } from './image-generation';
 import { videoGeneration } from './video-generation';
 import { alternativeImageGeneration } from './alternative-image-generation';
 import { alternativeVideoGeneration } from './alternative-video-generation';
+import { megaFusionAI } from './mega-fusion-ai';
 import { detectLanguage, getLanguageConfig, formatResponseForLanguage } from './language-detector';
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import OpenAI from "openai";
 import Anthropic from "@anthropic-ai/sdk";
 
 export const AI_MODELS = {
-  // Tier 1: MAXIMUM POWER Models (Ultimate Performance)
+  // Tier 1: MAXIMUM POWER Models (Ultimate Performance) - 10+ Combined Models
   maximum: {
+    "mega-fusion": {
+      name: "Mega Fusion AI",
+      provider: "fusion",
+      strengths: ["10+ model fusion", "Ultimate intelligence", "Maximum reasoning", "Breakthrough performance"],
+      maxTokens: 15000,
+      temperature: 0.1,
+      priority: 1,
+      isPaid: true,
+      description: "Combines 10+ AI models for unprecedented intelligence and reasoning capabilities"
+    },
     "research-pro": {
       name: "Research Pro Ultra",
       provider: "anthropic",
       strengths: ["Deep research analysis", "Academic citations", "Multi-source verification", "Comprehensive investigations"],
       maxTokens: 12000,
       temperature: 0.1,
-      priority: 1,
+      priority: 2,
       isPaid: true,
       description: "Performs extremely in-depth research with multiple data sources, academic citations, and comprehensive analysis"
+    },
+    "gemini-2.0-flash-thinking": {
+      name: "Gemini 2.0 Flash Thinking",
+      provider: "google",
+      strengths: ["Advanced reasoning", "Deep thinking", "Complex analysis", "Multi-step problem solving"],
+      maxTokens: 10000,
+      temperature: 0.15,
+      priority: 3
+    },
+    "claude-sonnet-4": {
+      name: "Claude 4.0 Sonnet",
+      provider: "anthropic",
+      strengths: ["Ultimate reasoning", "Expert-level analysis", "Advanced mathematics", "Complex problem solving"],
+      maxTokens: 8000,
+      temperature: 0.2,
+      priority: 4
+    },
+    "gpt-4o-advanced": {
+      name: "GPT-4o Advanced",
+      provider: "openai",
+      strengths: ["Multimodal intelligence", "Advanced coding", "Scientific analysis", "Creative reasoning"],
+      maxTokens: 8000,
+      temperature: 0.25,
+      priority: 5
     },
     "gemini-2.0-flash-exp": {
       name: "Gemini 2.0 Flash Experimental",
@@ -43,31 +78,39 @@ export const AI_MODELS = {
       strengths: ["Breakthrough intelligence", "Ultra-fast responses", "Advanced reasoning", "Maximum performance"],
       maxTokens: 8000,
       temperature: 0.2,
-      priority: 2
-    },
-    "claude-sonnet-4": {
-      name: "Claude 4.0 Sonnet",
-      provider: "anthropic",
-      strengths: ["Ultimate reasoning", "Expert-level analysis", "Advanced mathematics", "Complex problem solving"],
-      maxTokens: 8000,
-      temperature: 0.8,
-      priority: 3
-    },
-    "gpt-4o": {
-      name: "GPT-4o",
-      provider: "openai",
-      strengths: ["Multimodal intelligence", "Advanced coding", "Scientific analysis", "Creative reasoning"],
-      maxTokens: 6000,
-      temperature: 0.7,
-      priority: 4
+      priority: 6
     },
     "claude-3-opus": {
       name: "Claude 3 Opus",
       provider: "anthropic",
       strengths: ["Complex reasoning", "Creative writing", "Mathematical analysis", "Research"],
-      maxTokens: 4000,
-      temperature: 0.7,
-      priority: 5
+      maxTokens: 6000,
+      temperature: 0.3,
+      priority: 7
+    },
+    "gpt-4-turbo": {
+      name: "GPT-4 Turbo",
+      provider: "openai",
+      strengths: ["Fast processing", "Code generation", "Technical analysis", "Problem solving"],
+      maxTokens: 6000,
+      temperature: 0.3,
+      priority: 8
+    },
+    "perplexity-sonar": {
+      name: "Perplexity Sonar",
+      provider: "perplexity",
+      strengths: ["Real-time web search", "Live data access", "Current information", "Fact verification"],
+      maxTokens: 5000,
+      temperature: 0.2,
+      priority: 9
+    },
+    "xai-grok-2": {
+      name: "xAI Grok-2",
+      provider: "xai",
+      strengths: ["Unconventional thinking", "Creative problem solving", "Humor and wit", "Real-time awareness"],
+      maxTokens: 5000,
+      temperature: 0.4,
+      priority: 10
     }
   },
   
@@ -77,25 +120,33 @@ export const AI_MODELS = {
       name: "GPT-4",
       provider: "openai", 
       strengths: ["General intelligence", "Code generation", "Problem solving"],
-      maxTokens: 3000,
-      temperature: 0.6,
-      priority: 4
+      maxTokens: 4000,
+      temperature: 0.4,
+      priority: 11
     },
     "claude-3-sonnet": {
       name: "Claude 3 Sonnet",
       provider: "anthropic",
       strengths: ["Balanced performance", "Fast responses", "Detailed analysis"],
-      maxTokens: 2000,
-      temperature: 0.5,
-      priority: 5
+      maxTokens: 3000,
+      temperature: 0.4,
+      priority: 12
     },
     "gemini-1.5-pro": {
       name: "Gemini 1.5 Pro",
       provider: "google",
       strengths: ["Advanced multimodal", "Long context", "Research capabilities"],
       maxTokens: 4000,
-      temperature: 0.6,
-      priority: 6
+      temperature: 0.5,
+      priority: 13
+    },
+    "deepseek-coder": {
+      name: "DeepSeek Coder",
+      provider: "deepseek",
+      strengths: ["Advanced coding", "Programming expertise", "Code optimization", "Technical solutions"],
+      maxTokens: 4000,
+      temperature: 0.3,
+      priority: 14
     }
   },
   
@@ -105,9 +156,9 @@ export const AI_MODELS = {
       name: "GPT-3.5 Turbo",
       provider: "openai",
       strengths: ["Speed", "General knowledge", "Conversational"],
-      maxTokens: 1500,
+      maxTokens: 2000,
       temperature: 0.4,
-      priority: 7
+      priority: 15
     },
     "gemini-pro": {
       name: "Gemini Pro",
@@ -115,7 +166,15 @@ export const AI_MODELS = {
       strengths: ["Multimodal", "Code understanding", "Research"],
       maxTokens: 2000,
       temperature: 0.5,
-      priority: 8
+      priority: 16
+    },
+    "llama-3-70b": {
+      name: "Llama 3 70B",
+      provider: "meta",
+      strengths: ["Open-source excellence", "General reasoning", "Multilingual support"],
+      maxTokens: 3000,
+      temperature: 0.4,
+      priority: 17
     }
   },
   
@@ -125,8 +184,25 @@ export const AI_MODELS = {
       name: "Claude Instant",
       provider: "anthropic",
       strengths: ["Speed", "Efficiency", "Quick responses"],
-      maxTokens: 1000,
-      temperature: 0.3
+      maxTokens: 1500,
+      temperature: 0.3,
+      priority: 18
+    },
+    "mistral-large": {
+      name: "Mistral Large",
+      provider: "mistral",
+      strengths: ["European AI", "Privacy-focused", "Multilingual excellence"],
+      maxTokens: 2000,
+      temperature: 0.4,
+      priority: 19
+    },
+    "cohere-command": {
+      name: "Cohere Command",
+      provider: "cohere",
+      strengths: ["Business applications", "RAG optimization", "Enterprise solutions"],
+      maxTokens: 2000,
+      temperature: 0.3,
+      priority: 20
     }
   }
 };
@@ -230,6 +306,18 @@ export async function generateAIResponse(
   userLanguage: string = "en"
 ): Promise<string> {
   try {
+    // Force Mega Fusion AI for selected model - ULTIMATE INTELLIGENCE
+    if (selectedModel === 'mega-fusion') {
+      console.log(`[Mega Fusion AI] Using mega fusion model with 10+ AI systems`);
+      
+      return await megaFusionAI.generateFusionResponse({
+        userMessage,
+        complexity: intent.complexity,
+        domain: intent.domain,
+        conversationHistory
+      });
+    }
+    
     // Force conversational AI for selected model - MAXIMUM SPEED MODE
     if (selectedModel === 'conversational') {
       console.log(`[TURBO CONVERSATIONAL AI] Using maximum performance conversational model`);

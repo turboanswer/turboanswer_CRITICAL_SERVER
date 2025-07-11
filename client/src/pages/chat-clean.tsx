@@ -201,6 +201,7 @@ export default function ChatClean() {
               className="px-4 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg border border-slate-600"
             >
               <option value="auto">Auto-Select</option>
+              <option value="mega-fusion">🚀 Mega Fusion AI (10+ Models)</option>
               <option value="conversational">Conversational AI</option>
               <option value="emotional">Emotional AI</option>
               <option value="claude-3-opus">Claude 3 Opus</option>

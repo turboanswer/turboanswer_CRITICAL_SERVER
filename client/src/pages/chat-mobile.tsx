@@ -318,6 +318,7 @@ export default function ChatMobile() {
             className="px-3 py-1 text-xs bg-gray-800 border border-gray-700 rounded-lg"
           >
             <option value="auto">Auto</option>
+            <option value="mega-fusion">🚀 Mega Fusion (10+ Models)</option>
             <option value="conversational">Conversational</option>
             <option value="emotional">Emotional</option>
             <option value="claude-3-opus">Claude Opus</option>

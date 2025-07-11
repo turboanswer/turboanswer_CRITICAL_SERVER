@@ -570,6 +570,7 @@ export default function Chat() {
                   </SelectTrigger>
                   <SelectContent className="bg-zinc-800 border-zinc-700">
                     <SelectItem value="auto">🤖 Auto-Select</SelectItem>
+                    <SelectItem value="mega-fusion">🚀 Mega Fusion AI (10+ Models)</SelectItem>
                     <SelectItem value="research-pro">📚 Research Pro Ultra (Premium)</SelectItem>
                     <SelectItem value="conversational">💬 Conversational AI</SelectItem>
                     <SelectItem value="emotional">❤️ Emotional AI</SelectItem>
