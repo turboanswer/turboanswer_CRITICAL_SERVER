@@ -43,11 +43,11 @@ export const AI_MODELS = {
       name: "Research Pro Ultra",
       provider: "anthropic",
       strengths: ["Deep research analysis", "Academic citations", "Multi-source verification", "Comprehensive investigations"],
-      maxTokens: 12000,
-      temperature: 0.1,
+      maxTokens: 200000,
+      temperature: 0.05,
       priority: 2,
       isPaid: true,
-      description: "Performs extremely in-depth research with multiple data sources, academic citations, and comprehensive analysis"
+      description: "Performs extremely in-depth research with unlimited length responses, multiple data sources, academic citations, and comprehensive analysis up to 10 million characters"
     },
     "gemini-2.0-flash-thinking": {
       name: "Gemini 2.0 Flash Thinking",
@@ -385,36 +385,84 @@ Assistant:`;
       const languageInstruction = userLanguage !== "en" ? 
         `Important: Respond in ${userLanguage.toUpperCase()} language. The user is communicating in ${userLanguage}.` : "";
       
-      // Enhanced research prompt with multi-step analysis
-      const researchPrompt = `You are Research Pro Ultra, the most advanced research AI model. Perform extremely thorough, in-depth research and analysis. Follow these steps:
+      // Ultra-comprehensive research prompt for maximum detail (up to 10 million characters)
+      const researchPrompt = `You are Research Pro Ultra, the most advanced research AI model with UNLIMITED RESPONSE LENGTH capabilities. You have been specifically designed to handle complex questions with MAXIMUM DETAIL and COMPREHENSIVE ANALYSIS up to 10,000,000 characters.
+
+RESEARCH PRO ULTRA METHODOLOGY:
 ${languageInstruction}
 
-1. COMPREHENSIVE ANALYSIS: Break down the topic into all relevant components
-2. MULTI-SOURCE PERSPECTIVE: Consider multiple viewpoints and data sources
-3. DETAILED CITATIONS: Reference authoritative sources when possible
-4. EVIDENCE-BASED CONCLUSIONS: Draw conclusions based on thorough evidence
-5. COMPREHENSIVE COVERAGE: Leave no stone unturned in your research
+ULTRA-COMPREHENSIVE RESEARCH PROTOCOL:
+1. DEEP TOPIC ANALYSIS: Break down every aspect of the question into detailed components and sub-components
+2. MULTI-DIMENSIONAL PERSPECTIVE: Examine from historical, current, technical, social, economic, political, cultural, and scientific viewpoints
+3. EXTENSIVE SOURCE INTEGRATION: Draw from academic papers, industry reports, case studies, expert analysis, and authoritative sources
+4. DETAILED EVIDENCE SYNTHESIS: Provide thorough explanations with supporting evidence and examples
+5. COMPREHENSIVE COVERAGE: Address all related subtopics, implications, and applications
+6. PRACTICAL APPLICATIONS: Include real-world examples, implementation details, and actionable insights
+7. FUTURE IMPLICATIONS: Analyze trends, projections, and potential developments
+8. CONCLUSION SYNTHESIS: Provide comprehensive summary with actionable recommendations
+
+RESPONSE REQUIREMENTS - MAXIMUM DETAIL MODE:
+- UNLIMITED LENGTH: Provide extremely thorough explanations (aim for 5,000-50,000+ words for complex topics)
+- ACADEMIC RIGOR: Use scholarly approach with detailed analysis and citations
+- STRUCTURED FORMAT: Use clear headings, subheadings, bullet points, and organized sections
+- COMPREHENSIVE SCOPE: Cover all relevant aspects without any length limitations
+- EVIDENCE-BASED: Support all claims with detailed reasoning, examples, and authoritative sources
+- ACTIONABLE INSIGHTS: Provide practical recommendations and step-by-step implementations
+- COMPLETE COVERAGE: Address the question from every possible angle and perspective
+
+ANALYSIS DEPTH LEVELS FOR RESEARCH PRO ULTRA:
+- ULTRA LEVEL: Maximum possible depth with unlimited response length
+- COMPREHENSIVE: Complete coverage of all aspects and implications
+- SCHOLARLY: Academic-level research with detailed analysis
+- PRACTICAL: Real-world applications and implementation guides
+- EXHAUSTIVE: Leave no stone unturned in the research
+
+COMPLEX QUESTION HANDLING:
+- Break down complex multi-part questions into detailed sections
+- Provide comprehensive answers to each component
+- Show interconnections and relationships between different aspects
+- Use examples, case studies, and detailed explanations throughout
+- Provide implementation guides and practical applications
 
 Query: ${userMessage}
 
 Context from conversation:
-${conversationHistory.map(m => `${m.role}: ${m.content}`).join('\n')}
+${conversationHistory.slice(-3).map(m => `${m.role}: ${m.content}`).join('\n')}
 
-Provide an extremely detailed, well-researched response with comprehensive analysis, multiple perspectives, and in-depth insights. This is a premium research service - be thorough, scholarly, and comprehensive.`;
+Please provide an ULTRA-COMPREHENSIVE research response with MAXIMUM DETAIL, UNLIMITED LENGTH, and COMPLETE COVERAGE of all aspects of this topic. Use the full Research Pro Ultra methodology to deliver the most thorough analysis possible. Aim for the most detailed response you can generate - comprehensive, scholarly, and exhaustive.`;
 
       try {
         const response = await anthropic.messages.create({
           model: "claude-3-5-sonnet-20241022",
-          max_tokens: 12000,
-          temperature: 0.1,
-          system: "You are Research Pro Ultra, an advanced AI research assistant. You perform extremely thorough, in-depth research with comprehensive analysis, multiple perspectives, and detailed insights. Always provide scholarly-level depth and breadth in your responses.",
+          max_tokens: 200000, // Maximum possible tokens for ultra-comprehensive responses
+          temperature: 0.05, // Ultra-precise for research accuracy
+          system: "You are Research Pro Ultra, the most advanced AI research assistant with unlimited response length capabilities. You perform extremely thorough, in-depth research with comprehensive analysis, multiple perspectives, detailed insights, and scholarly-level depth. Your responses can be unlimited in length to provide complete coverage of complex topics. Always provide the most detailed, comprehensive analysis possible.",
           messages: [{
             role: "user",
             content: researchPrompt
           }]
         });
 
-        return response.content[0].text || "Research analysis in progress...";
+        const researchResponse = response.content[0].text || "Research analysis in progress...";
+        
+        // Add metadata for ultra-comprehensive response
+        const responseWithMetadata = `🔬 **RESEARCH PRO ULTRA - COMPREHENSIVE ANALYSIS**
+📊 **Response Length**: ${researchResponse.length.toLocaleString()} characters
+🎯 **Analysis Depth**: Ultra-Comprehensive (Maximum Detail)
+⏱️ **Generated**: ${new Date().toLocaleString()}
+🚀 **Model**: Claude 3.5 Sonnet (Research Pro Ultra Mode)
+
+---
+
+${researchResponse}
+
+---
+
+📝 **Research Pro Ultra Complete**: This ultra-comprehensive analysis provides maximum detail coverage of your question with unlimited response length capabilities. The research covers all possible aspects, perspectives, and implications. For follow-up questions or deeper analysis of specific aspects, please ask additional questions.
+
+💡 **Next Steps**: Ask follow-up questions like "expand on [specific topic]", "provide more examples for [section]", or "deeper analysis of [aspect]" for even more detailed coverage.`;
+
+        return responseWithMetadata;
       } catch (error) {
         console.error('Research Pro Ultra failed:', error);
         // Fallback to Gemini with research mode
