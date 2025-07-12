@@ -183,6 +183,7 @@ export function VoiceInterface({
   const wakeWordRef = useRef<any>(null);
   const speechSynthesisRef = useRef<SpeechSynthesisUtterance | null>(null);
   const silenceTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const handsFreeSilenceTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Initialize speech recognition
   const initializeRecognition = useCallback(() => {
@@ -258,6 +259,31 @@ export function VoiceInterface({
     return recognition;
   }, [selectedLanguage, onMessage, isWakeWordActive, voiceEnabled, isProcessing]);
 
+  // Start hands-free silence timer (7 seconds)
+  const startHandsFreeSilenceTimer = useCallback(() => {
+    if (handsFreeSilenceTimerRef.current) {
+      clearTimeout(handsFreeSilenceTimerRef.current);
+    }
+
+    handsFreeSilenceTimerRef.current = setTimeout(() => {
+      console.log('🔇 Auto-deactivating hands-free mode after 7 seconds of silence');
+      setIsWakeWordActive(false);
+      if (wakeWordRef.current) {
+        wakeWordRef.current.stop();
+      }
+    }, 7000); // 7 seconds
+  }, []);
+
+  // Reset hands-free silence timer
+  const resetHandsFreeSilenceTimer = useCallback(() => {
+    if (handsFreeSilenceTimerRef.current) {
+      clearTimeout(handsFreeSilenceTimerRef.current);
+    }
+    if (isWakeWordActive) {
+      startHandsFreeSilenceTimer();
+    }
+  }, [isWakeWordActive, startHandsFreeSilenceTimer]);
+
   // Initialize wake word detection
   const initializeWakeWordDetection = useCallback(() => {
     if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
@@ -272,6 +298,9 @@ export function VoiceInterface({
     wakeWordRecognition.lang = selectedLanguage;
 
     wakeWordRecognition.onresult = (event: any) => {
+      // Reset silence timer on any speech activity
+      resetHandsFreeSilenceTimer();
+      
       for (let i = event.resultIndex; i < event.results.length; i++) {
         const transcript = event.results[i][0].transcript.toLowerCase();
         
@@ -280,7 +309,7 @@ export function VoiceInterface({
           'hey turbo', 'hi turbo', 'turbo', 'hey turboanswer',
           'hola turbo', 'bonjour turbo', 'hallo turbo', 'ciao turbo',
           'olá turbo', 'привет турбо', 'こんにちは ターボ', '你好 涡轮',
-          'مرحبا تيربو', 'हैलो टर्बो', 'turbo جواب', 'تربو',
+          'مرحبا تيربو', 'हैلो टर्बो', 'turbo جواب', 'تربو',
         ];
 
         const containsWakeWord = wakeWords.some(word => transcript.includes(word));
@@ -304,7 +333,7 @@ export function VoiceInterface({
     };
 
     return wakeWordRecognition;
-  }, [selectedLanguage, isWakeWordActive]);
+  }, [selectedLanguage, isWakeWordActive, resetHandsFreeSilenceTimer]);
 
   // Start wake word listening
   const startWakeWordListening = useCallback(() => {
@@ -315,11 +344,13 @@ export function VoiceInterface({
       try {
         wakeWordRef.current.start();
         console.log('👂 Wake word detection started');
+        // Start the 7-second silence timer
+        startHandsFreeSilenceTimer();
       } catch (error) {
         console.log('Wake word detection start error:', error);
       }
     }
-  }, [isWakeWordActive, voiceEnabled, initializeWakeWordDetection]);
+  }, [isWakeWordActive, voiceEnabled, initializeWakeWordDetection, startHandsFreeSilenceTimer]);
 
   // Start listening
   const startListening = useCallback(() => {
@@ -466,6 +497,10 @@ export function VoiceInterface({
       if (wakeWordRef.current) {
         wakeWordRef.current.stop();
       }
+      // Clear silence timer when manually turning off hands-free mode
+      if (handsFreeSilenceTimerRef.current) {
+        clearTimeout(handsFreeSilenceTimerRef.current);
+      }
     }
   }, [isWakeWordActive, startWakeWordListening]);
 
@@ -507,6 +542,9 @@ export function VoiceInterface({
       }
       if (silenceTimerRef.current) {
         clearTimeout(silenceTimerRef.current);
+      }
+      if (handsFreeSilenceTimerRef.current) {
+        clearTimeout(handsFreeSilenceTimerRef.current);
       }
     };
   }, []);
@@ -674,9 +712,12 @@ export function VoiceInterface({
             {/* Wake Word Instructions */}
             {isWakeWordActive && (
               <div className="bg-blue-900/30 border border-blue-800 rounded-lg p-4">
-                <h4 className="text-base font-medium text-white mb-2">Wake Words:</h4>
-                <p className="text-sm text-gray-300 leading-relaxed">
+                <h4 className="text-base font-medium text-white mb-2">Hands-Free Mode Active:</h4>
+                <p className="text-sm text-gray-300 leading-relaxed mb-2">
                   Say "Hey Turbo", "Hi Turbo", or "Turbo" to activate voice input hands-free. Wake words work in multiple languages!
+                </p>
+                <p className="text-xs text-yellow-300">
+                  ⏱️ Auto-deactivates after 7 seconds of silence
                 </p>
               </div>
             )}
