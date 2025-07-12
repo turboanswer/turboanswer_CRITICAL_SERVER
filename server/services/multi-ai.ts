@@ -21,6 +21,7 @@ import { alternativeImageGeneration } from './alternative-image-generation';
 import { alternativeVideoGeneration } from './alternative-video-generation';
 import { megaFusionAI } from './mega-fusion-ai';
 import { powerAmplifier } from './power-amplifier';
+import { generateUltimateFusionResponse, getUltimateFusionInfo } from './ultimate-fusion-ai';
 import { detectLanguage, getLanguageConfig, formatResponseForLanguage } from './language-detector';
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import OpenAI from "openai";
@@ -29,8 +30,18 @@ import Anthropic from "@anthropic-ai/sdk";
 export const AI_MODELS = {
   // Tier 1: MAXIMUM POWER Models (Ultimate Performance) - 10+ Combined Models
   maximum: {
+    "ultimate-fusion": {
+      name: "Ultimate Fusion AI",
+      provider: "ultimate-fusion",
+      strengths: ["ALL 40+ models combined", "Maximum superintelligence", "Every AI expert unified", "Complete knowledge synthesis"],
+      maxTokens: 20000,
+      temperature: 0.05,
+      priority: 0,
+      isPaid: true,
+      description: "Revolutionary AI that combines ALL available models into one superintelligent system - every expert unified for ultimate performance"
+    },
     "mega-fusion": {
-      name: "Mega Fusion AI",
+      name: "Mega Fusion AI", 
       provider: "fusion",
       strengths: ["10+ model fusion", "Ultimate intelligence", "Maximum reasoning", "Breakthrough performance"],
       maxTokens: 15000,
@@ -683,6 +694,21 @@ export async function generateAIResponse(
   try {
     // Analyze user intent first for all models
     const intent = analyzeUserIntent(userMessage, conversationHistory);
+    
+    // Force Ultimate Fusion AI for selected model - MAXIMUM SUPERINTELLIGENCE
+    if (selectedModel === 'ultimate-fusion') {
+      console.log(`[Ultimate Fusion AI] Activating ALL 40+ AI models for supreme intelligence`);
+      
+      const fusionInfo = getUltimateFusionInfo();
+      console.log(`[Ultimate Fusion AI] Using ${fusionInfo.totalModels} total models from ${fusionInfo.availableProviders} providers`);
+      
+      return await generateUltimateFusionResponse(userMessage, conversationHistory, {
+        maxModels: 15, // Use up to 15 models simultaneously
+        complexityThreshold: 3,
+        fusionStrategy: 'hybrid',
+        confidenceBooster: true
+      });
+    }
     
     // Force Mega Fusion AI for selected model - ULTIMATE INTELLIGENCE
     if (selectedModel === 'mega-fusion') {

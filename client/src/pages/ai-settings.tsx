@@ -8,6 +8,16 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 
 const AI_MODELS = {
+  // Ultimate AI Models (Maximum Intelligence)
+  "ultimate-fusion": {
+    name: "Ultimate Fusion AI",
+    description: "🚀 REVOLUTIONARY: Combines ALL 40+ AI models into one superintelligent system - every expert unified for maximum performance",
+    tier: "premium",
+    speed: "Supreme Intelligence",
+    color: "rainbow",
+    isPaid: true
+  },
+  
   // Core Models (Free & Premium)
   "auto": {
     name: "Auto-Select",
@@ -390,6 +400,10 @@ export default function AISettings() {
 
   const getSpeedColor = (speed: string) => {
     switch (speed) {
+      case "Supreme Intelligence":
+        return "bg-gradient-to-r from-purple-500 via-pink-500 to-red-500";
+      case "Maximum Power":
+        return "bg-gradient-to-r from-yellow-400 to-orange-500";
       case "Lightning":
       case "Ultra-Fast":
         return "bg-green-500";
@@ -429,11 +443,46 @@ export default function AISettings() {
         <div className="mb-8">
           <h2 className="text-2xl font-bold mb-2">Choose Your AI Assistant</h2>
           <p className="text-gray-400">
-            Select from 40 specialized AI models designed for different tasks and expertise areas.
+            Select from 41 specialized AI models including the revolutionary Ultimate Fusion AI.
           </p>
         </div>
 
         <RadioGroup value={selectedModel} onValueChange={setSelectedModel} className="space-y-4">
+          
+          {/* Ultimate AI Section */}
+          <div className="mb-8">
+            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+              <div className="w-5 h-5 bg-gradient-to-r from-purple-500 via-pink-500 to-red-500 rounded-full animate-pulse" />
+              Ultimate AI (Revolutionary Technology)
+            </h3>
+            <Card className="bg-gradient-to-r from-purple-900/50 to-pink-900/50 border-purple-500 hover:border-purple-400 transition-colors">
+              <CardContent className="p-4">
+                <div className="flex items-start space-x-3">
+                  <RadioGroupItem value="ultimate-fusion" id="ultimate-fusion" className="mt-1" />
+                  <div className="flex-1 min-w-0">
+                    <Label htmlFor="ultimate-fusion" className="cursor-pointer">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="font-bold text-white text-lg">Ultimate Fusion AI</span>
+                        <Badge variant="secondary" className="bg-gradient-to-r from-purple-600 to-pink-600 text-white">
+                          Revolutionary
+                        </Badge>
+                        <div className="flex items-center gap-1">
+                          <div className="w-3 h-3 rounded-full bg-gradient-to-r from-purple-500 via-pink-500 to-red-500 animate-pulse" />
+                          <span className="text-xs text-purple-300 font-semibold">Supreme Intelligence</span>
+                        </div>
+                      </div>
+                      <p className="text-sm text-purple-200 leading-relaxed font-medium">
+                        🚀 REVOLUTIONARY: Combines ALL 40+ AI models into one superintelligent system - every expert unified for maximum performance
+                      </p>
+                    </Label>
+                  </div>
+                  {selectedModel === "ultimate-fusion" && (
+                    <CheckCircle className="h-5 w-5 text-purple-400 mt-1 flex-shrink-0" />
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
           {/* Free Models Section */}
           <div className="mb-8">
             <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
