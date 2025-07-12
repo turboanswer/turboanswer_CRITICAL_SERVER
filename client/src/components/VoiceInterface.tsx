@@ -638,15 +638,7 @@ export function VoiceInterface({
                 />
               </div>
 
-              <div className="flex items-center justify-between p-2">
-                <Label htmlFor="continuous-mode" className="text-white text-base font-normal">Continuous Conversation</Label>
-                <Switch
-                  id="continuous-mode"
-                  checked={isContinuousMode}
-                  onCheckedChange={toggleContinuousMode}
-                  className="data-[state=checked]:bg-purple-600"
-                />
-              </div>
+              {/* Continuous mode toggle removed as requested */}
             </div>
 
             {/* Stop Speech Button */}
