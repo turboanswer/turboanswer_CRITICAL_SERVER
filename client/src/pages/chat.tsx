@@ -451,339 +451,124 @@ export default function Chat() {
 
   return (
     <div className="flex flex-col h-screen max-w-7xl mx-auto bg-black shadow-2xl">
-      {/* Enhanced Header with Integrated Controls */}
-      <header className="bg-zinc-950 border-b border-zinc-800 px-4 py-4 sm:px-6 relative z-40 shrink-0">
-        <div className="flex flex-col space-y-4">
-          {/* Top Row: Logo and User Controls */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <div className="relative">
-                <img 
-                  src="/src/assets/turboanswer-logo.png" 
-                  alt="TURBOANSWER AI Robot" 
-                  className="w-16 h-16 object-contain animate-pulse hover:animate-bounce transition-all duration-300"
-                />
-                <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-400 rounded-full animate-ping"></div>
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent tracking-wide">TURBOANSWER</h1>
-                <p className="text-sm text-cyan-400 font-medium">NEVER STOP INNOVATING</p>
-              </div>
+      {/* Simplified Intuitive Header */}
+      <header className="bg-black/95 backdrop-blur-sm border-b border-gray-800 px-4 py-3 relative z-40 shrink-0">
+        <div className="flex items-center justify-between">
+          {/* Simplified Logo */}
+          <div className="flex items-center space-x-3">
+            <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
+              <Zap className="h-6 w-6 text-white" />
             </div>
-            <div className="flex items-center space-x-2">
-              {/* User Authentication */}
-              {user ? (
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-zinc-400">Welcome, {user.username}</span>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleLogout}
-                    className="p-2 text-zinc-400 hover:text-red-400"
-                  >
-                    <LogOut size={16} />
-                  </Button>
-                </div>
-              ) : (
-                <div className="flex items-center gap-2">
-                  <Link href="/login">
-                    <Button variant="ghost" size="sm" className="text-purple-400 hover:text-purple-300">
-                      Sign In
-                    </Button>
-                  </Link>
-                  <Link href="/register">
-                    <Button size="sm" className="bg-purple-600 hover:bg-purple-700 text-white">
-                      Create Account
-                    </Button>
-                  </Link>
-                </div>
-              )}
+            <div>
+              <h1 className="text-xl font-bold text-white">Turbo Answer</h1>
+              <p className="text-xs text-gray-400">AI Assistant</p>
             </div>
           </div>
-
-          {/* Second Row: AI Controls Always Visible */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              {/* Document Upload & Camera Section */}
-              <div className="flex items-center space-x-2">
-                <Button
-                  onClick={() => setShowDocumentUpload(!showDocumentUpload)}
-                  variant={showDocumentUpload ? "default" : "outline"}
-                  size="sm"
-                  className={showDocumentUpload ? 
-                    "bg-purple-600 hover:bg-purple-700 text-white" : 
-                    "bg-zinc-800 hover:bg-zinc-700 text-zinc-300 border-zinc-700"
-                  }
-                >
-                  <FileText className="h-4 w-4 mr-2" />
-                  Upload Doc
-                </Button>
-                <Button
-                  onClick={() => setShowCamera(!showCamera)}
-                  variant={showCamera ? "default" : "outline"}
-                  size="sm"
-                  className={showCamera ? 
-                    "bg-purple-600 hover:bg-purple-700 text-white" : 
-                    "bg-zinc-800 hover:bg-zinc-700 text-zinc-300 border-zinc-700"
-                  }
-                >
-                  <Camera className="h-4 w-4 mr-2" />
-                  Camera
-                </Button>
-                <Button
-                  onClick={() => setShowLiveCamera(!showLiveCamera)}
-                  variant={showLiveCamera ? "default" : "outline"}
-                  size="sm"
-                  className={showLiveCamera ? 
-                    "bg-red-600 hover:bg-red-700 text-white" : 
-                    "bg-zinc-800 hover:bg-zinc-700 text-zinc-300 border-zinc-700"
-                  }
-                >
-                  <Camera className="h-4 w-4 mr-2" />
-                  Live Feed
-                </Button>
-                {(showDocumentUpload || showCamera || showLiveCamera) && (
-                  <div className="text-xs text-purple-300">• Active</div>
-                )}
-              </div>
-
-              {/* Language & Voice Controls */}
-              <div className="flex items-center space-x-2">
-                <LanguageSelector 
-                  currentLanguage={currentLanguage} 
-                  onLanguageChange={handleLanguageChange} 
-                />
-                <Button
-                  onClick={() => setContinuousMode(!continuousMode)}
-                  variant={continuousMode ? "default" : "outline"}
-                  size="sm"
-                  className={continuousMode ? 
-                    "bg-green-600 hover:bg-green-700 text-white" : 
-                    "bg-zinc-800 hover:bg-zinc-700 text-zinc-300 border-zinc-700"
-                  }
-                  title="Continuous conversation mode"
-                >
-                  <Globe className="h-4 w-4 mr-2" />
-                  Live Chat
-                </Button>
-              </div>
-
-              {/* AI Brain Selector - Enhanced Creative Design */}
-              <div className="flex items-center space-x-3">
-                <div className="flex items-center space-x-2">
-                  <div className="relative">
-                    <Brain className="h-5 w-5 text-cyan-400 animate-pulse" />
-                    <div className="absolute -top-1 -right-1 w-2 h-2 bg-green-400 rounded-full animate-ping"></div>
-                  </div>
-                  <label className="text-sm text-cyan-300 font-medium bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">
-                    AI Brain:
-                  </label>
-                </div>
-                
-                <div className="relative group">
-                  <Select value={selectedAIModel} onValueChange={setSelectedAIModel}>
-                    <SelectTrigger className="w-64 bg-gradient-to-r from-zinc-900 via-zinc-800 to-zinc-900 border border-zinc-600 text-white text-sm hover:border-cyan-500 transition-all duration-300 shadow-lg hover:shadow-cyan-500/20">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-3 h-3 bg-gradient-to-r from-green-400 to-cyan-400 rounded-full animate-pulse shadow-lg shadow-cyan-400/50"></div>
-                        <SelectValue placeholder="🧠 Select Intelligence Level" />
-                        <div className="ml-auto opacity-50 group-hover:opacity-100 transition-opacity">
-                          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-                          </svg>
-                        </div>
-                      </div>
-                    </SelectTrigger>
-                    
-                    <SelectContent className="bg-zinc-950 border border-zinc-700 shadow-2xl max-h-80 overflow-y-auto">
-                      {/* Ultimate Power Tier */}
-                      <div className="p-3 border-b border-zinc-800 bg-gradient-to-r from-amber-950/30 to-red-950/30">
-                        <div className="flex items-center space-x-2 mb-2">
-                          <div className="flex space-x-1">
-                            <div className="w-2 h-2 bg-amber-400 rounded-full animate-pulse"></div>
-                            <div className="w-2 h-2 bg-red-400 rounded-full animate-pulse" style={{animationDelay: '0.2s'}}></div>
-                            <div className="w-2 h-2 bg-orange-400 rounded-full animate-pulse" style={{animationDelay: '0.4s'}}></div>
-                          </div>
-                          <span className="text-xs font-bold text-amber-400 tracking-wide">🔥 ULTIMATE POWER</span>
-                        </div>
-                        
-                        <SelectItem value="mega-fusion" className="bg-gradient-to-r from-amber-900/40 to-red-900/40 border border-amber-600/30 mb-2 hover:from-amber-800/50 hover:to-red-800/50">
-                          <div className="flex items-center space-x-3 p-1">
-                            <div className="relative">
-                              <span className="text-2xl animate-bounce">🚀</span>
-                              <div className="absolute -top-1 -right-1 w-2 h-2 bg-amber-400 rounded-full animate-ping"></div>
-                            </div>
-                            <div className="flex-1">
-                              <div className="font-bold text-amber-100 text-sm">Mega Fusion AI</div>
-                              <div className="text-xs text-amber-300">20+ Models • Ultimate Intelligence</div>
-                              <div className="flex items-center space-x-1 mt-1">
-                                <div className="w-1 h-1 bg-amber-400 rounded-full"></div>
-                                <div className="w-1 h-1 bg-red-400 rounded-full"></div>
-                                <div className="w-1 h-1 bg-orange-400 rounded-full"></div>
-                                <span className="text-xs text-amber-400 ml-1">MAX POWER</span>
-                              </div>
-                            </div>
-                          </div>
-                        </SelectItem>
-                        
-                        <SelectItem value="research-pro" className="bg-gradient-to-r from-purple-900/40 to-blue-900/40 border border-purple-600/30 hover:from-purple-800/50 hover:to-blue-800/50">
-                          <div className="flex items-center space-x-3 p-1">
-                            <span className="text-xl text-purple-400">📚</span>
-                            <div className="flex-1">
-                              <div className="font-bold text-purple-100 text-sm">Research Pro Ultra</div>
-                              <div className="text-xs text-purple-300">Premium • Deep Analysis</div>
-                            </div>
-                            <div className="px-2 py-1 bg-purple-600/30 rounded-full text-xs text-purple-200">PRO</div>
-                          </div>
-                        </SelectItem>
-                      </div>
-                      
-                      {/* Specialized Tier */}
-                      <div className="p-3 border-b border-zinc-800">
-                        <div className="flex items-center space-x-2 mb-2">
-                          <div className="w-2 h-2 bg-cyan-400 rounded-full animate-pulse"></div>
-                          <span className="text-xs font-medium text-cyan-400 tracking-wide">⚡ SPECIALIZED</span>
-                        </div>
-                        
-                        <SelectItem value="auto" className="mb-2 bg-zinc-800/50 hover:bg-zinc-700/50">
-                          <div className="flex items-center space-x-3 p-1">
-                            <span className="text-lg">🤖</span>
-                            <div className="flex-1">
-                              <div className="font-medium text-white text-sm">Auto-Select</div>
-                              <div className="text-xs text-zinc-400">Smart Routing • Adaptive</div>
-                            </div>
-                            <div className="text-xs text-cyan-400">AUTO</div>
-                          </div>
-                        </SelectItem>
-                        
-                        <SelectItem value="conversational" className="mb-2 bg-green-900/20 hover:bg-green-800/30">
-                          <div className="flex items-center space-x-3 p-1">
-                            <span className="text-lg text-green-400">💬</span>
-                            <div className="flex-1">
-                              <div className="font-medium text-green-100 text-sm">Conversational AI</div>
-                              <div className="text-xs text-green-400">Ultra-Fast • Human-like</div>
-                            </div>
-                            <div className="text-xs text-green-400">FAST</div>
-                          </div>
-                        </SelectItem>
-                        
-                        <SelectItem value="emotional" className="bg-pink-900/20 hover:bg-pink-800/30">
-                          <div className="flex items-center space-x-3 p-1">
-                            <span className="text-lg text-pink-400 animate-pulse">❤️</span>
-                            <div className="flex-1">
-                              <div className="font-medium text-pink-100 text-sm">Emotional AI</div>
-                              <div className="text-xs text-pink-400">Empathetic • Supportive</div>
-                            </div>
-                            <div className="text-xs text-pink-400">CARE</div>
-                          </div>
-                        </SelectItem>
-                      </div>
-                      
-                      {/* Premium Models Tier */}
-                      <div className="p-3">
-                        <div className="flex items-center space-x-2 mb-2">
-                          <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
-                          <span className="text-xs font-medium text-blue-400 tracking-wide">🎯 PREMIUM MODELS</span>
-                        </div>
-                        
-                        <div className="space-y-1">
-                          <SelectItem value="claude-3-opus" className="hover:bg-zinc-800/50">
-                            <div className="flex items-center space-x-3 p-1">
-                              <span className="text-lg">🧠</span>
-                              <div className="flex-1">
-                                <div className="font-medium text-white text-sm">Claude 3 Opus</div>
-                                <div className="text-xs text-zinc-400">Advanced Reasoning</div>
-                              </div>
-                            </div>
-                          </SelectItem>
-                          
-                          <SelectItem value="gpt-4" className="hover:bg-zinc-800/50">
-                            <div className="flex items-center space-x-3 p-1">
-                              <span className="text-lg">🎯</span>
-                              <div className="flex-1">
-                                <div className="font-medium text-white text-sm">GPT-4</div>
-                                <div className="text-xs text-zinc-400">Multimodal Intelligence</div>
-                              </div>
-                            </div>
-                          </SelectItem>
-                          
-                          <SelectItem value="claude-3-sonnet" className="hover:bg-zinc-800/50">
-                            <div className="flex items-center space-x-3 p-1">
-                              <span className="text-lg">⚖️</span>
-                              <div className="flex-1">
-                                <div className="font-medium text-white text-sm">Claude 3 Sonnet</div>
-                                <div className="text-xs text-zinc-400">Balanced Performance</div>
-                              </div>
-                            </div>
-                          </SelectItem>
-                          
-                          <SelectItem value="gpt-3.5-turbo" className="hover:bg-zinc-800/50">
-                            <div className="flex items-center space-x-3 p-1">
-                              <span className="text-lg">⚡</span>
-                              <div className="flex-1">
-                                <div className="font-medium text-white text-sm">GPT-3.5 Turbo</div>
-                                <div className="text-xs text-zinc-400">Fast & Efficient</div>
-                              </div>
-                            </div>
-                          </SelectItem>
-                          
-                          <SelectItem value="gemini-pro" className="hover:bg-zinc-800/50">
-                            <div className="flex items-center space-x-3 p-1">
-                              <span className="text-lg">🔬</span>
-                              <div className="flex-1">
-                                <div className="font-medium text-white text-sm">Gemini Pro</div>
-                                <div className="text-xs text-zinc-400">Google Advanced</div>
-                              </div>
-                            </div>
-                          </SelectItem>
-                        </div>
-                      </div>
-                    </SelectContent>
-                  </Select>
-                  
-                  {/* Active indicator */}
-                  <div className="absolute -top-1 -right-1 w-3 h-3 bg-gradient-to-r from-green-400 to-cyan-400 rounded-full animate-ping opacity-75"></div>
-                </div>
-              </div>
+          
+          {/* Quick Controls */}
+          <div className="flex items-center space-x-3">
+            {/* AI Model Quick Selector */}
+            <div className="flex items-center space-x-2">
+              <span className="text-xs text-gray-400 hidden sm:block">AI:</span>
+              <Select value={selectedAIModel} onValueChange={setSelectedAIModel}>
+                <SelectTrigger className="w-24 h-8 bg-gray-900 border-gray-700 text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="auto">Auto</SelectItem>
+                  <SelectItem value="ultimate-fusion">Ultimate</SelectItem>
+                  <SelectItem value="conversational">Fast</SelectItem>
+                  <SelectItem value="research-pro">Research</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
-
-            {/* Enhanced AI Status Display */}
-            <div className="flex items-center space-x-3 p-3 bg-gradient-to-r from-zinc-900/50 to-zinc-800/50 rounded-lg border border-zinc-700/50">
-              <div className="flex items-center space-x-2">
-                <div className="relative">
-                  <Brain className="h-4 w-4 text-cyan-400" />
-                  <div className="absolute -top-1 -right-1 w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                </div>
-                <span className="text-sm font-medium text-cyan-300">Active AI:</span>
-              </div>
-              
-              <div className="flex items-center space-x-2">
-                <div className="px-2 py-1 bg-zinc-800 rounded-md border border-zinc-600">
-                  <span className="text-sm font-medium text-white">
-                    {selectedAIModel === 'auto' ? '🤖 Auto-Select' : 
-                     selectedAIModel === 'mega-fusion' ? '🚀 Mega Fusion' :
-                     selectedAIModel === 'research-pro' ? '📚 Research Pro' :
-                     selectedAIModel === 'conversational' ? '💬 Conversational' :
-                     selectedAIModel === 'emotional' ? '❤️ Emotional' :
-                     selectedAIModel}
-                  </span>
-                </div>
-                
-                <div className="flex items-center space-x-1">
-                  <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" title="AI System Online"></div>
-                  <span className="text-xs text-green-400 font-medium">ONLINE</span>
-                </div>
-              </div>
-              
-              {selectedAIModel === 'mega-fusion' && (
-                <div className="flex items-center space-x-1 px-2 py-1 bg-gradient-to-r from-amber-900/30 to-red-900/30 rounded-md border border-amber-600/30">
-                  <div className="w-1 h-1 bg-amber-400 rounded-full animate-pulse"></div>
-                  <span className="text-xs text-amber-400 font-bold">20+ MODELS</span>
-                </div>
-              )}
-            </div>
+            
+            {/* Voice Toggle */}
+            <Button
+              onClick={() => setVoiceEnabled(!voiceEnabled)}
+              variant="ghost"
+              size="sm"
+              className={`h-8 w-8 p-0 ${voiceEnabled ? 'text-green-400' : 'text-gray-400'} hover:text-white`}
+              title={voiceEnabled ? "Voice On" : "Voice Off"}
+            >
+              {voiceEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
+            </Button>
+            
+            {/* Settings */}
+            <Link href="/ai-settings">
+              <Button 
+                variant="ghost" 
+                size="sm"
+                className="h-8 w-8 p-0 text-gray-400 hover:text-white"
+                title="Settings"
+              >
+                <Settings className="h-4 w-4" />
+              </Button>
+            </Link>
+            
+            {/* User Menu */}
+            {user ? (
+              <Button
+                onClick={handleLogout}
+                variant="ghost"
+                size="sm"
+                className="h-8 w-8 p-0 text-gray-400 hover:text-red-400"
+                title="Logout"
+              >
+                <LogOut className="h-4 w-4" />
+              </Button>
+            ) : (
+              <Link href="/login">
+                <Button variant="ghost" size="sm" className="text-sm text-blue-400 hover:text-white">
+                  Sign In
+                </Button>
+              </Link>
+            )}
           </div>
         </div>
       </header>
+
+      {/* Quick Action Bar */}
+      <div className="bg-gray-900/50 border-b border-gray-800 px-4 py-2">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <Button
+              onClick={() => setShowDocumentUpload(!showDocumentUpload)}
+              variant="ghost"
+              size="sm"
+              className={`h-8 px-2 ${showDocumentUpload ? 'text-blue-400' : 'text-gray-400'} hover:text-white`}
+              title="Upload Document"
+            >
+              <FileText className="h-4 w-4" />
+            </Button>
+            <Button
+              onClick={() => setShowCamera(!showCamera)}
+              variant="ghost"
+              size="sm"
+              className={`h-8 px-2 ${showCamera ? 'text-blue-400' : 'text-gray-400'} hover:text-white`}
+              title="Camera"
+            >
+              <Camera className="h-4 w-4" />
+            </Button>
+            <Button
+              onClick={() => setShowLiveCamera(!showLiveCamera)}
+              variant="ghost"
+              size="sm"
+              className={`h-8 px-2 ${showLiveCamera ? 'text-red-400' : 'text-gray-400'} hover:text-white`}
+              title="Live Camera"
+            >
+              <Globe className="h-4 w-4" />
+            </Button>
+          </div>
+          
+          <div className="flex items-center space-x-2">
+            <LanguageSelector 
+              currentLanguage={currentLanguage} 
+              onLanguageChange={handleLanguageChange} 
+            />
+          </div>
+        </div>
+      </div>
 
       {/* Document Upload Panel */}
       {showDocumentUpload && (
@@ -979,52 +764,65 @@ export default function Chat() {
         </div>
       </div>
 
-      {/* Enhanced Input Area - Fixed position */}
-      <div className="bg-gradient-to-r from-zinc-950 via-zinc-900 to-zinc-950 border-t border-purple-800/30 px-6 py-6 relative z-40 shrink-0 shadow-2xl">
-        <div className="flex items-end space-x-4">
-          <div className="flex-1">
-            <div className="relative">
+      {/* Simplified Message Input */}
+      <div className="bg-black border-t border-gray-800 p-4">
+        <div className="max-w-4xl mx-auto">
+          <div className="flex items-center space-x-3">
+            {/* Voice Button */}
+            <Button
+              onClick={isListening ? stopListening : startListening}
+              variant="ghost"
+              size="sm"
+              className={`h-10 w-10 p-0 rounded-full ${
+                isListening 
+                  ? 'bg-red-500 text-white hover:bg-red-600' 
+                  : 'bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-white'
+              }`}
+              title={isListening ? "Stop listening" : "Start voice input"}
+            >
+              {isListening ? <MicOff className="h-5 w-5" /> : <Mic className="h-5 w-5" />}
+            </Button>
+            
+            {/* Message Input */}
+            <div className="flex-1 relative">
               <Textarea
                 ref={textareaRef}
                 value={messageContent}
                 onChange={(e) => setMessageContent(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder="Ask me anything or click the camera to start live feed..."
-                className={`w-full px-4 py-3 pr-20 text-zinc-100 placeholder-zinc-500 bg-zinc-900 border border-zinc-700 rounded-2xl resize-none focus:ring-2 focus:ring-purple-500 focus:border-transparent min-h-[48px] ${showLiveCamera ? 'ring-2 ring-red-400 border-red-400' : ''}`}
+                placeholder="Type your message here..."
+                className="w-full px-4 py-3 pr-12 bg-gray-900 border border-gray-700 rounded-xl text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none min-h-[44px] max-h-32"
                 rows={1}
               />
-              <Button
-                onClick={() => setShowLiveCamera(!showLiveCamera)}
-                disabled={sendMessageMutation.isPending}
-                className={`absolute right-11 bottom-2 w-8 h-8 rounded-full flex items-center justify-center focus:ring-2 focus:ring-offset-2 focus:ring-offset-zinc-900 disabled:opacity-50 disabled:cursor-not-allowed p-0 ${
-                  showLiveCamera 
-                    ? 'bg-red-500 text-white hover:bg-red-600 focus:ring-red-500' 
-                    : 'bg-zinc-700 text-zinc-300 hover:bg-zinc-600 focus:ring-zinc-500'
-                }`}
-                title={showLiveCamera ? "Stop live camera" : "Start live camera feed"}
-              >
-                <Camera className="h-4 w-4" />
-              </Button>
+              
+              {/* Send Button */}
               <Button
                 onClick={handleSendMessage}
                 disabled={!messageContent.trim() || sendMessageMutation.isPending}
-                className="absolute right-2 bottom-2 w-8 h-8 bg-purple-500 text-white rounded-full flex items-center justify-center hover:bg-purple-600 focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 focus:ring-offset-zinc-900 disabled:opacity-50 disabled:cursor-not-allowed p-0"
+                className="absolute right-2 bottom-2 h-8 w-8 p-0 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                title="Send message"
               >
                 <Send className="h-4 w-4" />
               </Button>
             </div>
           </div>
-        </div>
-        
-        {/* Input Helper Text */}
-        <div className="flex items-center justify-between mt-2 px-1">
-          <div className="flex items-center space-x-4 text-xs text-gray-500">
-            <span>Press Enter to send</span>
-            <span>{showLiveCamera ? 'Live camera active...' : 'Live camera available'}</span>
-            <span>Secure & Private</span>
-          </div>
-          <div className="text-xs text-gray-400">
-            {messageContent.length}/2000
+          
+          {/* Status and Tips */}
+          <div className="flex items-center justify-between mt-2 text-xs text-gray-500">
+            <div className="flex items-center space-x-3">
+              <span className="flex items-center space-x-1">
+                <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+                <span>AI Ready</span>
+              </span>
+              {voiceEnabled && (
+                <span className="flex items-center space-x-1">
+                  <Volume2 className="h-3 w-3" />
+                  <span>Voice On</span>
+                </span>
+              )}
+              <span>Press Enter to send</span>
+            </div>
+            <span>{messageContent.length}/2000</span>
           </div>
         </div>
       </div>

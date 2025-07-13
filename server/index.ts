@@ -1,8 +1,7 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
-import { WebSocketServer } from 'ws';
-import { PhoneService } from './services/phone-service';
+
 
 const app = express();
 app.use(express.json());
@@ -41,16 +40,7 @@ app.use((req, res, next) => {
 (async () => {
   const server = await registerRoutes(app);
   
-  // Set up WebSocket server for voice calls
-  const wss = new WebSocketServer({ 
-    server,
-    path: '/voice-call'
-  });
 
-  wss.on('connection', (websocket) => {
-    log('[WebSocket] New voice call connection');
-    PhoneService.handleWebSocketConnection(websocket);
-  });
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;

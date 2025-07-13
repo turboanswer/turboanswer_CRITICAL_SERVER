@@ -440,10 +440,10 @@ export default function AISettings() {
       </header>
 
       <main className="max-w-4xl mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h2 className="text-2xl font-bold mb-2">Choose Your AI Assistant</h2>
-          <p className="text-gray-400">
-            Select from 41 specialized AI models including the revolutionary Ultimate Fusion AI.
+        <div className="mb-8 text-center">
+          <h2 className="text-3xl font-bold mb-3">Choose Your AI</h2>
+          <p className="text-gray-400 text-lg">
+            Select the AI model that best fits your needs
           </p>
         </div>
 

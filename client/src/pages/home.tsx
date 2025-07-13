@@ -46,58 +46,55 @@ export default function Home() {
           <p className="text-gray-400 text-lg">Advanced AI Assistant with Multi-Model Intelligence</p>
         </div>
 
-        {/* Quick Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-          <Card className="bg-gray-900 border-gray-800 hover:border-blue-500 transition-colors">
-            <CardHeader>
-              <div className="flex items-center">
-                <MessageSquare className="h-8 w-8 text-blue-500 mr-3" />
-                <CardTitle className="text-white">New Chat</CardTitle>
-              </div>
-              <CardDescription>Start a conversation with AI</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Link href="/">
-                <Button className="w-full bg-blue-600 hover:bg-blue-700">
-                  Start Chatting
-                </Button>
-              </Link>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-gray-900 border-gray-800 hover:border-green-500 transition-colors">
-            <CardHeader>
-              <div className="flex items-center">
-                <Brain className="h-8 w-8 text-green-500 mr-3" />
-                <CardTitle className="text-white">AI Settings</CardTitle>
-              </div>
-              <CardDescription>Choose your AI model</CardDescription>
-            </CardHeader>
-            <CardContent>
+        {/* Main Actions - Simplified */}
+        <div className="max-w-2xl mx-auto mb-8">
+          <div className="space-y-4">
+            {/* Primary Action */}
+            <Link href="/">
+              <Card className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 transition-colors border-0 cursor-pointer">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-center space-x-4">
+                    <MessageSquare className="h-10 w-10 text-white" />
+                    <div className="text-center">
+                      <h3 className="text-2xl font-bold text-white">Start Chatting</h3>
+                      <p className="text-blue-100">Begin a conversation with AI</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </Link>
+            
+            {/* Secondary Actions */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Link href="/ai-settings">
-                <Button className="w-full bg-green-600 hover:bg-green-700">
-                  Configure AI
-                </Button>
+                <Card className="bg-gray-900 border-gray-700 hover:border-gray-600 transition-colors cursor-pointer">
+                  <CardContent className="p-4">
+                    <div className="flex items-center space-x-3">
+                      <Brain className="h-6 w-6 text-green-400" />
+                      <div>
+                        <h4 className="font-semibold text-white">AI Settings</h4>
+                        <p className="text-sm text-gray-400">Choose AI model</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
               </Link>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-gray-900 border-gray-800 hover:border-purple-500 transition-colors">
-            <CardHeader>
-              <div className="flex items-center">
-                <Shield className="h-8 w-8 text-purple-500 mr-3" />
-                <CardTitle className="text-white">Admin Panel</CardTitle>
-              </div>
-              <CardDescription>Employee management</CardDescription>
-            </CardHeader>
-            <CardContent>
+              
               <Link href="/employee/login">
-                <Button className="w-full bg-purple-600 hover:bg-purple-700">
-                  Admin Access
-                </Button>
+                <Card className="bg-gray-900 border-gray-700 hover:border-gray-600 transition-colors cursor-pointer">
+                  <CardContent className="p-4">
+                    <div className="flex items-center space-x-3">
+                      <Shield className="h-6 w-6 text-purple-400" />
+                      <div>
+                        <h4 className="font-semibold text-white">Admin Panel</h4>
+                        <p className="text-sm text-gray-400">Manage users</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
               </Link>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </div>
 
         {/* Features */}
