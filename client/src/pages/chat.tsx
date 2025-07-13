@@ -4,7 +4,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Send, Bot, User, FileText, X, Brain, Settings, LogOut, Camera, Globe } from "lucide-react";
+import { Send, Bot, User, FileText, X, Brain, Settings, LogOut, Camera, Globe, Zap } from "lucide-react";
 import { Link } from "wouter";
 // Logo integrated directly in component
 import { LoadingScreen } from "@/components/LoadingScreen";
@@ -294,16 +294,7 @@ export default function Chat() {
               </Select>
             </div>
             
-            {/* Voice Toggle */}
-            <Button
-              onClick={() => setVoiceEnabled(!voiceEnabled)}
-              variant="ghost"
-              size="sm"
-              className={`h-8 w-8 p-0 ${voiceEnabled ? 'text-green-400' : 'text-gray-400'} hover:text-white`}
-              title={voiceEnabled ? "Voice On" : "Voice Off"}
-            >
-              {voiceEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
-            </Button>
+
             
             {/* Settings */}
             <Link href="/ai-settings">
@@ -443,43 +434,11 @@ export default function Chat() {
           <LiveCameraFeed 
             language={currentLanguage}
             onAnalysisResult={handleLiveCameraAnalysis}
-            voiceEnabled={voiceEnabled}
           />
         </div>
       )}
 
-      {/* Continuous Conversation Panel */}
-      {continuousMode && (
-        <div className="bg-gradient-to-r from-green-950 to-green-900 border-b border-green-800 px-4 py-4 sm:px-6 relative z-30">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-medium text-white flex items-center">
-              <Globe className="h-5 w-5 mr-2 text-green-400" />
-              Live Conversation Mode - Speak naturally!
-            </h3>
-            <Button
-              onClick={() => setContinuousMode(false)}
-              variant="ghost"
-              size="sm"
-              className="text-green-400 hover:text-white"
-            >
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
-          <ContinuousConversation
-            onSpeechInput={handleSpeechInput}
-            onSpeechOutput={handleSpeechOutput}
-            isListening={isListening}
-            isSpeaking={isSpeaking}
-            language={currentLanguage}
-            onToggleListening={() => setIsListening(!isListening)}
-            onToggleSpeaking={() => setIsSpeaking(!isSpeaking)}
-            onToggleWakeWord={handleToggleWakeWord}
-            wakeWordEnabled={wakeWordEnabled}
-            voiceEnabled={voiceEnabled}
-            onToggleVoice={handleToggleVoice}
-          />
-        </div>
-      )}
+
 
 
 
@@ -525,17 +484,7 @@ export default function Chat() {
                   <p className={`leading-relaxed ${message.role === 'user' ? 'text-white' : 'text-zinc-100'}`}>
                     {message.content}
                   </p>
-                  {message.role === 'assistant' && 'speechSynthesis' in window && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="absolute top-2 right-2 w-6 h-6 p-0 text-zinc-400 hover:text-purple-400"
-                      onClick={() => speakResponse(message.content)}
-                      title="Read aloud"
-                    >
-                      <Volume2 className="h-3 w-3" />
-                    </Button>
-                  )}
+
                 </Card>
                 <div className={`text-xs text-zinc-500 mt-2 ${message.role === 'user' ? 'mr-1 text-right' : 'ml-1'}`}>
                   {formatTimestamp(message.timestamp)}

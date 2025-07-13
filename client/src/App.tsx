@@ -6,7 +6,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { StartupScreen } from "@/components/StartupScreen";
 import Home from "@/pages/home";
-import Chat from "@/pages/chat-simple";
+import Chat from "@/pages/chat";
 import AISettings from "@/pages/ai-settings";
 import TestSimple from "@/pages/test-simple";
 import Subscribe from "@/pages/subscribe";
