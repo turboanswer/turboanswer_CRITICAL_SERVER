@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Send, Bot, User, FileText, X, Brain, Settings, LogOut, Camera, Globe, Zap } from "lucide-react";
 import { Link } from "wouter";
-// Logo integrated directly in component
+import turboLogo from "@assets/file_00000000d40c61f9a186294bbf2c842a_1752427622475.png";
 import { LoadingScreen } from "@/components/LoadingScreen";
 import { useToast } from "@/hooks/use-toast";
 import { DocumentUpload } from "@/components/DocumentUpload";
@@ -261,18 +261,20 @@ export default function Chat() {
   }
 
   return (
-    <div className="flex flex-col h-screen max-w-7xl mx-auto bg-black shadow-2xl">
+    <div className="flex flex-col h-screen w-full mx-auto bg-black fixed inset-0">
       {/* Simplified Intuitive Header */}
       <header className="bg-black/95 backdrop-blur-sm border-b border-gray-800 px-4 py-3 relative z-40 shrink-0">
         <div className="flex items-center justify-between">
-          {/* Simplified Logo */}
+          {/* New Robot Logo */}
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
-              <Zap className="h-6 w-6 text-white" />
-            </div>
+            <img 
+              src={turboLogo} 
+              alt="TurboAnswer Robot" 
+              className="w-12 h-12 object-contain"
+            />
             <div>
-              <h1 className="text-xl font-bold text-white">Turbo Answer</h1>
-              <p className="text-xs text-gray-400">AI Assistant</p>
+              <h1 className="text-xl font-bold text-white">TurboAnswer</h1>
+              <p className="text-xs text-gray-400">Never Stop Innovating</p>
             </div>
           </div>
           
