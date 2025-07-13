@@ -4,7 +4,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Send, Bot, User, Mic, MicOff, Volume2, FileText, X, Brain, Settings, LogOut, Camera, Globe } from "lucide-react";
+import { Send, Bot, User, FileText, X, Brain, Settings, LogOut, Camera, Globe } from "lucide-react";
 import { Link } from "wouter";
 // Logo integrated directly in component
 import { LoadingScreen } from "@/components/LoadingScreen";
@@ -12,7 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { DocumentUpload } from "@/components/DocumentUpload";
 import CameraCapture from "@/components/CameraCapture";
 import LanguageSelector from "@/components/LanguageSelector";
-import ContinuousConversation from "@/components/ContinuousConversation";
+
 import LiveCameraFeed from "@/components/LiveCameraFeed";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { Conversation, Message } from "@shared/schema";
@@ -21,22 +21,18 @@ export default function Chat() {
   const [currentConversationId, setCurrentConversationId] = useState<number | null>(null);
   const [messageContent, setMessageContent] = useState("");
   const [isTyping, setIsTyping] = useState(false);
-  const [isListening, setIsListening] = useState(false);
-  const [isRecognitionSupported, setIsRecognitionSupported] = useState(false);
-  const [isSpeaking, setIsSpeaking] = useState(false);
+
   const [showDocumentUpload, setShowDocumentUpload] = useState(false);
   const [showCamera, setShowCamera] = useState(false);
   const [showLiveCamera, setShowLiveCamera] = useState(false);
   const [selectedAIModel, setSelectedAIModel] = useState("auto");
   const [currentLanguage, setCurrentLanguage] = useState("en");
-  const [voiceEnabled, setVoiceEnabled] = useState(false);
-  const [wakeWordEnabled, setWakeWordEnabled] = useState(false);
-  const [continuousMode, setContinuousMode] = useState(false);
+
   const [user, setUser] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const recognitionRef = useRef<any>(null);
+
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
@@ -57,17 +53,7 @@ export default function Chat() {
       setCurrentLanguage(savedLanguage);
     }
     
-    // Load voice settings
-    const voiceSettings = localStorage.getItem('turbo_voice_settings');
-    if (voiceSettings) {
-      try {
-        const settings = JSON.parse(voiceSettings);
-        setVoiceEnabled(settings.voiceEnabled || false);
-        setWakeWordEnabled(settings.wakeWordEnabled || false);
-      } catch (e) {
-        console.error('Failed to load voice settings:', e);
-      }
-    }
+
     
     // Show loading screen for 2 seconds
     const timer = setTimeout(() => {
@@ -140,15 +126,7 @@ export default function Chat() {
         console.log('🤖 AI Response received, selected model:', selectedAIModel);
         console.log('🤖 Response content:', data.aiMessage.content.substring(0, 100) + '...');
         
-        // Auto-speak for conversational and emotional AI models
-        if (selectedAIModel === 'conversational' || selectedAIModel === 'emotional') {
-          console.log('🗣️ Auto-speaking enabled for', selectedAIModel);
-          setTimeout(() => {
-            speakResponse(data.aiMessage.content);
-          }, 800); // Longer delay to ensure message is fully rendered
-        } else {
-          console.log('🗣️ Auto-speak disabled for model:', selectedAIModel);
-        }
+
       }
     },
     onError: (error: any) => {
@@ -183,74 +161,7 @@ export default function Chat() {
     }
   }, [messageContent]);
 
-  // Initialize speech recognition
-  useEffect(() => {
-    const initializeSpeechRecognition = () => {
-      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-      
-      if (SpeechRecognition) {
-        setIsRecognitionSupported(true);
-        
-        const recognition = new SpeechRecognition();
-        recognition.continuous = false;
-        recognition.interimResults = true;
-        recognition.lang = 'en-US';
-        
-        recognition.onstart = () => {
-          setIsListening(true);
-        };
-        
-        recognition.onresult = (event: any) => {
-          let interimTranscript = '';
-          let finalTranscript = '';
-          
-          for (let i = event.resultIndex; i < event.results.length; i++) {
-            const transcript = event.results[i][0].transcript;
-            if (event.results[i].isFinal) {
-              finalTranscript += transcript;
-            } else {
-              interimTranscript += transcript;
-            }
-          }
-          
-          if (finalTranscript) {
-            setMessageContent(finalTranscript.trim());
-          } else if (interimTranscript) {
-            setMessageContent(interimTranscript.trim());
-          }
-        };
-        
-        recognition.onerror = (event: any) => {
-          console.error('Speech recognition error:', event.error);
-          setIsListening(false);
-          
-          if (event.error === 'not-allowed') {
-            toast({
-              title: "Microphone Access Denied",
-              description: "Please allow microphone access to use voice commands",
-              variant: "destructive",
-            });
-          } else if (event.error === 'no-speech') {
-            toast({
-              title: "No Speech Detected",
-              description: "Please try speaking again",
-              variant: "destructive",
-            });
-          }
-        };
-        
-        recognition.onend = () => {
-          setIsListening(false);
-        };
-        
-        recognitionRef.current = recognition;
-      } else {
-        setIsRecognitionSupported(false);
-      }
-    };
-    
-    initializeSpeechRecognition();
-  }, [toast]);
+
 
   const handleSendMessage = async () => {
     if (!messageContent.trim() || sendMessageMutation.isPending) return;
@@ -277,85 +188,7 @@ export default function Chat() {
     }
   };
 
-  const startListening = () => {
-    if (recognitionRef.current && !isListening) {
-      try {
-        recognitionRef.current.start();
-      } catch (error) {
-        console.error('Failed to start speech recognition:', error);
-        toast({
-          title: "Voice Command Error",
-          description: "Unable to start voice recognition. Please try again.",
-          variant: "destructive",
-        });
-      }
-    }
-  };
 
-  const stopListening = () => {
-    if (recognitionRef.current && isListening) {
-      recognitionRef.current.stop();
-    }
-  };
-
-  const speakResponse = (text: string) => {
-    if ('speechSynthesis' in window) {
-      console.log('🗣️ Speaking:', text.substring(0, 50) + '...');
-      
-      // Stop any ongoing speech
-      window.speechSynthesis.cancel();
-      
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.rate = 0.9;
-      utterance.pitch = 1;
-      utterance.volume = 0.8;
-      
-      utterance.onstart = () => {
-        console.log('🗣️ Speech started');
-        setIsSpeaking(true);
-      };
-      utterance.onend = () => {
-        console.log('🗣️ Speech ended');
-        setIsSpeaking(false);
-      };
-      utterance.onerror = (error) => {
-        console.error('🗣️ Speech error:', error);
-        setIsSpeaking(false);
-      };
-      
-      // Try to use a more natural voice
-      const voices = window.speechSynthesis.getVoices();
-      const englishVoice = voices.find(voice => 
-        voice.lang.includes('en') && 
-        (voice.name.includes('Natural') || voice.name.includes('Enhanced') || voice.name.includes('Premium'))
-      ) || voices.find(voice => voice.lang.includes('en'));
-      
-      if (englishVoice) {
-        utterance.voice = englishVoice;
-        console.log('🗣️ Using voice:', englishVoice.name);
-      }
-      
-      window.speechSynthesis.speak(utterance);
-    } else {
-      console.log('🗣️ Speech synthesis not supported');
-    }
-  };
-
-  // Auto-speak AI responses for conversational models
-  const autoSpeakResponse = (text: string) => {
-    if (selectedAIModel === 'conversational' || selectedAIModel === 'emotional') {
-      setTimeout(() => {
-        speakResponse(text);
-      }, 500); // Small delay to ensure message is displayed first
-    }
-  };
-
-  const toggleSpeech = () => {
-    if (isSpeaking) {
-      window.speechSynthesis.cancel();
-      setIsSpeaking(false);
-    }
-  };
 
   // Language change handler
   const handleLanguageChange = (languageCode: string) => {
@@ -367,18 +200,7 @@ export default function Chat() {
     });
   };
 
-  // Voice settings handlers
-  const handleToggleVoice = (enabled: boolean) => {
-    setVoiceEnabled(enabled);
-    const settings = { voiceEnabled: enabled, wakeWordEnabled };
-    localStorage.setItem('turbo_voice_settings', JSON.stringify(settings));
-  };
 
-  const handleToggleWakeWord = (enabled: boolean) => {
-    setWakeWordEnabled(enabled);
-    const settings = { voiceEnabled, wakeWordEnabled: enabled };
-    localStorage.setItem('turbo_voice_settings', JSON.stringify(settings));
-  };
 
   // Camera analysis handlers
   const handleCameraCapture = (imageData: string) => {
@@ -407,18 +229,7 @@ export default function Chat() {
     }
   };
 
-  // Speech input handler for continuous conversation
-  const handleSpeechInput = (text: string) => {
-    setMessageContent(text);
-    if (text.trim()) {
-      handleSendMessage();
-    }
-  };
 
-  // Speech output handler
-  const handleSpeechOutput = (text: string) => {
-    speakResponse(text);
-  };
 
   // Live camera analysis result handler
   const handleLiveCameraAnalysis = (analysis: string) => {
@@ -768,23 +579,10 @@ export default function Chat() {
       <div className="bg-black border-t border-gray-800 p-4">
         <div className="max-w-4xl mx-auto">
           <div className="flex items-center space-x-3">
-            {/* Voice Button */}
-            <Button
-              onClick={isListening ? stopListening : startListening}
-              variant="ghost"
-              size="sm"
-              className={`h-10 w-10 p-0 rounded-full ${
-                isListening 
-                  ? 'bg-red-500 text-white hover:bg-red-600' 
-                  : 'bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-white'
-              }`}
-              title={isListening ? "Stop listening" : "Start voice input"}
-            >
-              {isListening ? <MicOff className="h-5 w-5" /> : <Mic className="h-5 w-5" />}
-            </Button>
+
             
             {/* Message Input */}
-            <div className="flex-1 relative">
+            <div className="w-full relative">
               <Textarea
                 ref={textareaRef}
                 value={messageContent}
@@ -814,12 +612,7 @@ export default function Chat() {
                 <div className="w-2 h-2 bg-green-400 rounded-full"></div>
                 <span>AI Ready</span>
               </span>
-              {voiceEnabled && (
-                <span className="flex items-center space-x-1">
-                  <Volume2 className="h-3 w-3" />
-                  <span>Voice On</span>
-                </span>
-              )}
+
               <span>Press Enter to send</span>
             </div>
             <span>{messageContent.length}/2000</span>
