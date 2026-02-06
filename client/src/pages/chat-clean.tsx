@@ -278,12 +278,12 @@ export default function ChatClean() {
                 <div className="relative mx-auto mb-6">
                   <img 
                     src="/src/assets/file_00000000d40c61f9a186294bbf2c842a_1752206962243.png" 
-                    alt="TURBOANSWER AI Robot" 
+                    alt="TURBO ANSWER AI Robot" 
                     className="w-32 h-32 object-contain hover:scale-110 transition-all duration-300 mx-auto"
                   />
                   <div className="absolute -top-2 -right-2 w-4 h-4 bg-cyan-400 rounded-full animate-ping"></div>
                 </div>
-                <h2 className="text-3xl font-bold mb-3 bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 bg-clip-text text-transparent">Welcome to TURBOANSWER</h2>
+                <h2 className="text-3xl font-bold mb-3 bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 bg-clip-text text-transparent">Welcome to TURBO ANSWER</h2>
                 <p className="text-cyan-400 mb-8 font-medium text-lg">NEVER STOP INNOVATING</p>
                 {/* Voice Interface Component */}
                 <div className="max-w-4xl mx-auto mb-8">

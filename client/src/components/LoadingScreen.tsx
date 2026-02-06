@@ -12,7 +12,7 @@ export function LoadingScreen({ message = "Initializing Maximum Power AI..." }: 
         <div className="relative animate-pulse">
           <img 
             src="/src/assets/file_00000000d40c61f9a186294bbf2c842a_1752206962243.png" 
-            alt="TURBOANSWER AI Robot" 
+            alt="TURBO ANSWER AI Robot" 
             className="w-32 h-32 object-contain hover:scale-110 transition-all duration-300 mx-auto"
           />
           <div className="absolute -top-2 -right-2 w-6 h-6 bg-cyan-400 rounded-full animate-ping"></div>
@@ -21,7 +21,7 @@ export function LoadingScreen({ message = "Initializing Maximum Power AI..." }: 
         {/* Loading message */}
         <div className="text-center space-y-4">
           <h1 className="text-4xl font-bold bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent tracking-wide">
-            TURBOANSWER
+            TURBO ANSWER
           </h1>
           <h2 className="text-xl text-cyan-400 font-medium">
             NEVER STOP INNOVATING

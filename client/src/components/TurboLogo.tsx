@@ -11,7 +11,7 @@ export default function TurboLogo({ size = 60, className = "", animated = true }
     <div className={`relative ${className}`}>
       <img 
         src={turboLogo}
-        alt="TURBOANSWER AI Robot" 
+        alt="TURBO ANSWER AI Robot" 
         className={`object-contain ${animated ? 'animate-pulse hover:animate-bounce' : ''} transition-all duration-300`}
         style={{ width: `${size}px`, height: `${size}px` }}
       />
