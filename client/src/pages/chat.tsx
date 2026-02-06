@@ -157,6 +157,52 @@ export default function Chat() {
     });
   };
 
+  const renderMessageContent = (content: string, role: string) => {
+    const imageRegex = /!\[([^\]]*)\]\((data:image\/[^)]+)\)/g;
+    const parts: Array<{ type: 'text' | 'image'; value: string; alt?: string }> = [];
+    let lastIndex = 0;
+    let match;
+
+    while ((match = imageRegex.exec(content)) !== null) {
+      if (match.index > lastIndex) {
+        parts.push({ type: 'text', value: content.slice(lastIndex, match.index) });
+      }
+      parts.push({ type: 'image', value: match[2], alt: match[1] });
+      lastIndex = match.index + match[0].length;
+    }
+    if (lastIndex < content.length) {
+      parts.push({ type: 'text', value: content.slice(lastIndex) });
+    }
+
+    if (parts.length === 0 || (parts.length === 1 && parts[0].type === 'text')) {
+      return <span style={{ whiteSpace: 'pre-wrap' }}>{content}</span>;
+    }
+
+    return (
+      <div className="space-y-3">
+        {parts.map((part, i) => {
+          if (part.type === 'image') {
+            return (
+              <div key={i} className="rounded-lg overflow-hidden border border-zinc-600">
+                <img src={part.value} alt={part.alt || 'Generated image'} className="w-full max-w-md h-auto" />
+                <div className="flex gap-2 p-2 bg-zinc-900/50">
+                  <a
+                    href={part.value}
+                    download={`turbo-image-${Date.now()}.png`}
+                    className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1"
+                  >
+                    Download
+                  </a>
+                </div>
+              </div>
+            );
+          }
+          return <span key={i} style={{ whiteSpace: 'pre-wrap' }}>{part.value}</span>;
+        })}
+      </div>
+    );
+  };
+
   const handleCameraCapture = (imageData: string) => {
     console.log('Camera captured image');
   };
@@ -427,9 +473,9 @@ export default function Chat() {
                     ? 'bg-gradient-to-r from-purple-600 to-purple-500 text-white rounded-2xl rounded-tr-md' 
                     : 'bg-zinc-800 rounded-2xl rounded-tl-md border border-zinc-700'
                 }`}>
-                  <p className={`text-sm sm:text-base leading-relaxed break-words ${message.role === 'user' ? 'text-white' : 'text-zinc-100'}`}>
-                    {message.content}
-                  </p>
+                  <div className={`text-sm sm:text-base leading-relaxed break-words ${message.role === 'user' ? 'text-white' : 'text-zinc-100'}`}>
+                    {renderMessageContent(message.content, message.role)}
+                  </div>
                 </Card>
                 <div className={`text-[10px] sm:text-xs text-zinc-500 mt-1 sm:mt-2 ${message.role === 'user' ? 'mr-1 text-right' : 'ml-1'}`}>
                   {formatTimestamp(message.timestamp)}

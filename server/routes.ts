@@ -190,22 +190,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
         role: "user"
       });
 
-      const existingMessages = await storage.getMessagesByConversation(conversationId);
-      const conversationHistory = existingMessages.map(msg => ({
-        role: msg.role,
-        content: msg.content
-      }));
+      const imageNouns = /\b(image|picture|photo|illustration|artwork|drawing|painting|visual|icon|logo|graphic|poster|banner|wallpaper|avatar|portrait|diagram|infographic|meme|thumbnail|cover)\b/i;
+      const imageVerbs = /\b(generate|create|make|draw|paint|design|sketch|render|produce|show|give|build|craft)\b/i;
+      const imageIntent = /\b(can you|could you|please|i want|i need|i'd like|give me|show me|let me see|make me)\b/i;
+      const isImageRequest = (imageVerbs.test(content) && imageNouns.test(content)) || (imageIntent.test(content) && imageNouns.test(content));
 
-      const { generateAIResponse } = await import('./services/multi-ai.js');
-      const userId = `user_${Math.random().toString(36).substr(2, 9)}`;
-      const aiResponseContent = await generateAIResponse(
-        content,
-        conversationHistory,
-        "premium",
-        req.body.selectedModel || "auto-select",
-        userId,
-        req.body.language || "en"
-      );
+      let aiResponseContent: string;
+
+      if (isImageRequest) {
+        try {
+          const { generateImageBuffer } = await import('./replit_integrations/image/client');
+          const imagePrompt = content
+            .replace(/^(can you|could you|please|i want to|i need|i'd like to|give me|show me|let me see|make me)\s*/i, '')
+            .replace(/^(generate|create|make|draw|paint|design|sketch|render|produce)\s+(an?|the|me\s+an?|me\s+the|me\s+a)?\s*/i, '')
+            .replace(/\b(image|picture|photo|illustration|artwork|drawing|painting|visual)\s*(of|about|showing|depicting|with|for)?\s*/i, '')
+            .replace(/\s+/g, ' ')
+            .trim() || content;
+
+          const imageBuffer = await generateImageBuffer(imagePrompt);
+          const base64Image = imageBuffer.toString('base64');
+          const imageDataUrl = `data:image/png;base64,${base64Image}`;
+
+          aiResponseContent = `Here's the image I generated for you:\n\n![Generated Image](${imageDataUrl})\n\n*Prompt: "${imagePrompt}"*`;
+        } catch (imageError: any) {
+          console.error("Image generation failed in chat:", imageError);
+          aiResponseContent = `I tried to generate that image but ran into an issue: ${imageError.message}. You can also try using the Image button in the toolbar to generate images directly.`;
+        }
+      } else {
+        const existingMessages = await storage.getMessagesByConversation(conversationId);
+        const conversationHistory = existingMessages.map(msg => ({
+          role: msg.role,
+          content: msg.content
+        }));
+
+        const { generateAIResponse } = await import('./services/multi-ai.js');
+        const userId = `user_${Math.random().toString(36).substr(2, 9)}`;
+        aiResponseContent = await generateAIResponse(
+          content,
+          conversationHistory,
+          "premium",
+          req.body.selectedModel || "auto-select",
+          userId,
+          req.body.language || "en"
+        );
+      }
 
       const aiMessage = await storage.createMessage({
         conversationId,
@@ -770,44 +798,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Alternative image generation endpoint
-  app.post("/api/generate-image", isAuthenticated, async (req: any, res) => {
-    try {
-      const { prompt, size = "1024x1024", style = "realistic" } = req.body;
-      
-      if (!prompt) {
-        return res.status(400).json({ error: "Image prompt is required" });
-      }
-
-      const { alternativeImageGeneration } = await import("./services/alternative-image-generation");
-      
-      const result = await alternativeImageGeneration.generateImage({
-        prompt,
-        size,
-        style
-      });
-
-      if (result.success) {
-        res.json({
-          success: true,
-          imageUrl: result.imageUrl,
-          provider: result.provider,
-          originalPrompt: prompt
-        });
-      } else {
-        res.status(400).json({
-          success: false,
-          error: result.error
-        });
-      }
-    } catch (error: any) {
-      console.error("Alternative image generation API error:", error);
-      res.status(500).json({
-        success: false,
-        error: "Image generation failed: " + error.message
-      });
-    }
-  });
 
   // Alternative video generation endpoint
   app.post("/api/generate-video", isAuthenticated, async (req: any, res) => {
