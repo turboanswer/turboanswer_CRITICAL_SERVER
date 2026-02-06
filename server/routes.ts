@@ -14,15 +14,13 @@ import {
   SUPPORTED_FILE_TYPES 
 } from "./services/document-analysis";
 import { setupAuth, registerAuthRoutes, isAuthenticated } from "./replit_integrations/auth";
+import { registerImageRoutes } from "./replit_integrations/image";
 
 import widgetRoutes from './routes/widget-routes';
 
-if (!process.env.STRIPE_SECRET_KEY) {
-  throw new Error('Missing required Stripe secret: STRIPE_SECRET_KEY');
-}
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+const stripe = process.env.STRIPE_SECRET_KEY ? new Stripe(process.env.STRIPE_SECRET_KEY, {
   apiVersion: "2025-06-30.basil",
-});
+}) : null as any as Stripe;
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -35,6 +33,7 @@ const upload = multer({
 export async function registerRoutes(app: Express): Promise<Server> {
   await setupAuth(app);
   registerAuthRoutes(app);
+  registerImageRoutes(app);
 
   app.use(widgetRoutes);
 

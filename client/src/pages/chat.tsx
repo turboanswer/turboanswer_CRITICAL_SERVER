@@ -4,13 +4,14 @@ import { apiRequest } from "@/lib/queryClient";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Send, Bot, User, FileText, X, Brain, Settings, LogOut, Camera, Globe, Zap, Menu, QrCode } from "lucide-react";
+import { Send, Bot, User, FileText, X, Brain, Settings, LogOut, Camera, Globe, Zap, Menu, QrCode, ImageIcon } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { Link } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { LoadingScreen } from "@/components/LoadingScreen";
 import { useToast } from "@/hooks/use-toast";
 import { DocumentUpload } from "@/components/DocumentUpload";
+import { ImageGenerator } from "@/components/ImageGenerator";
 import CameraCapture from "@/components/CameraCapture";
 import LanguageSelector from "@/components/LanguageSelector";
 
@@ -24,6 +25,7 @@ export default function Chat() {
   const [isTyping, setIsTyping] = useState(false);
 
   const [showDocumentUpload, setShowDocumentUpload] = useState(false);
+  const [showImageGenerator, setShowImageGenerator] = useState(false);
   const [showCamera, setShowCamera] = useState(false);
   const [showLiveCamera, setShowLiveCamera] = useState(false);
   const [selectedAIModel, setSelectedAIModel] = useState("auto");
@@ -258,6 +260,9 @@ export default function Chat() {
               <Button onClick={() => { setShowDocumentUpload(!showDocumentUpload); setShowToolbar(false); }} variant="ghost" size="sm" className={`h-8 px-2 text-xs ${showDocumentUpload ? 'text-blue-400' : 'text-gray-400'}`}>
                 <FileText className="h-4 w-4 mr-1" /> Docs
               </Button>
+              <Button onClick={() => { setShowImageGenerator(!showImageGenerator); setShowToolbar(false); }} variant="ghost" size="sm" className={`h-8 px-2 text-xs ${showImageGenerator ? 'text-pink-400' : 'text-gray-400'}`}>
+                <ImageIcon className="h-4 w-4 mr-1" /> Image
+              </Button>
               <Button onClick={() => { setShowCamera(!showCamera); setShowToolbar(false); }} variant="ghost" size="sm" className={`h-8 px-2 text-xs ${showCamera ? 'text-blue-400' : 'text-gray-400'}`}>
                 <Camera className="h-4 w-4 mr-1" /> Cam
               </Button>
@@ -317,6 +322,9 @@ export default function Chat() {
             <Button onClick={() => setShowDocumentUpload(!showDocumentUpload)} variant="ghost" size="sm" className={`h-8 px-2 ${showDocumentUpload ? 'text-blue-400' : 'text-gray-400'} hover:text-white`} title="Upload Document">
               <FileText className="h-4 w-4" />
             </Button>
+            <Button onClick={() => setShowImageGenerator(!showImageGenerator)} variant="ghost" size="sm" className={`h-8 px-2 ${showImageGenerator ? 'text-pink-400' : 'text-gray-400'} hover:text-white`} title="Generate Image">
+              <ImageIcon className="h-4 w-4" />
+            </Button>
             <Button onClick={() => setShowCamera(!showCamera)} variant="ghost" size="sm" className={`h-8 px-2 ${showCamera ? 'text-blue-400' : 'text-gray-400'} hover:text-white`} title="Camera">
               <Camera className="h-4 w-4" />
             </Button>
@@ -339,6 +347,20 @@ export default function Chat() {
             </Button>
           </div>
           <DocumentUpload conversationId={currentConversationId ?? undefined} onAnalysisComplete={handleDocumentAnalysis} />
+        </div>
+      )}
+
+      {showImageGenerator && (
+        <div className="bg-zinc-950 border-b border-zinc-800 px-3 sm:px-6 py-3 sm:py-4 relative z-30 shrink-0">
+          <ImageGenerator
+            onImageGenerated={(imageUrl, prompt) => {
+              if (currentConversationId) {
+                sendMessageMutation.mutate(`🎨 **Generated Image**: "${prompt}"`);
+              }
+              setShowImageGenerator(false);
+            }}
+            onClose={() => setShowImageGenerator(false)}
+          />
         </div>
       )}
 
