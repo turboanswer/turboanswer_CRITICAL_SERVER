@@ -281,11 +281,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Find the Pro plan price from Stripe API
-      const products = await stripe.products.search({ query: "name:'Turbo Answer Pro'" });
-      if (!products.data.length) {
-        return res.status(400).json({ error: 'Pro plan not found. Please try again later.' });
+      let product = null;
+      try {
+        const searchResult = await stripe.products.search({ query: "name:'Turbo Answer Pro'" });
+        product = searchResult.data[0] || null;
+      } catch (searchErr) {
+        console.log('Product search failed, trying list fallback');
       }
-      const prices = await stripe.prices.list({ product: products.data[0].id, active: true });
+      
+      if (!product) {
+        const allProducts = await stripe.products.list({ limit: 100, active: true });
+        product = allProducts.data.find(p => p.name === 'Turbo Answer Pro') || null;
+      }
+
+      if (!product) {
+        // Auto-create the product if it doesn't exist
+        product = await stripe.products.create({
+          name: 'Turbo Answer Pro',
+          description: 'Unlock Gemini 2.5 Pro and Deep Research mode for advanced AI assistance',
+          metadata: { tier: 'pro' },
+        });
+        await stripe.prices.create({
+          product: product.id,
+          unit_amount: 699,
+          currency: 'usd',
+          recurring: { interval: 'month' },
+        });
+        console.log('Auto-created Turbo Answer Pro product:', product.id);
+      }
+
+      const prices = await stripe.prices.list({ product: product.id, active: true });
       const monthlyPrice = prices.data.find(p => p.recurring?.interval === 'month');
       if (!monthlyPrice) {
         return res.status(400).json({ error: 'Pro plan price not found.' });
