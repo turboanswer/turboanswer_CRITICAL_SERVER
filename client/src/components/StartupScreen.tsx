@@ -19,7 +19,7 @@ export function StartupScreen({ onComplete }: StartupScreenProps) {
         <div className="mb-8">
           <div className="relative">
             <img 
-              src="/src/assets/file_00000000d40c61f9a186294bbf2c842a_1752206962243.png" 
+              src="/turboanswer-logo.png" 
               alt="TURBO ANSWER AI Robot" 
               className="w-32 h-32 object-contain hover:scale-110 transition-all duration-300 mx-auto"
             />

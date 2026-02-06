@@ -306,7 +306,7 @@ export default function ChatMobile() {
         <div className="flex items-center space-x-3">
           <div className="relative">
             <img 
-              src="/src/assets/file_00000000d40c61f9a186294bbf2c842a_1752206962243.png" 
+              src="/turboanswer-logo.png" 
               alt="TURBO ANSWER AI Robot" 
               className="w-10 h-10 object-contain hover:scale-110 transition-all duration-300"
             />
@@ -377,7 +377,7 @@ export default function ChatMobile() {
             {/* Main TURBO ANSWER Robot Logo */}
             <div className="relative mx-auto mb-6">
               <img 
-                src="/src/assets/file_00000000d40c61f9a186294bbf2c842a_1752206962243.png" 
+                src="/turboanswer-logo.png" 
                 alt="TURBO ANSWER AI Robot" 
                 className="w-24 h-24 object-contain hover:scale-110 transition-all duration-300 mx-auto"
               />
