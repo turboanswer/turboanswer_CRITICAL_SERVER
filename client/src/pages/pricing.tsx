@@ -171,7 +171,8 @@ function SubscribeForm({ plan }: { plan: PricingPlan }) {
         amount: plan.id === 'monthly' ? 999 : 14999 // Amount in cents
       });
 
-      const { clientSecret } = response;
+      const data = await response.json();
+      const { clientSecret } = data;
 
       // Confirm payment
       const { error } = await stripe.confirmCardPayment(clientSecret, {

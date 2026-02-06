@@ -8,13 +8,11 @@ import { useToast } from '@/hooks/use-toast';
 interface LiveCameraFeedProps {
   language: string;
   onAnalysisResult: (analysis: string) => void;
-  voiceEnabled: boolean;
 }
 
 export default function LiveCameraFeed({ 
   language, 
-  onAnalysisResult, 
-  voiceEnabled 
+  onAnalysisResult
 }: LiveCameraFeedProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -174,10 +172,6 @@ export default function LiveCameraFeed({
         setAnalysisCount(prev => prev + 1);
         onAnalysisResult(result.analysis);
         
-        // Speak the analysis if voice is enabled
-        if (voiceEnabled && result.analysis) {
-          speakText(result.analysis);
-        }
       }
       
     } catch (error) {
@@ -189,7 +183,7 @@ export default function LiveCameraFeed({
 
   // Text-to-speech function
   const speakText = (text: string) => {
-    if ('speechSynthesis' in window && voiceEnabled) {
+    if ('speechSynthesis' in window) {
       window.speechSynthesis.cancel();
       
       const utterance = new SpeechSynthesisUtterance(text);

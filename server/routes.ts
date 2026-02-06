@@ -7,7 +7,7 @@ import { storage } from "./storage";
 import { db } from "./db";
 import { insertConversationSchema, insertMessageSchema, users } from "@shared/schema";
 import { eq } from "drizzle-orm";
-import { generateAIResponse } from "./services/multi-ai";
+import { generateAIResponse, getAvailableModels } from "./services/multi-ai";
 import { 
   extractTextFromFile, 
   analyzeDocument, 
@@ -881,7 +881,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.json({
         filename: originalname,
-        fileType: SUPPORTED_FILE_TYPES[mimetype],
+        fileType: (SUPPORTED_FILE_TYPES as Record<string, string>)[mimetype],
         fileSize: size,
         analysisType,
         analysis: analysisResult,
@@ -1093,8 +1093,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Create anonymous conversation for widget users
       const conversation = await storage.createConversation({
-        title: `Widget Chat - ${domain}`,
-        userId: null // Anonymous widget user
+        title: `Widget Chat - ${domain}`
       });
       
       res.json({ 

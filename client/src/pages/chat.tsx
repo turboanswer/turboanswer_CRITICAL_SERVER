@@ -387,7 +387,7 @@ export default function Chat() {
             </Button>
           </div>
           <DocumentUpload 
-            conversationId={currentConversationId} 
+            conversationId={currentConversationId ?? undefined} 
             onAnalysisComplete={handleDocumentAnalysis}
           />
         </div>
@@ -409,7 +409,11 @@ export default function Chat() {
           </div>
           <CameraCapture 
             onCapture={handleCameraCapture}
-            onAnalysis={handleImageAnalysis}
+            onAnalyze={handleImageAnalysis}
+            isAnalyzing={false}
+            language={currentLanguage}
+            onContinuousMode={() => {}}
+            continuousMode={false}
           />
         </div>
       )}
