@@ -23,6 +23,7 @@ import { megaFusionAI } from './mega-fusion-ai';
 import { powerAmplifier } from './power-amplifier';
 import { generateUltimateFusionResponse, getUltimateFusionInfo } from './ultimate-fusion-ai';
 import { detectLanguage, getLanguageConfig, formatResponseForLanguage } from './language-detector';
+import { GoogleGenAI } from "@google/genai";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import OpenAI from "openai";
 import Anthropic from "@anthropic-ai/sdk";
@@ -597,6 +598,15 @@ export const AI_MODELS = {
 const ai = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY || "" });
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY || "" });
+
+// Replit AI Integration - Gemini access without own API key (uses Replit credits)
+const replitAI = new GoogleGenAI({
+  apiKey: process.env.AI_INTEGRATIONS_GEMINI_API_KEY || "",
+  httpOptions: {
+    apiVersion: "",
+    baseUrl: process.env.AI_INTEGRATIONS_GEMINI_BASE_URL || "",
+  },
+});
 
 // Advanced user intent analysis with complexity scoring
 function analyzeUserIntent(message: string, conversationHistory: Array<{role: string, content: string}>): {
@@ -2237,20 +2247,14 @@ Coordinates: ${locationData.latitude}°, ${locationData.longitude}°`;
       console.log(`[Speed AI] Using ultra-fast mode for simple conversation`);
       
       try {
-        const quickModel = ai.getGenerativeModel({ 
-          model: "gemini-2.0-flash",
-          generationConfig: {
-            temperature: 0.2,
-            maxOutputTokens: 40,
-            topP: 0.8,
-            topK: 20
-          }
+        const quickResult = await replitAI.models.generateContent({
+          model: "gemini-2.5-flash",
+          contents: `User: ${userMessage}\nTurbo (brief friendly response):`,
+          config: { maxOutputTokens: 60, temperature: 0.2 }
         });
-        const quickResult = await quickModel.generateContent(`User: ${userMessage}\nTurbo (brief friendly response):`);
-        const quickResponse = await quickResult.response;
-        return quickResponse.text() || "Hey there!";
+        return quickResult.text || "Hey there!";
       } catch (geminiError) {
-        console.log('[Speed AI] Gemini failed, falling back to OpenAI');
+        console.log('[Speed AI] Replit Gemini failed, falling back');
       }
     }
 
@@ -2337,29 +2341,42 @@ Coordinates: ${locationData.latitude}°, ${locationData.longitude}°`;
     
     console.log(`[AI Router] Selected model: ${finalModel}`);
     
-    // Try Gemini first, then fall back to other providers
+    // Try Replit AI Integration first (most reliable), then own Gemini key, then fallbacks
+    const hasReplitAI = !!process.env.AI_INTEGRATIONS_GEMINI_API_KEY && !!process.env.AI_INTEGRATIONS_GEMINI_BASE_URL;
+    
+    if (hasReplitAI) {
+      try {
+        return await generateReplitGeminiResponse(enhancedMessage, conversationHistory, intent, additionalContext, userLanguage);
+      } catch (replitError: any) {
+        console.log('[AI Router] Replit Gemini failed:', replitError.message?.substring(0, 100));
+      }
+    }
+    
     if (hasGemini) {
       try {
         return await generateGeminiResponse(enhancedMessage, conversationHistory, finalModel, intent, additionalContext, userLanguage);
       } catch (geminiError: any) {
-        console.log('[AI Router] Gemini failed, trying fallback:', geminiError.message?.substring(0, 100));
-        if (hasOpenAI) {
-          console.log('[AI Router] Falling back to OpenAI');
-          return await generateOpenAIResponse(enhancedMessage, conversationHistory, 'gpt-3.5-turbo', intent, additionalContext);
-        }
-        if (hasAnthropic) {
-          console.log('[AI Router] Falling back to Anthropic');
-          return await generateAnthropicResponse(enhancedMessage, conversationHistory, 'claude-3-sonnet', intent, additionalContext);
-        }
-        throw geminiError;
+        console.log('[AI Router] Own Gemini key failed:', geminiError.message?.substring(0, 100));
       }
-    } else if (hasOpenAI) {
-      return await generateOpenAIResponse(enhancedMessage, conversationHistory, 'gpt-3.5-turbo', intent, additionalContext);
-    } else if (hasAnthropic) {
-      return await generateAnthropicResponse(enhancedMessage, conversationHistory, 'claude-3-sonnet', intent, additionalContext);
-    } else {
-      throw new Error("No working AI API keys available. Please check your API key configuration.");
     }
+    
+    if (hasOpenAI) {
+      try {
+        return await generateOpenAIResponse(enhancedMessage, conversationHistory, 'gpt-3.5-turbo', intent, additionalContext);
+      } catch (openaiError: any) {
+        console.log('[AI Router] OpenAI failed:', openaiError.message?.substring(0, 100));
+      }
+    }
+    
+    if (hasAnthropic) {
+      try {
+        return await generateAnthropicResponse(enhancedMessage, conversationHistory, 'claude-3-sonnet', intent, additionalContext);
+      } catch (anthropicError: any) {
+        console.log('[AI Router] Anthropic failed:', anthropicError.message?.substring(0, 100));
+      }
+    }
+    
+    throw new Error("All AI providers failed. Please check your API configuration.");
     
   } catch (error: any) {
     console.error('[AI Router] Error:', error);
@@ -2436,6 +2453,54 @@ async function generateGeminiResponse(
     
   } catch (error) {
     console.error('[Gemini] Error:', error);
+    throw error;
+  }
+}
+
+// Replit AI Integration Gemini response (no own API key needed)
+async function generateReplitGeminiResponse(
+  userMessage: string,
+  context: Array<{role: string, content: string}>,
+  userIntent: any,
+  additionalContext: string,
+  userLanguage: string = "en"
+): Promise<string> {
+  const isSimpleQuery = userMessage.length < 50 || /\b(what|when|where|who|how|yes|no|hi|hello|hey|turbo)\b/i.test(userMessage);
+  const languageInstruction = userLanguage !== "en" ? 
+    `CRITICAL: Respond in ${userLanguage.toUpperCase()} language.` : "";
+  
+  const systemPrompt = isSimpleQuery ? 
+    `You are Turbo, a fast AI assistant. Give direct, simple answers. Keep responses under 2 sentences for simple questions. Be conversational and helpful. ${languageInstruction}` :
+    `You are Turbo Answer, an advanced AI assistant. Provide clear, helpful responses. For simple questions, keep answers brief. For complex questions, provide detailed explanations. ${languageInstruction}
+    Current context: ${userIntent.domain} domain, ${userIntent.complexity} complexity
+    ${additionalContext}`;
+
+  try {
+    const chatHistory = context.slice(-5).map(msg => ({
+      role: msg.role === 'user' ? 'user' as const : 'model' as const,
+      parts: [{ text: msg.content }]
+    }));
+
+    const result = await replitAI.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: [
+        ...chatHistory,
+        { role: 'user' as const, parts: [{ text: `${systemPrompt}\n\nUser: ${userMessage}` }] }
+      ],
+      config: {
+        temperature: 0.3,
+        maxOutputTokens: isSimpleQuery ? 150 : 500,
+      }
+    });
+    
+    const content = result.text;
+    if (!content) {
+      throw new Error('No content received from Replit Gemini');
+    }
+    
+    return content;
+  } catch (error) {
+    console.error('[Replit Gemini] Error:', error);
     throw error;
   }
 }
