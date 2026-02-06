@@ -31,6 +31,7 @@ export default function Chat() {
   const [showQR, setShowQR] = useState(false);
 
   const [showProPopup, setShowProPopup] = useState(false);
+  const [showWelcomePro, setShowWelcomePro] = useState(false);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -51,26 +52,27 @@ export default function Chat() {
     if (params.get('subscription') === 'success') {
       window.history.replaceState({}, '', '/chat');
       const syncSubscription = async () => {
-        try {
-          const res = await apiRequest("GET", "/api/subscription-status");
-          const data = await res.json();
-          if (data.tier === 'pro') {
-            toast({ title: "Welcome to Pro!", description: "Your subscription is now active. Enjoy Pro and Research models!" });
-            queryClient.invalidateQueries({ queryKey: ["/api/models"] });
-          } else {
-            toast({ title: "Processing", description: "Your payment is being processed. Pro access will activate shortly." });
-            setTimeout(async () => {
-              const retryRes = await apiRequest("GET", "/api/subscription-status");
-              const retryData = await retryRes.json();
-              if (retryData.tier === 'pro') {
-                toast({ title: "Welcome to Pro!", description: "Your subscription is now active!" });
-                queryClient.invalidateQueries({ queryKey: ["/api/models"] });
-              }
-            }, 5000);
+        const trySync = async (): Promise<boolean> => {
+          try {
+            const res = await apiRequest("GET", "/api/subscription-status");
+            const data = await res.json();
+            if (data.tier === 'pro') {
+              queryClient.invalidateQueries({ queryKey: ["/api/models"] });
+              setShowWelcomePro(true);
+              return true;
+            }
+          } catch (err) {
+            console.error('Subscription sync error:', err);
           }
-        } catch (err) {
-          console.error('Subscription sync error:', err);
-        }
+          return false;
+        };
+
+        if (await trySync()) return;
+        await new Promise(r => setTimeout(r, 3000));
+        if (await trySync()) return;
+        await new Promise(r => setTimeout(r, 5000));
+        if (await trySync()) return;
+        toast({ title: "Processing", description: "Your payment is being processed. Pro access will activate shortly. Please refresh the page in a moment." });
       };
       syncSubscription();
     }
@@ -573,6 +575,70 @@ export default function Chat() {
             </Button>
 
             <p className="text-center text-zinc-500 text-xs mt-3">Cancel anytime. Secure payment via Stripe.</p>
+          </div>
+        </div>
+      )}
+
+      {showWelcomePro && (
+        <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4" onClick={() => setShowWelcomePro(false)}>
+          <div className="bg-zinc-900 rounded-2xl p-6 sm:p-8 max-w-md w-full border border-purple-500/30 shadow-2xl shadow-purple-500/20" onClick={e => e.stopPropagation()}>
+            <div className="text-center mb-6">
+              <div className="w-16 h-16 mx-auto bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center mb-4 shadow-lg shadow-purple-500/40">
+                <Crown className="w-8 h-8 text-white" />
+              </div>
+              <h2 className="text-2xl font-bold text-white mb-2">Welcome to Pro!</h2>
+              <p className="text-zinc-400">Your subscription is now active</p>
+            </div>
+
+            <div className="space-y-4 mb-6">
+              <h3 className="text-sm font-semibold text-purple-400 uppercase tracking-wide">What you can do now:</h3>
+              
+              <div className="bg-zinc-800 rounded-xl p-4 border border-zinc-700">
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 bg-purple-500/20 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <Brain className="w-4 h-4 text-purple-400" />
+                  </div>
+                  <div>
+                    <p className="text-white font-medium text-sm">Gemini Pro Model</p>
+                    <p className="text-zinc-400 text-xs mt-0.5">Select "Gemini Pro" from the model dropdown for smarter, more detailed answers</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-zinc-800 rounded-xl p-4 border border-zinc-700">
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 bg-pink-500/20 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <Zap className="w-4 h-4 text-pink-400" />
+                  </div>
+                  <div>
+                    <p className="text-white font-medium text-sm">Deep Research Mode</p>
+                    <p className="text-zinc-400 text-xs mt-0.5">Select "Research" for in-depth analysis on complex topics</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-zinc-800 rounded-xl p-4 border border-zinc-700">
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 bg-green-500/20 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <CheckCircle className="w-4 h-4 text-green-400" />
+                  </div>
+                  <div>
+                    <p className="text-white font-medium text-sm">How to Switch Models</p>
+                    <p className="text-zinc-400 text-xs mt-0.5">Tap the model selector at the top of your chat to switch between Free, Pro, and Research anytime</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <Button
+              className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold py-5 rounded-xl text-base"
+              onClick={() => {
+                setShowWelcomePro(false);
+                setSelectedAIModel("gemini-pro");
+              }}
+            >
+              Start Using Pro
+            </Button>
           </div>
         </div>
       )}

@@ -157,10 +157,13 @@ async function callGemini(prompt: string, preferredModel: string, maxTokens: num
     for (let attempt = 0; attempt < 2; attempt++) {
       try {
         console.log(`[Gemini] Trying ${model} (attempt ${attempt + 1})`);
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 30000);
         const response = await fetch(
           `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
-          { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: requestBody }
+          { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: requestBody, signal: controller.signal }
         );
+        clearTimeout(timeout);
 
         if (response.status === 429) {
           const retryAfter = response.headers.get('retry-after');
@@ -196,6 +199,10 @@ async function callGemini(prompt: string, preferredModel: string, maxTokens: num
         return content;
 
       } catch (error: any) {
+        if (error.name === 'AbortError') {
+          console.log(`[Gemini] ${model} timed out after 30s, trying next...`);
+          break;
+        }
         if (error.message?.includes('quota') || error.message?.includes('429') || error.message?.includes('Rate')) {
           if (attempt === 0) {
             await new Promise(resolve => setTimeout(resolve, 5000 + Math.random() * 2000));
