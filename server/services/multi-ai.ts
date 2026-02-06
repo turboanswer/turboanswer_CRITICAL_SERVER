@@ -12,7 +12,7 @@ import {
 } from "./weather-location";
 
 export const AI_MODELS: Record<string, Record<string, any>> = {
-  premium: {
+  pro: {
     "gemini-pro": {
       name: "Gemini Pro",
       provider: "google",
@@ -20,10 +20,12 @@ export const AI_MODELS: Record<string, Record<string, any>> = {
       maxTokens: 8000,
       temperature: 0.3,
     },
-    "gemini-pro-research": {
-      name: "Gemini Pro Research",
-      provider: "google",
-      description: "Premium model optimized for in-depth research",
+  },
+  research: {
+    "claude-research": {
+      name: "Claude Research",
+      provider: "anthropic",
+      description: "Claude AI for deep research and comprehensive analysis",
       maxTokens: 16000,
       temperature: 0.1,
     },
@@ -48,11 +50,6 @@ export async function generateAIResponse(
   userLanguage: string = "en"
 ): Promise<string> {
   try {
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) {
-      return "Gemini API key is not configured. Please add GEMINI_API_KEY to get started.";
-    }
-
     let additionalContext = "";
     let enhancedMessage = userMessage;
 
@@ -100,21 +97,27 @@ export async function generateAIResponse(
     let maxTokens: number;
     let temperature: number;
 
-    if (selectedModel === 'gemini-pro' || selectedModel === 'gemini-pro-research') {
-      geminiModel = 'gemini-2.5-pro';
-      if (selectedModel === 'gemini-pro-research') {
-        maxTokens = 16000;
-        temperature = 0.1;
-        systemPrompt = `You are Turbo Answer, a premium AI research assistant. Provide thorough, well-structured, in-depth analysis. Use clear headings, evidence-based reasoning, and comprehensive coverage.
-${languageInstruction}
-${additionalContext}`;
-      } else {
-        maxTokens = 8000;
-        temperature = 0.3;
-        systemPrompt = `You are Turbo Answer, a premium AI assistant. Provide clear, detailed, high-quality responses. For simple questions, be concise. For complex topics, provide thorough explanations.
-${languageInstruction}
-${additionalContext}`;
+    if (selectedModel === 'claude-research') {
+      const anthropicKey = process.env.ANTHROPIC_API_KEY;
+      if (!anthropicKey) {
+        return "Claude AI is not configured. Please add ANTHROPIC_API_KEY to enable Research mode.";
       }
+      maxTokens = 16000;
+      temperature = 0.1;
+      systemPrompt = `You are Turbo Answer, a premium AI research assistant powered by Claude. Provide thorough, well-structured, in-depth analysis. Use clear headings, evidence-based reasoning, and comprehensive coverage.
+${languageInstruction}
+${additionalContext}`;
+
+      console.log(`[AI] Model: claude-research, Tokens: ${maxTokens}`);
+      const contextMessages = conversationHistory.slice(-4).map(m => `${m.role}: ${m.content}`).join('\n');
+      return await callClaude(enhancedMessage, systemPrompt, contextMessages, maxTokens, temperature, anthropicKey);
+    } else if (selectedModel === 'gemini-pro') {
+      geminiModel = 'gemini-2.5-pro';
+      maxTokens = 8000;
+      temperature = 0.3;
+      systemPrompt = `You are Turbo Answer, a premium AI assistant. Provide clear, detailed, high-quality responses. For simple questions, be concise. For complex topics, provide thorough explanations.
+${languageInstruction}
+${additionalContext}`;
     } else {
       geminiModel = 'gemini-2.5-flash';
       maxTokens = isSimple ? 1000 : 4000;
@@ -127,12 +130,17 @@ ${languageInstruction}
 ${additionalContext}`;
     }
 
+    const geminiApiKey = process.env.GEMINI_API_KEY;
+    if (!geminiApiKey) {
+      return "Gemini API key is not configured. Please add GEMINI_API_KEY to get started.";
+    }
+
     console.log(`[AI] Model: ${geminiModel}, Tokens: ${maxTokens}`);
 
     const contextMessages = conversationHistory.slice(-4).map(m => `${m.role}: ${m.content}`).join('\n');
     const fullPrompt = `${systemPrompt}\n\n${contextMessages ? `Recent conversation:\n${contextMessages}\n\n` : ''}User: ${enhancedMessage}`;
 
-    return await callGemini(fullPrompt, geminiModel, maxTokens, temperature, apiKey);
+    return await callGemini(fullPrompt, geminiModel, maxTokens, temperature, geminiApiKey);
 
   } catch (error: any) {
     console.error('[AI] Error:', error.message);
@@ -218,11 +226,78 @@ async function callGemini(prompt: string, preferredModel: string, maxTokens: num
   throw new Error('All Gemini models are currently rate limited. Please wait a moment and try again.');
 }
 
-export function getAvailableModels(subscriptionTier: string): Record<string, any> {
-  if (!process.env.GEMINI_API_KEY) return {};
+async function callClaude(userMessage: string, systemPrompt: string, contextMessages: string, maxTokens: number, temperature: number, apiKey: string): Promise<string> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 45000);
 
-  if (subscriptionTier === 'premium' || subscriptionTier === 'pro') {
-    return { ...AI_MODELS.premium, ...AI_MODELS.free };
+  try {
+    const messages: Array<{role: string, content: string}> = [];
+    if (contextMessages) {
+      messages.push({ role: "user", content: `Previous conversation context:\n${contextMessages}` });
+      messages.push({ role: "assistant", content: "I understand the context. How can I help?" });
+    }
+    messages.push({ role: "user", content: userMessage });
+
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: maxTokens,
+        temperature,
+        system: systemPrompt,
+        messages,
+      }),
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeout);
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      console.error('[Claude] API error:', response.status, errorData);
+      if (response.status === 429) {
+        return "Claude is a bit busy right now. Please wait a few seconds and try again!";
+      }
+      throw new Error(errorData.error?.message || `Claude API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    const content = data.content?.[0]?.text;
+    if (!content) {
+      throw new Error('No content received from Claude');
+    }
+    return content;
+  } catch (error: any) {
+    clearTimeout(timeout);
+    if (error.name === 'AbortError') {
+      return "The research query took too long. Please try a simpler question or try again.";
+    }
+    throw error;
   }
-  return { ...AI_MODELS.free };
+}
+
+export function getAvailableModels(subscriptionTier: string): Record<string, any> {
+  const hasGemini = !!process.env.GEMINI_API_KEY;
+  const hasClaude = !!process.env.ANTHROPIC_API_KEY;
+
+  const models: Record<string, any> = {};
+
+  if (hasGemini) {
+    Object.assign(models, AI_MODELS.free);
+  }
+
+  if (subscriptionTier === 'pro' || subscriptionTier === 'research') {
+    if (hasGemini) Object.assign(models, AI_MODELS.pro);
+  }
+
+  if (subscriptionTier === 'research') {
+    if (hasClaude) Object.assign(models, AI_MODELS.research);
+  }
+
+  return models;
 }

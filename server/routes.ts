@@ -267,6 +267,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ error: 'User not found' });
       }
 
+      const { plan } = req.body || {};
+      const tier = plan === 'research' ? 'research' : 'pro';
+      const productName = tier === 'research' ? 'Turbo Answer Research' : 'Turbo Answer Pro';
+      const productDescription = tier === 'research'
+        ? 'Claude AI powered deep research and comprehensive analysis'
+        : 'Unlock Gemini 2.5 Pro for advanced AI assistance';
+      const priceAmount = tier === 'research' ? 1000 : 699;
+
       const stripe = await getUncachableStripeClient();
 
       let customerId = user.stripeCustomerId;
@@ -280,42 +288,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
         await storage.updateStripeCustomerId(userId, customerId);
       }
 
-      // Find the Pro plan price from Stripe API
       let product = null;
       try {
-        const searchResult = await stripe.products.search({ query: "name:'Turbo Answer Pro'" });
+        const searchResult = await stripe.products.search({ query: `name:'${productName}'` });
         product = searchResult.data[0] || null;
       } catch (searchErr) {
         console.log('Product search failed, trying list fallback');
       }
-      
+
       if (!product) {
         const allProducts = await stripe.products.list({ limit: 100, active: true });
-        product = allProducts.data.find(p => p.name === 'Turbo Answer Pro') || null;
+        product = allProducts.data.find(p => p.name === productName) || null;
       }
 
       if (!product) {
-        // Auto-create the product if it doesn't exist
         product = await stripe.products.create({
-          name: 'Turbo Answer Pro',
-          description: 'Unlock Gemini 2.5 Pro and Deep Research mode for advanced AI assistance',
-          metadata: { tier: 'pro' },
+          name: productName,
+          description: productDescription,
+          metadata: { tier },
         });
         await stripe.prices.create({
           product: product.id,
-          unit_amount: 699,
+          unit_amount: priceAmount,
           currency: 'usd',
           recurring: { interval: 'month' },
         });
-        console.log('Auto-created Turbo Answer Pro product:', product.id);
+        console.log(`Auto-created ${productName} product:`, product.id);
       }
 
       const prices = await stripe.prices.list({ product: product.id, active: true });
-      const monthlyPrice = prices.data.find(p => p.recurring?.interval === 'month');
+      const monthlyPrice = prices.data.find(p => p.recurring?.interval === 'month' && p.unit_amount === priceAmount);
       if (!monthlyPrice) {
-        return res.status(400).json({ error: 'Pro plan price not found.' });
+        const fallbackPrice = prices.data.find(p => p.recurring?.interval === 'month');
+        if (!fallbackPrice) {
+          return res.status(400).json({ error: `${tier} plan price not found.` });
+        }
       }
-      const priceId = monthlyPrice.id;
+      const priceId = (prices.data.find(p => p.recurring?.interval === 'month' && p.unit_amount === priceAmount) || prices.data.find(p => p.recurring?.interval === 'month'))!.id;
 
       const baseUrl = `${req.protocol}://${req.get('host')}`;
       const session = await stripe.checkout.sessions.create({
@@ -323,9 +332,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         payment_method_types: ['card'],
         line_items: [{ price: priceId, quantity: 1 }],
         mode: 'subscription',
-        success_url: `${baseUrl}/chat?subscription=success`,
+        success_url: `${baseUrl}/chat?subscription=${tier}`,
         cancel_url: `${baseUrl}/chat`,
-        metadata: { userId },
+        metadata: { userId, tier },
       });
 
       res.json({ url: session.url });
@@ -344,21 +353,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.json({ tier: 'free', status: 'none' });
       }
 
-      // If DB already says pro, trust it immediately
-      if (user.subscriptionTier === 'pro' && user.subscriptionStatus === 'active') {
-        return res.json({ tier: 'pro', status: 'active' });
+      // If DB already says pro or research with active status, trust it immediately
+      if ((user.subscriptionTier === 'pro' || user.subscriptionTier === 'research') && user.subscriptionStatus === 'active') {
+        return res.json({ tier: user.subscriptionTier, status: 'active' });
       }
 
       // Otherwise try to sync from Stripe
       try {
         const stripe = await getUncachableStripeClient();
 
+        // Helper to determine tier from a Stripe subscription
+        const getTierFromSub = async (sub: any): Promise<string> => {
+          try {
+            const item = sub.items?.data?.[0];
+            if (item?.price?.product) {
+              const productId = typeof item.price.product === 'string' ? item.price.product : item.price.product.id;
+              const product = await stripe.products.retrieve(productId);
+              if (product.name?.toLowerCase().includes('research') || product.metadata?.tier === 'research') {
+                return 'research';
+              }
+            }
+            if (item?.price?.unit_amount === 1000) return 'research';
+          } catch (e) {}
+          return 'pro';
+        };
+
         if (user.stripeSubscriptionId) {
           try {
-            const sub = await stripe.subscriptions.retrieve(user.stripeSubscriptionId);
+            const sub = await stripe.subscriptions.retrieve(user.stripeSubscriptionId, { expand: ['items.data.price'] });
             if (sub.status === 'active' || sub.status === 'trialing') {
-              await storage.updateUserSubscription(userId, sub.status, 'pro');
-              return res.json({ tier: 'pro', status: sub.status });
+              const tier = await getTierFromSub(sub);
+              await storage.updateUserSubscription(userId, sub.status, tier);
+              return res.json({ tier, status: sub.status });
             }
           } catch (e) {}
         }
@@ -367,36 +393,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const subscriptions = await stripe.subscriptions.list({
             customer: user.stripeCustomerId,
             status: 'active',
-            limit: 1,
+            limit: 5,
+            expand: ['data.items.data.price'],
           });
           if (subscriptions.data.length > 0) {
+            // Find the highest tier subscription
+            let bestTier = 'pro';
             const activeSub = subscriptions.data[0];
+            bestTier = await getTierFromSub(activeSub);
             await storage.updateUserStripeInfo(userId, user.stripeCustomerId, activeSub.id);
-            await storage.updateUserSubscription(userId, 'active', 'pro');
-            return res.json({ tier: 'pro', status: 'active' });
-          }
-
-          const sessions = await stripe.checkout.sessions.list({
-            customer: user.stripeCustomerId,
-            limit: 5,
-          });
-          for (const session of sessions.data) {
-            if (session.status === 'complete' && session.subscription) {
-              const subId = typeof session.subscription === 'string' ? session.subscription : session.subscription.id;
-              const sub = await stripe.subscriptions.retrieve(subId);
-              if (sub.status === 'active' || sub.status === 'trialing') {
-                await storage.updateUserStripeInfo(userId, user.stripeCustomerId, subId);
-                await storage.updateUserSubscription(userId, sub.status, 'pro');
-                return res.json({ tier: 'pro', status: sub.status });
-              }
-            }
+            await storage.updateUserSubscription(userId, 'active', bestTier);
+            return res.json({ tier: bestTier, status: 'active' });
           }
         }
       } catch (stripeError: any) {
         console.log('[Stripe] Could not verify with Stripe:', stripeError.message?.substring(0, 100));
-        // If Stripe is unreachable, still trust the DB
-        if (user.subscriptionTier === 'pro') {
-          return res.json({ tier: 'pro', status: user.subscriptionStatus || 'active' });
+        if (user.subscriptionTier === 'pro' || user.subscriptionTier === 'research') {
+          return res.json({ tier: user.subscriptionTier, status: user.subscriptionStatus || 'active' });
         }
       }
 

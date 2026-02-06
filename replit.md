@@ -44,10 +44,10 @@ Subscription preference: Lifetime free premium access through promo code system 
 - **Authentication Storage**: User sessions and account data
 
 ### Key Features
-- **Simplified Gemini AI System**: 3 clean models - Free (Gemini 2.5 Flash), Pro (Gemini 2.5 Pro), Research (Gemini 2.5 Pro deep mode). All powered by Google Gemini API with automatic retry and model fallback on rate limits.
+- **Multi-Model AI System**: 3 tiers - Free (Gemini 2.5 Flash), Pro ($6.99/mo - Gemini 2.5 Pro), Research ($10/mo - Claude AI via Anthropic API). Gemini models have automatic retry and fallback on rate limits. Research tier includes Pro access.
 - **Voice Command Features**: Speech recognition (Web Speech API), "Turbo" assistant name, optional "Hey Turbo" wake word, auto-send, text-to-speech, and visual feedback.
 - **Comprehensive Knowledge Coverage**: Expert-level knowledge in technical, scientific, creative, business, and general domains, including real-time weather and world time zone intelligence.
-- **Subscription Management**: Stripe Checkout integration for Pro plan ($6.99/month). Payment popup triggers from model selector. Uses Replit Stripe connector with stripe-replit-sync for webhook handling and data sync.
+- **Subscription Management**: Stripe Checkout integration for Pro ($6.99/month) and Research ($10/month) plans. Payment popups trigger from model selector. Uses Replit Stripe connector with stripe-replit-sync for webhook handling and data sync.
 - **Employee Management API**: Endpoints for user management (ban, flag, suspend) and audit logging.
 - **AI Image & Video Generation**: Integration with OpenAI DALL-E 3 and a framework for video generation with multi-provider architecture.
 - **Embeddable AI Widget System**: A universal JavaScript widget (`turbo-answer-widget.js`) for seamless integration into any website.

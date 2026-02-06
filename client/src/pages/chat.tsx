@@ -31,7 +31,9 @@ export default function Chat() {
   const [showQR, setShowQR] = useState(false);
 
   const [showProPopup, setShowProPopup] = useState(false);
+  const [showResearchPopup, setShowResearchPopup] = useState(false);
   const [showWelcomePro, setShowWelcomePro] = useState(false);
+  const [welcomeTier, setWelcomeTier] = useState<'pro' | 'research'>('pro');
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -49,15 +51,19 @@ export default function Chat() {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    if (params.get('subscription') === 'success') {
+    const subParam = params.get('subscription');
+    if (subParam === 'pro' || subParam === 'research' || subParam === 'success') {
+      const expectedTier = subParam === 'research' ? 'research' : 'pro';
       window.history.replaceState({}, '', '/chat');
       const syncSubscription = async () => {
         const trySync = async (): Promise<boolean> => {
           try {
             const res = await apiRequest("GET", "/api/subscription-status");
             const data = await res.json();
-            if (data.tier === 'pro') {
+            if (data.tier === 'pro' || data.tier === 'research') {
               queryClient.invalidateQueries({ queryKey: ["/api/models"] });
+              queryClient.invalidateQueries({ queryKey: ["/api/subscription-status"] });
+              setWelcomeTier(data.tier as 'pro' | 'research');
               setShowWelcomePro(true);
               return true;
             }
@@ -72,7 +78,7 @@ export default function Chat() {
         if (await trySync()) return;
         await new Promise(r => setTimeout(r, 5000));
         if (await trySync()) return;
-        toast({ title: "Processing", description: "Your payment is being processed. Pro access will activate shortly. Please refresh the page in a moment." });
+        toast({ title: "Processing", description: "Your payment is being processed. Access will activate shortly. Please refresh the page in a moment." });
       };
       syncSubscription();
     }
@@ -247,8 +253,11 @@ export default function Chat() {
   });
 
   const handleModelChange = (value: string) => {
-    if ((value === 'gemini-pro' || value === 'gemini-pro-research') && subscriptionData?.tier !== 'pro') {
+    const tier = subscriptionData?.tier;
+    if (value === 'gemini-pro' && tier !== 'pro' && tier !== 'research') {
       setShowProPopup(true);
+    } else if (value === 'claude-research' && tier !== 'research') {
+      setShowResearchPopup(true);
     } else {
       setSelectedAIModel(value);
     }
@@ -276,7 +285,7 @@ export default function Chat() {
               <SelectContent>
                 <SelectItem value="gemini-flash">Free</SelectItem>
                 <SelectItem value="gemini-pro">Pro $6.99</SelectItem>
-                <SelectItem value="gemini-pro-research">Research $6.99</SelectItem>
+                <SelectItem value="claude-research">Research $10</SelectItem>
               </SelectContent>
             </Select>
 
@@ -416,7 +425,7 @@ export default function Chat() {
                   </p>
                   <div className="mt-2 sm:mt-3 flex items-center space-x-2 text-[10px] sm:text-xs text-zinc-400">
                     <Brain className="h-3 w-3" />
-                    <span>Model: {selectedAIModel === 'gemini-flash' ? 'Free' : selectedAIModel === 'gemini-pro' ? 'Pro' : selectedAIModel === 'gemini-pro-research' ? 'Research' : selectedAIModel}</span>
+                    <span>Model: {selectedAIModel === 'gemini-flash' ? 'Free' : selectedAIModel === 'gemini-pro' ? 'Pro' : selectedAIModel === 'claude-research' ? 'Research' : selectedAIModel}</span>
                   </div>
                 </Card>
                 <div className="text-[10px] sm:text-xs text-zinc-500 mt-1.5 sm:mt-2 ml-1">Just now</div>
@@ -527,7 +536,7 @@ export default function Chat() {
                 <Crown className="text-white h-7 w-7" />
               </div>
               <h2 className="text-xl font-bold text-white mb-1">Upgrade to Pro</h2>
-              <p className="text-zinc-400 text-sm">Unlock the most powerful AI models</p>
+              <p className="text-zinc-400 text-sm">Unlock Gemini 2.5 Pro</p>
             </div>
 
             <div className="text-center mb-5">
@@ -539,10 +548,6 @@ export default function Chat() {
               <li className="flex items-center gap-3">
                 <CheckCircle className="w-4 h-4 text-green-400 flex-shrink-0" />
                 <span className="text-zinc-200 text-sm">Gemini 2.5 Pro - advanced reasoning</span>
-              </li>
-              <li className="flex items-center gap-3">
-                <CheckCircle className="w-4 h-4 text-green-400 flex-shrink-0" />
-                <span className="text-zinc-200 text-sm">Deep Research mode - thorough analysis</span>
               </li>
               <li className="flex items-center gap-3">
                 <CheckCircle className="w-4 h-4 text-green-400 flex-shrink-0" />
@@ -560,7 +565,7 @@ export default function Chat() {
               onClick={async () => {
                 setCheckoutLoading(true);
                 try {
-                  const response = await apiRequest("POST", "/api/checkout");
+                  const response = await apiRequest("POST", "/api/checkout", { plan: "pro" });
                   const data = await response.json();
                   if (data.url) {
                     window.location.href = data.url;
@@ -583,43 +588,128 @@ export default function Chat() {
         </div>
       )}
 
+      {showResearchPopup && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4" onClick={() => setShowResearchPopup(false)}>
+          <div className="bg-zinc-900 border border-zinc-700 rounded-2xl max-w-sm w-full p-6 relative" onClick={(e) => e.stopPropagation()}>
+            <button onClick={() => setShowResearchPopup(false)} className="absolute top-3 right-3 text-zinc-400 hover:text-white">
+              <X className="h-5 w-5" />
+            </button>
+
+            <div className="text-center mb-5">
+              <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Brain className="text-white h-7 w-7" />
+              </div>
+              <h2 className="text-xl font-bold text-white mb-1">Upgrade to Research</h2>
+              <p className="text-zinc-400 text-sm">Claude AI for deep research</p>
+            </div>
+
+            <div className="text-center mb-5">
+              <span className="text-4xl font-bold text-white">$10</span>
+              <span className="text-zinc-400 text-base">/month</span>
+            </div>
+
+            <ul className="space-y-3 mb-6">
+              <li className="flex items-center gap-3">
+                <CheckCircle className="w-4 h-4 text-green-400 flex-shrink-0" />
+                <span className="text-zinc-200 text-sm">Claude AI - deep research analysis</span>
+              </li>
+              <li className="flex items-center gap-3">
+                <CheckCircle className="w-4 h-4 text-green-400 flex-shrink-0" />
+                <span className="text-zinc-200 text-sm">Gemini 2.5 Pro included</span>
+              </li>
+              <li className="flex items-center gap-3">
+                <CheckCircle className="w-4 h-4 text-green-400 flex-shrink-0" />
+                <span className="text-zinc-200 text-sm">Comprehensive, in-depth answers</span>
+              </li>
+              <li className="flex items-center gap-3">
+                <CheckCircle className="w-4 h-4 text-green-400 flex-shrink-0" />
+                <span className="text-zinc-200 text-sm">Everything in Pro + Free included</span>
+              </li>
+            </ul>
+
+            <Button
+              className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white font-semibold py-5 rounded-xl text-base"
+              disabled={checkoutLoading}
+              onClick={async () => {
+                setCheckoutLoading(true);
+                try {
+                  const response = await apiRequest("POST", "/api/checkout", { plan: "research" });
+                  const data = await response.json();
+                  if (data.url) {
+                    window.location.href = data.url;
+                  } else {
+                    toast({ title: "Error", description: data.error || "Could not start checkout", variant: "destructive" });
+                  }
+                } catch (err: any) {
+                  toast({ title: "Error", description: err.message || "Checkout failed", variant: "destructive" });
+                } finally {
+                  setCheckoutLoading(false);
+                }
+              }}
+            >
+              <Brain className="w-4 h-4 mr-2" />
+              {checkoutLoading ? "Loading..." : "Subscribe Now - $10/mo"}
+            </Button>
+
+            <p className="text-center text-zinc-500 text-xs mt-3">Cancel anytime. Secure payment via Stripe.</p>
+          </div>
+        </div>
+      )}
+
       {showWelcomePro && (
         <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4" onClick={() => setShowWelcomePro(false)}>
-          <div className="bg-zinc-900 rounded-2xl p-6 sm:p-8 max-w-md w-full border border-purple-500/30 shadow-2xl shadow-purple-500/20" onClick={e => e.stopPropagation()}>
+          <div className={`bg-zinc-900 rounded-2xl p-6 sm:p-8 max-w-md w-full border ${welcomeTier === 'research' ? 'border-blue-500/30 shadow-2xl shadow-blue-500/20' : 'border-purple-500/30 shadow-2xl shadow-purple-500/20'}`} onClick={e => e.stopPropagation()}>
             <div className="text-center mb-6">
-              <div className="w-16 h-16 mx-auto bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center mb-4 shadow-lg shadow-purple-500/40">
-                <Crown className="w-8 h-8 text-white" />
+              <div className={`w-16 h-16 mx-auto rounded-full flex items-center justify-center mb-4 shadow-lg ${welcomeTier === 'research' ? 'bg-gradient-to-br from-blue-500 to-cyan-500 shadow-blue-500/40' : 'bg-gradient-to-br from-purple-500 to-pink-500 shadow-purple-500/40'}`}>
+                {welcomeTier === 'research' ? <Brain className="w-8 h-8 text-white" /> : <Crown className="w-8 h-8 text-white" />}
               </div>
-              <h2 className="text-2xl font-bold text-white mb-2">Welcome to Pro!</h2>
+              <h2 className="text-2xl font-bold text-white mb-2">{welcomeTier === 'research' ? 'Welcome to Research!' : 'Welcome to Pro!'}</h2>
               <p className="text-zinc-400">Your subscription is now active</p>
             </div>
 
             <div className="space-y-4 mb-6">
-              <h3 className="text-sm font-semibold text-purple-400 uppercase tracking-wide">What you can do now:</h3>
-              
-              <div className="bg-zinc-800 rounded-xl p-4 border border-zinc-700">
-                <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 bg-purple-500/20 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <Brain className="w-4 h-4 text-purple-400" />
-                  </div>
-                  <div>
-                    <p className="text-white font-medium text-sm">Gemini Pro Model</p>
-                    <p className="text-zinc-400 text-xs mt-0.5">Select "Gemini Pro" from the model dropdown for smarter, more detailed answers</p>
-                  </div>
-                </div>
-              </div>
+              <h3 className={`text-sm font-semibold uppercase tracking-wide ${welcomeTier === 'research' ? 'text-blue-400' : 'text-purple-400'}`}>What you can do now:</h3>
 
-              <div className="bg-zinc-800 rounded-xl p-4 border border-zinc-700">
-                <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 bg-pink-500/20 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <Zap className="w-4 h-4 text-pink-400" />
+              {welcomeTier === 'research' ? (
+                <>
+                  <div className="bg-zinc-800 rounded-xl p-4 border border-zinc-700">
+                    <div className="flex items-start gap-3">
+                      <div className="w-8 h-8 bg-blue-500/20 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <Brain className="w-4 h-4 text-blue-400" />
+                      </div>
+                      <div>
+                        <p className="text-white font-medium text-sm">Claude Research</p>
+                        <p className="text-zinc-400 text-xs mt-0.5">Select "Research $10" for deep analysis powered by Claude AI</p>
+                      </div>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-white font-medium text-sm">Deep Research Mode</p>
-                    <p className="text-zinc-400 text-xs mt-0.5">Select "Research" for in-depth analysis on complex topics</p>
+                  <div className="bg-zinc-800 rounded-xl p-4 border border-zinc-700">
+                    <div className="flex items-start gap-3">
+                      <div className="w-8 h-8 bg-purple-500/20 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <Zap className="w-4 h-4 text-purple-400" />
+                      </div>
+                      <div>
+                        <p className="text-white font-medium text-sm">Gemini Pro Included</p>
+                        <p className="text-zinc-400 text-xs mt-0.5">You also get access to Gemini 2.5 Pro for fast, detailed answers</p>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
+                </>
+              ) : (
+                <>
+                  <div className="bg-zinc-800 rounded-xl p-4 border border-zinc-700">
+                    <div className="flex items-start gap-3">
+                      <div className="w-8 h-8 bg-purple-500/20 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <Brain className="w-4 h-4 text-purple-400" />
+                      </div>
+                      <div>
+                        <p className="text-white font-medium text-sm">Gemini Pro Model</p>
+                        <p className="text-zinc-400 text-xs mt-0.5">Select "Pro $6.99" from the model dropdown for smarter, more detailed answers</p>
+                      </div>
+                    </div>
+                  </div>
+                </>
+              )}
 
               <div className="bg-zinc-800 rounded-xl p-4 border border-zinc-700">
                 <div className="flex items-start gap-3">
@@ -628,20 +718,20 @@ export default function Chat() {
                   </div>
                   <div>
                     <p className="text-white font-medium text-sm">How to Switch Models</p>
-                    <p className="text-zinc-400 text-xs mt-0.5">Tap the model selector at the top of your chat to switch between Free, Pro, and Research anytime</p>
+                    <p className="text-zinc-400 text-xs mt-0.5">Tap the model selector at the top of your chat to switch between models anytime</p>
                   </div>
                 </div>
               </div>
             </div>
 
             <Button
-              className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold py-5 rounded-xl text-base"
+              className={`w-full text-white font-semibold py-5 rounded-xl text-base ${welcomeTier === 'research' ? 'bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700' : 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700'}`}
               onClick={() => {
                 setShowWelcomePro(false);
-                setSelectedAIModel("gemini-pro");
+                setSelectedAIModel(welcomeTier === 'research' ? "claude-research" : "gemini-pro");
               }}
             >
-              Start Using Pro
+              {welcomeTier === 'research' ? 'Start Using Research' : 'Start Using Pro'}
             </Button>
           </div>
         </div>
