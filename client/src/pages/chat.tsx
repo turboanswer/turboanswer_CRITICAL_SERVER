@@ -4,7 +4,8 @@ import { apiRequest } from "@/lib/queryClient";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Send, Bot, User, FileText, X, Brain, Settings, LogOut, Camera, Globe, Zap, Menu } from "lucide-react";
+import { Send, Bot, User, FileText, X, Brain, Settings, LogOut, Camera, Globe, Zap, Menu, QrCode } from "lucide-react";
+import { QRCodeSVG } from "qrcode.react";
 import { Link } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { LoadingScreen } from "@/components/LoadingScreen";
@@ -28,6 +29,7 @@ export default function Chat() {
   const [selectedAIModel, setSelectedAIModel] = useState("auto");
   const [currentLanguage, setCurrentLanguage] = useState("en");
   const [showToolbar, setShowToolbar] = useState(false);
+  const [showQR, setShowQR] = useState(false);
 
   const [isLoading, setIsLoading] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -228,6 +230,9 @@ export default function Chat() {
             </Select>
 
             <div className="hidden sm:flex items-center gap-1">
+              <Button onClick={() => setShowQR(!showQR)} variant="ghost" size="sm" className={`h-8 w-8 p-0 ${showQR ? 'text-blue-400' : 'text-gray-400'} hover:text-white`} title="QR Code">
+                <QrCode className="h-4 w-4" />
+              </Button>
               <Link href="/ai-settings">
                 <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-gray-400 hover:text-white" title="Settings">
                   <Settings className="h-4 w-4" />
@@ -262,6 +267,9 @@ export default function Chat() {
             </div>
             <div className="flex items-center gap-1">
               <LanguageSelector currentLanguage={currentLanguage} onLanguageChange={handleLanguageChange} />
+              <Button onClick={() => { setShowQR(!showQR); setShowToolbar(false); }} variant="ghost" size="sm" className={`h-8 w-8 p-0 ${showQR ? 'text-blue-400' : 'text-gray-400'}`}>
+                <QrCode className="h-4 w-4" />
+              </Button>
               <Link href="/ai-settings">
                 <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-gray-400 hover:text-white">
                   <Settings className="h-4 w-4" />
@@ -274,6 +282,34 @@ export default function Chat() {
           </div>
         )}
       </header>
+
+      {showQR && (
+        <div className="bg-zinc-950 border-b border-zinc-800 px-3 sm:px-6 py-4 sm:py-6 relative z-30 shrink-0">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-base sm:text-lg font-medium text-white flex items-center gap-2">
+              <QrCode className="h-4 w-4 sm:h-5 sm:w-5 text-blue-400" />
+              Open on Your Phone
+            </h3>
+            <Button onClick={() => setShowQR(false)} variant="ghost" size="sm" className="text-zinc-400 hover:text-white">
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+          <div className="flex flex-col items-center gap-3">
+            <p className="text-xs sm:text-sm text-gray-400 text-center">Scan this QR code with your phone camera to open Turbo Answer</p>
+            <div className="bg-white p-3 sm:p-4 rounded-xl">
+              <QRCodeSVG
+                value={window.location.origin}
+                size={160}
+                bgColor="#ffffff"
+                fgColor="#000000"
+                level="H"
+                includeMargin={false}
+              />
+            </div>
+            <p className="text-[10px] sm:text-xs text-gray-500 break-all max-w-xs text-center">{window.location.origin}</p>
+          </div>
+        </div>
+      )}
 
       <div className="hidden sm:block bg-gray-900/50 border-b border-gray-800 px-4 py-2 shrink-0">
         <div className="flex items-center justify-between">
