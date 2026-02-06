@@ -283,6 +283,23 @@ function generateSmartResponse(userMessage: string, conversationHistory: Array<{
     }
   }
 
+  if (/^(?:no|nope|nah|no thanks|no thank you|not really|i'm good|im good|i don't need help|i dont need help|nothing|never ?mind|no i'm? (?:fine|good|ok|okay))[\s!.]*$/i.test(msg)) {
+    return pickRandom([
+      "Alright! I'll be here whenever you need me.",
+      "Sounds good. Just let me know when you need something.",
+      "Okay, no worries!",
+      "Got it. I'm here whenever you're ready.",
+    ]);
+  }
+
+  if (/^(?:yes|yeah|yep|yup|sure|ok|okay|alright)[\s!.]*$/i.test(msg)) {
+    return pickRandom([
+      "Great! What would you like to know?",
+      "Awesome! Go ahead and ask me anything.",
+      "Perfect! What's on your mind?",
+    ]);
+  }
+
   for (const conv of conversationalPatterns) {
     for (const p of conv.patterns) {
       if (p.test(msg)) return pickRandom(conv.responses);
@@ -351,13 +368,61 @@ function generateGeneralAnswer(msg: string, history: Array<{role: string, conten
 
 function generateConversationalResponse(msg: string, history: Array<{role: string, content: string}>): string {
   const responses = [
-    `Interesting! Tell me more about what you're thinking.`,
-    `I hear you! Is there something specific I can help with?`,
-    `That's cool! I'm ready to help with whatever you need - math, coding, facts, you name it.`,
-    `Got it! Want me to help with anything specific?`,
-    `I appreciate you sharing that! What would you like to explore?`,
+    `Interesting! Tell me more about that.`,
+    `I hear you!`,
+    `That's cool!`,
+    `Got it!`,
+    `Makes sense!`,
+    `I see what you mean.`,
   ];
   return pickRandom(responses);
+}
+
+function generateMathServerResponse(msg: string): string | null {
+  const mathExpr = extractMathExpression(msg);
+  if (mathExpr) {
+    const result = evaluateMath(mathExpr);
+    if (result !== null) return Number.isInteger(result) ? `${result}` : `${parseFloat(result.toFixed(6))}`;
+  }
+  for (const topic of topicResponses) {
+    for (const p of topic.patterns) { if (p.test(msg)) return topic.generator(msg); }
+  }
+  const directCalc = msg.replace(/[^0-9+\-*/%^().×÷\s]/g, '').trim();
+  if (directCalc) {
+    const result = evaluateMath(directCalc);
+    if (result !== null) return Number.isInteger(result) ? `${result}` : `${parseFloat(result.toFixed(6))}`;
+  }
+  return null;
+}
+
+function generateCodeServerResponse(msg: string): string | null {
+  for (const ex of codeExamples) {
+    for (const p of ex.patterns) {
+      if (p.test(msg)) return `${ex.explanation}\n\n\`\`\`${ex.language}\n${ex.code}\n\`\`\``;
+    }
+  }
+  return null;
+}
+
+function generateKnowledgeServerResponse(msg: string): string | null {
+  for (const fact of facts) {
+    for (const p of fact.patterns) { if (p.test(msg)) return fact.answer; }
+  }
+  return null;
+}
+
+function generateCreativeServerResponse(msg: string): string | null {
+  const lowerMsg = msg.toLowerCase();
+  if (/\b(story|write|poem|haiku|limerick|creative)\b/i.test(msg)) {
+    if (/haiku/i.test(msg)) return "Here's a haiku:\n\nSilent morning light\nKeyboard clicks through gentle dawn\nCode begins to bloom";
+    if (/poem/i.test(msg)) return "Here's a short poem:\n\nIn circuits and code we find,\nA spark of the creative mind.\nFrom zeros and ones we create,\nNew worlds that illuminate.\nThe future is ours to design,\nWhere human and machine combine.";
+    if (/limerick/i.test(msg)) return "Here's a limerick:\n\nA coder who worked through the night,\nFound a bug that was quite out of sight.\nWith a coffee in hand,\nThey debugged as they planned,\nAnd got everything working just right!";
+    return "I'm your creative assistant! I can help with:\n\n- Writing poems and haikus\n- Brainstorming ideas\n- Creative writing prompts\n- Wordplay and limericks\n\nWhat would you like to create?";
+  }
+  if (/\b(brainstorm|idea|suggest|inspiration)\b/i.test(msg)) {
+    return "Here are some brainstorming techniques:\n\n1. Mind mapping - Start with a central idea and branch out\n2. SCAMPER method - Substitute, Combine, Adapt, Modify, Put to other uses, Eliminate, Reverse\n3. The 5 Whys - Ask 'why' five times to get to the root\n4. Random word association - Pick a random word and connect it to your problem\n\nWhat topic are you brainstorming about? I can help generate specific ideas!";
+  }
+  return null;
 }
 
 export async function generateLocalAIResponse(
@@ -371,9 +436,28 @@ export async function generateLocalAIResponse(
   const startTime = Date.now();
 
   try {
-    const response = generateSmartResponse(userMessage, conversationHistory);
+    let response: string | null = null;
+    const server = selectedModel || "auto";
+    console.log(`[Local AI] Server: ${server}, Query: "${userMessage.substring(0, 50)}..."`);
+
+    if (server === "math") {
+      response = generateMathServerResponse(userMessage);
+      if (!response) response = "I'm in Math mode. Try asking me a calculation like '2+2', 'what is 15% of 200', or 'convert 100 fahrenheit to celsius'.";
+    } else if (server === "code") {
+      response = generateCodeServerResponse(userMessage);
+      if (!response) response = "I'm in Code mode. Try asking for code examples like 'hello world in python', 'for loop in javascript', or 'fibonacci in python'.";
+    } else if (server === "knowledge") {
+      response = generateKnowledgeServerResponse(userMessage);
+      if (!response) response = generateSmartResponse(userMessage, conversationHistory);
+    } else if (server === "creative") {
+      response = generateCreativeServerResponse(userMessage);
+      if (!response) response = generateSmartResponse(userMessage, conversationHistory);
+    } else {
+      response = generateSmartResponse(userMessage, conversationHistory);
+    }
+
     const elapsed = Date.now() - startTime;
-    console.log(`[Local AI] Response generated in ${elapsed}ms`);
+    console.log(`[Local AI] [${server}] Response in ${elapsed}ms`);
     return response;
   } catch (error) {
     console.error('[Local AI] Error:', error);

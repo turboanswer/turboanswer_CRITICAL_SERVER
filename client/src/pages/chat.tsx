@@ -1,79 +1,47 @@
 import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
-import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Send, Bot, User, FileText, X, Brain, Settings, LogOut, Camera, Globe, Zap } from "lucide-react";
+import { 
+  Send, Bot, User, Plus, MessageSquare, Trash2, 
+  Menu, X, Camera, FileText, ChevronDown, Sparkles,
+  Code, Calculator, BookOpen, Palette, Crown, Settings, LogOut
+} from "lucide-react";
 import { Link } from "wouter";
-import turboLogo from "@assets/file_00000000d40c61f9a186294bbf2c842a_1752427622475.png";
-import { LoadingScreen } from "@/components/LoadingScreen";
 import { useToast } from "@/hooks/use-toast";
-import { DocumentUpload } from "@/components/DocumentUpload";
-import CameraCapture from "@/components/CameraCapture";
-import LanguageSelector from "@/components/LanguageSelector";
-
-import LiveCameraFeed from "@/components/LiveCameraFeed";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { Conversation, Message } from "@shared/schema";
+
+const AI_SERVERS = [
+  { id: "auto", name: "Auto", icon: Sparkles, desc: "Smart routing", color: "text-blue-400" },
+  { id: "math", name: "Math", icon: Calculator, desc: "Calculations & formulas", color: "text-green-400" },
+  { id: "code", name: "Code", icon: Code, desc: "Programming help", color: "text-yellow-400" },
+  { id: "knowledge", name: "Knowledge", icon: BookOpen, desc: "Facts & research", color: "text-purple-400" },
+  { id: "creative", name: "Creative", icon: Palette, desc: "Writing & ideas", color: "text-pink-400" },
+];
 
 export default function Chat() {
   const [currentConversationId, setCurrentConversationId] = useState<number | null>(null);
   const [messageContent, setMessageContent] = useState("");
   const [isTyping, setIsTyping] = useState(false);
-
-  const [showDocumentUpload, setShowDocumentUpload] = useState(false);
-  const [showCamera, setShowCamera] = useState(false);
-  const [showLiveCamera, setShowLiveCamera] = useState(false);
-  const [selectedAIModel, setSelectedAIModel] = useState("auto");
-  const [currentLanguage, setCurrentLanguage] = useState("en");
-
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [selectedServer, setSelectedServer] = useState("auto");
+  const [showServerPicker, setShowServerPicker] = useState(false);
   const [user, setUser] = useState<any>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [showCamera, setShowCamera] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
-  // Check for user authentication and handle loading
   useEffect(() => {
     const userData = localStorage.getItem('turbo_user');
     if (userData) {
-      try {
-        setUser(JSON.parse(userData));
-      } catch (e) {
-        localStorage.removeItem('turbo_user');
-      }
+      try { setUser(JSON.parse(userData)); } catch (e) { localStorage.removeItem('turbo_user'); }
     }
-    
-    // Load saved language preference
-    const savedLanguage = localStorage.getItem('turbo_language');
-    if (savedLanguage) {
-      setCurrentLanguage(savedLanguage);
-    }
-    
-
-    
-    // Show loading screen for 2 seconds
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 2000);
-    
-    return () => clearTimeout(timer);
   }, []);
 
-  const handleLogout = () => {
-    localStorage.removeItem('turbo_user');
-    setUser(null);
-    toast({
-      title: "Logged Out",
-      description: "You have been successfully logged out",
-    });
-  };
-
-  // Get or create conversation
-  const { data: conversations } = useQuery<Conversation[]>({
+  const { data: conversations = [] } = useQuery<Conversation[]>({
     queryKey: ["/api/conversations"],
   });
 
@@ -82,104 +50,77 @@ export default function Chat() {
     enabled: !!currentConversationId,
   });
 
-  // Create conversation mutation
   const createConversationMutation = useMutation({
     mutationFn: async () => {
-      const response = await apiRequest("POST", "/api/conversations", {
-        title: "New Conversation"
-      });
+      const response = await apiRequest("POST", "/api/conversations", { title: "New chat" });
       return response.json();
     },
     onSuccess: (conversation: Conversation) => {
       setCurrentConversationId(conversation.id);
       queryClient.invalidateQueries({ queryKey: ["/api/conversations"] });
     },
-    onError: (error: any) => {
-      toast({
-        title: "Error",
-        description: "Failed to create conversation",
-        variant: "destructive",
-      });
-    }
   });
 
-  // Send message mutation
+  const deleteConversationMutation = useMutation({
+    mutationFn: async (id: number) => {
+      await apiRequest("DELETE", `/api/conversations/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/conversations"] });
+      if (conversations.length > 1) {
+        const remaining = conversations.filter(c => c.id !== currentConversationId);
+        setCurrentConversationId(remaining[0]?.id || null);
+      } else {
+        setCurrentConversationId(null);
+        createConversationMutation.mutate();
+      }
+    },
+  });
+
   const sendMessageMutation = useMutation({
     mutationFn: async (content: string) => {
       if (!currentConversationId) throw new Error("No conversation selected");
       const response = await apiRequest("POST", `/api/conversations/${currentConversationId}/messages`, {
         content,
-        selectedModel: selectedAIModel,
-        language: currentLanguage // Include language support
+        selectedModel: selectedServer,
       });
       return response.json();
     },
-    onSuccess: (data: any) => {
-      queryClient.invalidateQueries({ 
-        queryKey: ["/api/conversations", currentConversationId, "messages"] 
-      });
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/conversations", currentConversationId, "messages"] });
       setMessageContent("");
       setIsTyping(false);
-      
-      // Automatically speak the AI response for conversational models
-      if (data.aiMessage && data.aiMessage.content) {
-        console.log('🤖 AI Response received, selected model:', selectedAIModel);
-        console.log('🤖 Response content:', data.aiMessage.content.substring(0, 100) + '...');
-        
-
-      }
     },
-    onError: (error: any) => {
+    onError: () => {
       setIsTyping(false);
-      toast({
-        title: "Error",
-        description: error.message || "Failed to send message",
-        variant: "destructive",
-      });
+      toast({ title: "Error", description: "Failed to send message", variant: "destructive" });
     }
   });
 
-  // Initialize conversation on first load
   useEffect(() => {
-    if (!currentConversationId && conversations && conversations.length === 0) {
+    if (!currentConversationId && conversations.length === 0) {
       createConversationMutation.mutate();
-    } else if (!currentConversationId && conversations && conversations.length > 0) {
+    } else if (!currentConversationId && conversations.length > 0) {
       setCurrentConversationId(conversations[0].id);
     }
   }, [conversations, currentConversationId]);
 
-  // Auto-scroll to bottom
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    messagesEndRef.current?.scrollIntoView({ behavior: "instant" });
   }, [messages, isTyping]);
 
-  // Auto-resize textarea
   useEffect(() => {
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
-      textareaRef.current.style.height = Math.min(textareaRef.current.scrollHeight, 120) + 'px';
+      textareaRef.current.style.height = Math.min(textareaRef.current.scrollHeight, 200) + 'px';
     }
   }, [messageContent]);
 
-
-
-  const handleSendMessage = async () => {
+  const handleSendMessage = () => {
     if (!messageContent.trim() || sendMessageMutation.isPending) return;
-
     setIsTyping(true);
     sendMessageMutation.mutate(messageContent.trim());
-  }
-
-  const handleDocumentAnalysis = (analysis: any) => {
-    // Add the analysis result as a message in the current conversation
-    if (currentConversationId && analysis) {
-      const analysisMessage = `📄 **Document Analysis: ${analysis.filename}**\n\n**Analysis Type:** ${analysis.analysisType}\n\n**Result:**\n${analysis.analysis}`;
-      
-      // Send the analysis as a regular message
-      sendMessageMutation.mutate(analysisMessage);
-      setShowDocumentUpload(false);
-    }
-  };;
+  };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -188,388 +129,410 @@ export default function Chat() {
     }
   };
 
+  const handleNewChat = () => {
+    createConversationMutation.mutate();
+  };
 
+  const handleLogout = () => {
+    localStorage.removeItem('turbo_user');
+    setUser(null);
+    toast({ title: "Logged Out", description: "You have been logged out" });
+  };
 
-  // Language change handler
-  const handleLanguageChange = (languageCode: string) => {
-    setCurrentLanguage(languageCode);
-    localStorage.setItem('turbo_language', languageCode);
-    toast({
-      title: "Language Changed",
-      description: `Switched to ${languageCode.toUpperCase()}`,
+  const currentServer = AI_SERVERS.find(s => s.id === selectedServer) || AI_SERVERS[0];
+
+  const renderMarkdown = (text: string) => {
+    const parts = text.split(/(```[\s\S]*?```)/g);
+    return parts.map((part, i) => {
+      if (part.startsWith('```') && part.endsWith('```')) {
+        const lines = part.slice(3, -3).split('\n');
+        const lang = lines[0]?.trim() || '';
+        const code = lines.slice(lang ? 1 : 0).join('\n').trim();
+        return (
+          <div key={i} className="my-3 rounded-lg overflow-hidden bg-gray-900 border border-gray-700">
+            {lang && <div className="px-3 py-1 text-xs text-gray-400 bg-gray-800 border-b border-gray-700">{lang}</div>}
+            <pre className="p-3 overflow-x-auto text-sm"><code className="text-green-300">{code}</code></pre>
+          </div>
+        );
+      }
+      const formatted = part
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+        .replace(/`([^`]+)`/g, '<code class="bg-gray-700 px-1 py-0.5 rounded text-sm text-green-300">$1</code>');
+      return <span key={i} dangerouslySetInnerHTML={{ __html: formatted }} />;
     });
   };
 
-
-
-  // Camera analysis handlers
-  const handleCameraCapture = (imageData: string) => {
-    console.log('Camera captured image');
-  };
-
-  const handleImageAnalysis = async (imageData: string) => {
-    try {
-      const response = await apiRequest("POST", "/api/analyze-image", {
-        imageData,
-        query: "What do you see in this image?"
-      });
-      const analysis = await response.json();
-      
-      if (analysis.description) {
-        // Send the analysis as a message
-        sendMessageMutation.mutate(`📸 **Camera Analysis**: ${analysis.description}`);
-      }
-    } catch (error) {
-      console.error('Image analysis error:', error);
-      toast({
-        title: "Camera Analysis Failed",
-        description: "Unable to analyze the image. Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
-
-
-
-  // Live camera analysis result handler
-  const handleLiveCameraAnalysis = (analysis: string) => {
-    // Add the analysis result as a message in the current conversation
-    if (currentConversationId && analysis) {
-      const analysisMessage = `📹 **Live Camera**: ${analysis}`;
-      sendMessageMutation.mutate(analysisMessage);
-    }
-  };
-
-  const formatTimestamp = (timestamp: string | Date) => {
-    const date = new Date(timestamp);
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffMins = Math.floor(diffMs / 60000);
-    
-    if (diffMins < 1) return "Just now";
-    if (diffMins < 60) return `${diffMins} minute${diffMins > 1 ? 's' : ''} ago`;
-    
-    const diffHours = Math.floor(diffMins / 60);
-    if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
-    
-    return date.toLocaleDateString();
-  };
-
-  // Show loading screen on app start
-  if (isLoading) {
-    return <LoadingScreen message="Activating Maximum Power AI System..." />;
-  }
-
   return (
-    <div className="flex flex-col h-screen w-full mx-auto bg-black fixed inset-0">
-      {/* Simplified Intuitive Header */}
-      <header className="bg-black/95 backdrop-blur-sm border-b border-gray-800 px-4 py-3 relative z-40 shrink-0">
-        <div className="flex items-center justify-between">
-          {/* New Robot Logo */}
-          <div className="flex items-center space-x-3">
-            <img 
-              src={turboLogo} 
-              alt="Turbo Answer Robot" 
-              className="w-12 h-12 object-contain"
-            />
-            <div>
-              <h1 className="text-xl font-bold text-white">Turbo Answer</h1>
-              <p className="text-xs text-gray-400">Never Stop Innovating</p>
-            </div>
-          </div>
-          
-          {/* Quick Controls */}
-          <div className="flex items-center space-x-3">
-            {/* AI Model Quick Selector */}
-            <div className="flex items-center space-x-2">
-              <span className="text-xs text-gray-400 hidden sm:block">AI:</span>
-              <Select value={selectedAIModel} onValueChange={setSelectedAIModel}>
-                <SelectTrigger className="w-24 h-8 bg-gray-900 border-gray-700 text-xs">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="auto">Auto</SelectItem>
-                  <SelectItem value="ultimate-fusion">Ultimate</SelectItem>
-                  <SelectItem value="conversational">Fast</SelectItem>
-                  <SelectItem value="research-pro">Research</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            
+    <div className="flex h-screen bg-[#171717] text-white">
+      {/* Sidebar */}
+      <div className={`${sidebarOpen ? 'w-64' : 'w-0'} flex-shrink-0 bg-[#0d0d0d] flex flex-col overflow-hidden`}
+        style={{ transition: 'none' }}>
+        <div className="p-3 flex flex-col h-full">
+          {/* New Chat Button */}
+          <Button
+            onClick={handleNewChat}
+            className="w-full mb-3 bg-[#212121] hover:bg-[#2a2a2a] text-white border border-gray-700 rounded-lg h-10 flex items-center justify-center gap-2"
+          >
+            <Plus className="h-4 w-4" />
+            New chat
+          </Button>
 
-            
-            {/* Settings */}
-            <Link href="/ai-settings">
-              <Button 
-                variant="ghost" 
-                size="sm"
-                className="h-8 w-8 p-0 text-gray-400 hover:text-white"
-                title="Settings"
+          {/* Conversation List */}
+          <div className="flex-1 overflow-y-auto space-y-1">
+            {conversations.map((conv) => (
+              <div
+                key={conv.id}
+                className={`group flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer text-sm ${
+                  conv.id === currentConversationId 
+                    ? 'bg-[#212121] text-white' 
+                    : 'text-gray-400 hover:bg-[#1a1a1a] hover:text-white'
+                }`}
+                onClick={() => setCurrentConversationId(conv.id)}
               >
-                <Settings className="h-4 w-4" />
-              </Button>
+                <MessageSquare className="h-4 w-4 flex-shrink-0" />
+                <span className="truncate flex-1">{conv.title || "New chat"}</span>
+                <button
+                  onClick={(e) => { e.stopPropagation(); deleteConversationMutation.mutate(conv.id); }}
+                  className="hidden group-hover:block text-gray-500 hover:text-red-400"
+                >
+                  <Trash2 className="h-3 w-3" />
+                </button>
+              </div>
+            ))}
+          </div>
+
+          {/* Bottom Actions */}
+          <div className="border-t border-gray-800 pt-3 mt-3 space-y-1">
+            <Link href="/pricing">
+              <div className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-yellow-400 hover:bg-[#1a1a1a] cursor-pointer">
+                <Crown className="h-4 w-4" />
+                <span>Upgrade to Premium</span>
+              </div>
             </Link>
-            
-            {/* User Menu */}
+            <Link href="/ai-settings">
+              <div className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-gray-400 hover:bg-[#1a1a1a] hover:text-white cursor-pointer">
+                <Settings className="h-4 w-4" />
+                <span>Settings</span>
+              </div>
+            </Link>
             {user ? (
-              <Button
+              <div
                 onClick={handleLogout}
-                variant="ghost"
-                size="sm"
-                className="h-8 w-8 p-0 text-gray-400 hover:text-red-400"
-                title="Logout"
+                className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-gray-400 hover:bg-[#1a1a1a] hover:text-red-400 cursor-pointer"
               >
                 <LogOut className="h-4 w-4" />
-              </Button>
+                <span>Log out</span>
+              </div>
             ) : (
               <Link href="/login">
-                <Button variant="ghost" size="sm" className="text-sm text-blue-400 hover:text-white">
-                  Sign In
-                </Button>
+                <div className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-blue-400 hover:bg-[#1a1a1a] cursor-pointer">
+                  <User className="h-4 w-4" />
+                  <span>Sign in</span>
+                </div>
               </Link>
             )}
           </div>
         </div>
-      </header>
-
-      {/* Quick Action Bar */}
-      <div className="bg-gray-900/50 border-b border-gray-800 px-4 py-2">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <Button
-              onClick={() => setShowDocumentUpload(!showDocumentUpload)}
-              variant="ghost"
-              size="sm"
-              className={`h-8 px-2 ${showDocumentUpload ? 'text-blue-400' : 'text-gray-400'} hover:text-white`}
-              title="Upload Document"
-            >
-              <FileText className="h-4 w-4" />
-            </Button>
-            <Button
-              onClick={() => setShowCamera(!showCamera)}
-              variant="ghost"
-              size="sm"
-              className={`h-8 px-2 ${showCamera ? 'text-blue-400' : 'text-gray-400'} hover:text-white`}
-              title="Camera"
-            >
-              <Camera className="h-4 w-4" />
-            </Button>
-            <Button
-              onClick={() => setShowLiveCamera(!showLiveCamera)}
-              variant="ghost"
-              size="sm"
-              className={`h-8 px-2 ${showLiveCamera ? 'text-red-400' : 'text-gray-400'} hover:text-white`}
-              title="Live Camera"
-            >
-              <Globe className="h-4 w-4" />
-            </Button>
-          </div>
-          
-          <div className="flex items-center space-x-2">
-            <LanguageSelector 
-              currentLanguage={currentLanguage} 
-              onLanguageChange={handleLanguageChange} 
-            />
-          </div>
-        </div>
       </div>
 
-      {/* Document Upload Panel */}
-      {showDocumentUpload && (
-        <div className="bg-zinc-950 border-b border-zinc-800 px-4 py-4 sm:px-6 relative z-30">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-medium text-white">Document Analysis</h3>
-            <Button
-              onClick={() => setShowDocumentUpload(false)}
-              variant="ghost"
-              size="sm"
-              className="text-zinc-400 hover:text-white"
-            >
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
-          <DocumentUpload 
-            conversationId={currentConversationId} 
-            onAnalysisComplete={handleDocumentAnalysis}
-          />
-        </div>
-      )}
+      {/* Main Chat Area */}
+      <div className="flex-1 flex flex-col min-w-0">
+        {/* Header */}
+        <header className="h-12 border-b border-gray-800 flex items-center px-4 bg-[#171717] flex-shrink-0">
+          <Button
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            variant="ghost"
+            size="sm"
+            className="h-8 w-8 p-0 text-gray-400 hover:text-white mr-3"
+          >
+            {sidebarOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
+          </Button>
 
-      {/* Camera Panel */}
-      {showCamera && (
-        <div className="bg-zinc-950 border-b border-zinc-800 px-4 py-4 sm:px-6 relative z-30">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-medium text-white">Camera Analysis</h3>
-            <Button
-              onClick={() => setShowCamera(false)}
-              variant="ghost"
-              size="sm"
-              className="text-zinc-400 hover:text-white"
-            >
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
-          <CameraCapture 
-            onCapture={handleCameraCapture}
-            onAnalysis={handleImageAnalysis}
-          />
-        </div>
-      )}
-
-      {/* Live Camera Feed Panel */}
-      {showLiveCamera && (
-        <div className="bg-gradient-to-r from-red-950 to-red-900 border-b border-red-800 px-4 py-4 sm:px-6 relative z-30">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-medium text-white flex items-center">
-              <Camera className="h-5 w-5 mr-2 text-red-400" />
-              Live Camera Feed - Real-time AI Analysis
-            </h3>
-            <Button
-              onClick={() => setShowLiveCamera(false)}
-              variant="ghost"
-              size="sm"
-              className="text-red-400 hover:text-white"
-            >
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
-          <LiveCameraFeed 
-            language={currentLanguage}
-            onAnalysisResult={handleLiveCameraAnalysis}
-          />
-        </div>
-      )}
-
-
-
-
-
-      {/* Messages - Stable container */}
-      <div className="flex-1 overflow-y-auto bg-zinc-900 relative z-10">
-        <div className="px-4 py-6 sm:px-6">
-          {messages.length === 0 && !isTyping && (
-            <div className="flex items-start space-x-3 mb-8">
-              <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center flex-shrink-0 shadow-lg shadow-purple-500/30">
-                <Bot className="text-white text-sm" />
-              </div>
-              <div className="flex-1">
-                <Card className="bg-zinc-800 rounded-2xl rounded-tl-md px-4 py-3 shadow-xl border border-zinc-700">
-                  <p className="text-zinc-100 leading-relaxed">
-                    🚀 Welcome to <strong>TURBO ANSWER</strong> - The Ultimate AI Assistant! I can have natural conversations, understand your emotions, and talk back to you like a real person. Choose "Conversational AI" for natural chat or "Emotional AI" for deep emotional support. Ready to experience ultimate AI power?
-                  </p>
-                  <div className="mt-3 flex items-center space-x-2 text-xs text-zinc-400">
-                    <Brain className="h-3 w-3" />
-                    <span>AI Model: {selectedAIModel === 'auto' ? 'Auto-Select (Intelligent Routing)' : selectedAIModel}</span>
-                  </div>
-                </Card>
-                <div className="text-xs text-zinc-500 mt-2 ml-1">
-                  Just now
-                </div>
-              </div>
-            </div>
-          )}
-
-          {messages.map((message) => (
-            <div key={message.id} className={`flex items-start space-x-3 mb-6 ${message.role === 'user' ? 'justify-end' : ''}`}>
-              {message.role === 'assistant' && (
-                <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center flex-shrink-0 shadow-lg shadow-purple-500/30">
-                  <Bot className="text-white text-sm" />
-                </div>
-              )}
-              
-              <div className={`flex-1 ${message.role === 'user' ? 'max-w-xs sm:max-w-md' : ''}`}>
-                <Card className={`px-4 py-3 shadow-xl relative group ${
-                  message.role === 'user' 
-                    ? 'bg-gradient-to-r from-purple-600 to-purple-500 text-white rounded-2xl rounded-tr-md' 
-                    : 'bg-zinc-800 rounded-2xl rounded-tl-md border border-zinc-700'
-                }`}>
-                  <p className={`leading-relaxed ${message.role === 'user' ? 'text-white' : 'text-zinc-100'}`}>
-                    {message.content}
-                  </p>
-
-                </Card>
-                <div className={`text-xs text-zinc-500 mt-2 ${message.role === 'user' ? 'mr-1 text-right' : 'ml-1'}`}>
-                  {formatTimestamp(message.timestamp)}
-                </div>
-              </div>
-
-              {message.role === 'user' && (
-                <div className="w-8 h-8 bg-zinc-700 rounded-full flex items-center justify-center flex-shrink-0">
-                  <User className="text-zinc-300 text-sm" />
+          <div className="flex items-center gap-2 flex-1">
+            <h1 className="text-sm font-medium text-white">Turbo Answer</h1>
+            <span className="text-xs text-gray-500">|</span>
+            {/* Server Picker */}
+            <div className="relative">
+              <button
+                onClick={() => setShowServerPicker(!showServerPicker)}
+                className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-white px-2 py-1 rounded hover:bg-[#212121]"
+              >
+                <currentServer.icon className={`h-3 w-3 ${currentServer.color}`} />
+                <span>{currentServer.name}</span>
+                <ChevronDown className="h-3 w-3" />
+              </button>
+              {showServerPicker && (
+                <div className="absolute top-full left-0 mt-1 bg-[#212121] border border-gray-700 rounded-lg shadow-xl z-50 w-56 py-1">
+                  {AI_SERVERS.map((server) => (
+                    <button
+                      key={server.id}
+                      onClick={() => { setSelectedServer(server.id); setShowServerPicker(false); }}
+                      className={`w-full flex items-center gap-3 px-3 py-2 text-left hover:bg-[#2a2a2a] ${
+                        server.id === selectedServer ? 'bg-[#2a2a2a]' : ''
+                      }`}
+                    >
+                      <server.icon className={`h-4 w-4 ${server.color}`} />
+                      <div>
+                        <div className="text-sm text-white">{server.name}</div>
+                        <div className="text-xs text-gray-500">{server.desc}</div>
+                      </div>
+                    </button>
+                  ))}
                 </div>
               )}
             </div>
-          ))}
+          </div>
 
-          {/* Typing Indicator */}
-          {isTyping && (
-            <div className="flex items-start space-x-3 mb-6">
-              <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center flex-shrink-0 shadow-lg shadow-purple-500/30">
-                <Bot className="text-white text-sm" />
+          {/* Camera Button */}
+          <Button
+            onClick={() => setShowCamera(!showCamera)}
+            variant="ghost"
+            size="sm"
+            className={`h-8 w-8 p-0 ${showCamera ? 'text-blue-400' : 'text-gray-400'} hover:text-white`}
+            title="Camera"
+          >
+            <Camera className="h-4 w-4" />
+          </Button>
+        </header>
+
+        {/* Messages Area */}
+        <div className="flex-1 overflow-y-auto">
+          <div className="max-w-3xl mx-auto px-4 py-6">
+            {/* Empty State */}
+            {messages.length === 0 && !isTyping && (
+              <div className="flex flex-col items-center justify-center h-full min-h-[60vh]">
+                <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center mb-4">
+                  <Bot className="h-6 w-6 text-white" />
+                </div>
+                <h2 className="text-xl font-semibold text-white mb-2">How can I help you today?</h2>
+                <p className="text-sm text-gray-400 mb-8 text-center max-w-md">
+                  I'm Turbo, your self-hosted AI assistant. Ask me anything about math, coding, science, or just chat.
+                </p>
+                <div className="grid grid-cols-2 gap-3 w-full max-w-lg">
+                  {[
+                    { text: "Solve a math problem", icon: Calculator },
+                    { text: "Write some code", icon: Code },
+                    { text: "Explain a concept", icon: BookOpen },
+                    { text: "Help me brainstorm", icon: Palette },
+                  ].map(({ text, icon: Icon }) => (
+                    <button
+                      key={text}
+                      onClick={() => { setMessageContent(text); }}
+                      className="flex items-center gap-2 p-3 bg-[#212121] hover:bg-[#2a2a2a] rounded-xl text-sm text-gray-300 text-left border border-gray-800"
+                    >
+                      <Icon className="h-4 w-4 text-gray-500 flex-shrink-0" />
+                      <span>{text}</span>
+                    </button>
+                  ))}
+                </div>
               </div>
-              <div className="flex-1">
-                <Card className="bg-zinc-800 rounded-2xl rounded-tl-md px-4 py-3 shadow-xl border border-zinc-700">
-                  <div className="flex items-center space-x-2">
-                    <div className="flex space-x-1">
-                      <div className="w-2 h-2 bg-purple-400 rounded-full"></div>
-                      <div className="w-2 h-2 bg-purple-400 rounded-full"></div>
-                      <div className="w-2 h-2 bg-purple-400 rounded-full"></div>
-                    </div>
-                    <span className="text-zinc-400 text-sm">AI is processing...</span>
+            )}
+
+            {/* Message List */}
+            {messages.map((message) => (
+              <div key={message.id} className={`flex gap-4 mb-6 ${message.role === 'user' ? 'justify-end' : ''}`}>
+                {message.role === 'assistant' && (
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center flex-shrink-0 mt-1">
+                    <Bot className="h-4 w-4 text-white" />
                   </div>
-                </Card>
+                )}
+                <div className={`max-w-[80%] ${message.role === 'user' ? 'order-first' : ''}`}>
+                  <div className={`px-4 py-3 rounded-2xl text-sm leading-relaxed ${
+                    message.role === 'user'
+                      ? 'bg-[#303030] text-white rounded-br-md'
+                      : 'text-gray-200'
+                  }`}>
+                    {message.role === 'assistant' ? renderMarkdown(message.content) : message.content}
+                  </div>
+                </div>
+                {message.role === 'user' && (
+                  <div className="w-8 h-8 rounded-full bg-[#404040] flex items-center justify-center flex-shrink-0 mt-1">
+                    <User className="h-4 w-4 text-gray-300" />
+                  </div>
+                )}
               </div>
-            </div>
-          )}
+            ))}
 
-          <div ref={messagesEndRef} />
+            {/* Typing Indicator */}
+            {isTyping && (
+              <div className="flex gap-4 mb-6">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center flex-shrink-0 mt-1">
+                  <Bot className="h-4 w-4 text-white" />
+                </div>
+                <div className="px-4 py-3">
+                  <div className="flex items-center gap-1">
+                    <div className="w-2 h-2 bg-gray-500 rounded-full"></div>
+                    <div className="w-2 h-2 bg-gray-500 rounded-full"></div>
+                    <div className="w-2 h-2 bg-gray-500 rounded-full"></div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div ref={messagesEndRef} />
+          </div>
         </div>
-      </div>
 
-      {/* Simplified Message Input */}
-      <div className="bg-black border-t border-gray-800 p-4">
-        <div className="max-w-4xl mx-auto">
-          <div className="flex items-center space-x-3">
+        {/* Camera Panel */}
+        {showCamera && (
+          <div className="border-t border-gray-800 bg-[#1a1a1a] p-4">
+            <div className="max-w-3xl mx-auto">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-medium text-white flex items-center gap-2">
+                  <Camera className="h-4 w-4 text-blue-400" />
+                  Camera - Show me what you need help with
+                </h3>
+                <Button onClick={() => setShowCamera(false)} variant="ghost" size="sm" className="h-6 w-6 p-0 text-gray-400">
+                  <X className="h-3 w-3" />
+                </Button>
+              </div>
+              <CameraView onCapture={(desc: string) => {
+                setMessageContent(desc);
+                setShowCamera(false);
+              }} />
+            </div>
+          </div>
+        )}
 
-            
-            {/* Message Input */}
-            <div className="w-full relative">
+        {/* Input Area */}
+        <div className="border-t border-gray-800 bg-[#171717] p-4">
+          <div className="max-w-3xl mx-auto">
+            <div className="relative bg-[#212121] rounded-2xl border border-gray-700 focus-within:border-gray-500">
               <Textarea
                 ref={textareaRef}
                 value={messageContent}
                 onChange={(e) => setMessageContent(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder="Type your message here..."
-                className="w-full px-4 py-3 pr-12 bg-gray-900 border border-gray-700 rounded-xl text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none min-h-[44px] max-h-32"
+                placeholder="Message Turbo..."
+                className="w-full bg-transparent border-none text-white placeholder-gray-500 resize-none px-4 pt-3 pb-10 min-h-[52px] max-h-[200px] focus:ring-0 focus:outline-none text-sm"
                 rows={1}
               />
-              
-              {/* Send Button */}
-              <Button
-                onClick={handleSendMessage}
-                disabled={!messageContent.trim() || sendMessageMutation.isPending}
-                className="absolute right-2 bottom-2 h-8 w-8 p-0 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
-                title="Send message"
-              >
-                <Send className="h-4 w-4" />
-              </Button>
+              <div className="absolute bottom-2 right-2 flex items-center gap-2">
+                <Button
+                  onClick={() => setShowCamera(!showCamera)}
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 w-7 p-0 text-gray-500 hover:text-white"
+                >
+                  <Camera className="h-4 w-4" />
+                </Button>
+                <Button
+                  onClick={handleSendMessage}
+                  disabled={!messageContent.trim() || sendMessageMutation.isPending}
+                  className="h-7 w-7 p-0 bg-white text-black rounded-lg hover:bg-gray-200 disabled:opacity-30 disabled:bg-gray-600 disabled:text-gray-400"
+                >
+                  <Send className="h-3.5 w-3.5" />
+                </Button>
+              </div>
             </div>
-          </div>
-          
-          {/* Status and Tips */}
-          <div className="flex items-center justify-between mt-2 text-xs text-gray-500">
-            <div className="flex items-center space-x-3">
-              <span className="flex items-center space-x-1">
-                <div className="w-2 h-2 bg-green-400 rounded-full"></div>
-                <span>AI Ready</span>
-              </span>
-
-              <span>Press Enter to send</span>
-            </div>
-            <span>{messageContent.length}/2000</span>
+            <p className="text-xs text-gray-600 text-center mt-2">
+              Turbo Answer - Self-hosted AI. Fast. Private. Yours.
+            </p>
           </div>
         </div>
       </div>
+
+      {/* Click-away for server picker */}
+      {showServerPicker && (
+        <div className="fixed inset-0 z-40" onClick={() => setShowServerPicker(false)} />
+      )}
+    </div>
+  );
+}
+
+function CameraView({ onCapture }: { onCapture: (description: string) => void }) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [streaming, setStreaming] = useState(false);
+  const [captured, setCaptured] = useState<string | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+
+  const startCamera = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: { facingMode: 'environment', width: { ideal: 640 }, height: { ideal: 480 } } 
+      });
+      streamRef.current = stream;
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        setStreaming(true);
+      }
+    } catch (err) {
+      console.error('Camera error:', err);
+    }
+  };
+
+  const stopCamera = () => {
+    streamRef.current?.getTracks().forEach(t => t.stop());
+    streamRef.current = null;
+    setStreaming(false);
+  };
+
+  const capturePhoto = () => {
+    if (!videoRef.current || !canvasRef.current) return;
+    const canvas = canvasRef.current;
+    const video = videoRef.current;
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const ctx = canvas.getContext('2d');
+    if (ctx) {
+      ctx.drawImage(video, 0, 0);
+      const imageData = canvas.toDataURL('image/jpeg', 0.8);
+      setCaptured(imageData);
+      stopCamera();
+    }
+  };
+
+  useEffect(() => {
+    return () => stopCamera();
+  }, []);
+
+  if (captured) {
+    return (
+      <div className="space-y-3">
+        <img src={captured} alt="Captured" className="w-full max-h-48 object-contain rounded-lg" />
+        <div className="flex gap-2">
+          <input
+            type="text"
+            placeholder="Describe what you need help with..."
+            className="flex-1 px-3 py-2 bg-[#212121] border border-gray-700 rounded-lg text-sm text-white placeholder-gray-500"
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                const input = e.currentTarget.value.trim();
+                if (input) onCapture(`[Camera Photo] ${input}`);
+              }
+            }}
+          />
+          <Button onClick={() => { setCaptured(null); startCamera(); }} variant="outline" size="sm" className="text-xs border-gray-700">
+            Retake
+          </Button>
+        </div>
+        <p className="text-xs text-gray-500">Describe what's in the photo and I'll help you solve it.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      <div className="bg-black rounded-lg overflow-hidden aspect-video relative">
+        <video ref={videoRef} autoPlay playsInline muted className={`w-full h-full object-cover ${streaming ? '' : 'hidden'}`} />
+        {!streaming && (
+          <div className="flex items-center justify-center h-full min-h-[200px]">
+            <Button onClick={startCamera} className="bg-blue-600 hover:bg-blue-700 text-white">
+              <Camera className="h-4 w-4 mr-2" />
+              Open Camera
+            </Button>
+          </div>
+        )}
+      </div>
+      {streaming && (
+        <div className="flex justify-center">
+          <Button onClick={capturePhoto} className="bg-white text-black hover:bg-gray-200 rounded-full h-12 w-12 p-0">
+            <div className="w-8 h-8 border-2 border-black rounded-full" />
+          </Button>
+        </div>
+      )}
+      <canvas ref={canvasRef} className="hidden" />
     </div>
   );
 }
