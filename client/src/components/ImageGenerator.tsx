@@ -1,9 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
-import { ImageIcon, Download, Loader2, X, Sparkles } from "lucide-react";
+import { ImageIcon, Download, Loader2, X, Sparkles, Zap } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface ImageGeneratorProps {
@@ -14,14 +14,30 @@ interface ImageGeneratorProps {
 export function ImageGenerator({ onImageGenerated, onClose }: ImageGeneratorProps) {
   const [prompt, setPrompt] = useState("");
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
+  const [elapsed, setElapsed] = useState(0);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const { toast } = useToast();
+
+  useEffect(() => {
+    return () => { if (timerRef.current) clearInterval(timerRef.current); };
+  }, []);
+
+  const startTimer = () => {
+    setElapsed(0);
+    timerRef.current = setInterval(() => setElapsed(prev => prev + 100), 100);
+  };
+
+  const stopTimer = () => {
+    if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
+  };
 
   const generateMutation = useMutation({
     mutationFn: async (imagePrompt: string) => {
+      startTimer();
       const response = await fetch("/api/generate-image", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt: imagePrompt, size: "1024x1024" }),
+        body: JSON.stringify({ prompt: imagePrompt, size: "512x512", quality: "low" }),
       });
       if (!response.ok) {
         const error = await response.json();
@@ -30,14 +46,17 @@ export function ImageGenerator({ onImageGenerated, onClose }: ImageGeneratorProp
       return response.json();
     },
     onSuccess: (data) => {
+      stopTimer();
       const imageUrl = data.b64_json
         ? `data:image/png;base64,${data.b64_json}`
         : data.url;
       setGeneratedImage(imageUrl);
       onImageGenerated?.(imageUrl, prompt);
-      toast({ title: "Image Created", description: "Your image has been generated!" });
+      const serverTime = data.generationTime ? `${(data.generationTime / 1000).toFixed(1)}s` : `${(elapsed / 1000).toFixed(1)}s`;
+      toast({ title: "Image Created", description: `Generated in ${serverTime}` });
     },
     onError: (error: Error) => {
+      stopTimer();
       toast({
         title: "Generation Failed",
         description: error.message,
@@ -68,7 +87,9 @@ export function ImageGenerator({ onImageGenerated, onClose }: ImageGeneratorProp
           </div>
           <div>
             <h3 className="font-semibold text-white text-sm">AI Image Creator</h3>
-            <p className="text-[10px] text-zinc-400">Describe what you want to see</p>
+            <p className="text-[10px] text-zinc-400 flex items-center gap-1">
+              <Zap className="h-3 w-3 text-yellow-400" /> Turbo Speed Mode
+            </p>
           </div>
         </div>
         {onClose && (
@@ -110,10 +131,10 @@ export function ImageGenerator({ onImageGenerated, onClose }: ImageGeneratorProp
           className="w-full bg-gradient-to-r from-pink-500 to-violet-500 hover:from-pink-600 hover:to-violet-600 text-white"
         >
           {generateMutation.isPending ? (
-            <>
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              Creating image...
-            </>
+            <div className="flex items-center gap-2">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              <span>Creating... {(elapsed / 1000).toFixed(1)}s</span>
+            </div>
           ) : (
             <>
               <Sparkles className="h-4 w-4 mr-2" />
