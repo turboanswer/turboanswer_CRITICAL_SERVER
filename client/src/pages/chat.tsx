@@ -1,18 +1,18 @@
 import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Send, Bot, User, FileText, X, Settings, LogOut, Camera,
-  Globe, Zap, Crown, Calculator, Code, BookOpen, Palette, Sparkles
-} from "lucide-react";
+import { Send, Bot, User, FileText, X, Brain, Settings, LogOut, Camera, Globe, Zap } from "lucide-react";
 import { Link } from "wouter";
-import turboLogo from "@assets/file_00000000d40c61f9a186294bbf2c842a_1752427622475.png";
+// Logo integrated directly in component
+import { LoadingScreen } from "@/components/LoadingScreen";
 import { useToast } from "@/hooks/use-toast";
 import { DocumentUpload } from "@/components/DocumentUpload";
 import CameraCapture from "@/components/CameraCapture";
 import LanguageSelector from "@/components/LanguageSelector";
+
 import LiveCameraFeed from "@/components/LiveCameraFeed";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { Conversation, Message } from "@shared/schema";
@@ -21,38 +21,59 @@ export default function Chat() {
   const [currentConversationId, setCurrentConversationId] = useState<number | null>(null);
   const [messageContent, setMessageContent] = useState("");
   const [isTyping, setIsTyping] = useState(false);
+
   const [showDocumentUpload, setShowDocumentUpload] = useState(false);
   const [showCamera, setShowCamera] = useState(false);
   const [showLiveCamera, setShowLiveCamera] = useState(false);
-  const [selectedServer, setSelectedServer] = useState("auto");
+  const [selectedAIModel, setSelectedAIModel] = useState("auto");
   const [currentLanguage, setCurrentLanguage] = useState("en");
+
   const [user, setUser] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
+  // Check for user authentication and handle loading
   useEffect(() => {
     const userData = localStorage.getItem('turbo_user');
     if (userData) {
-      try { setUser(JSON.parse(userData)); } catch (e) { localStorage.removeItem('turbo_user'); }
+      try {
+        setUser(JSON.parse(userData));
+      } catch (e) {
+        localStorage.removeItem('turbo_user');
+      }
     }
-    const savedLang = localStorage.getItem('turbo_language');
-    if (savedLang) setCurrentLanguage(savedLang);
-  }, []);
+    
+    // Load saved language preference
+    const savedLanguage = localStorage.getItem('turbo_language');
+    if (savedLanguage) {
+      setCurrentLanguage(savedLanguage);
+    }
+    
 
-  const handleLanguageChange = (lang: string) => {
-    setCurrentLanguage(lang);
-    localStorage.setItem('turbo_language', lang);
-  };
+    
+    // Show loading screen for 2 seconds
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 2000);
+    
+    return () => clearTimeout(timer);
+  }, []);
 
   const handleLogout = () => {
     localStorage.removeItem('turbo_user');
     setUser(null);
-    toast({ title: "Logged Out", description: "You have been successfully logged out" });
+    toast({
+      title: "Logged Out",
+      description: "You have been successfully logged out",
+    });
   };
 
-  const { data: conversations = [] } = useQuery<Conversation[]>({
+  // Get or create conversation
+  const { data: conversations } = useQuery<Conversation[]>({
     queryKey: ["/api/conversations"],
   });
 
@@ -61,61 +82,104 @@ export default function Chat() {
     enabled: !!currentConversationId,
   });
 
+  // Create conversation mutation
   const createConversationMutation = useMutation({
     mutationFn: async () => {
-      const response = await apiRequest("POST", "/api/conversations", { title: "New Conversation" });
+      const response = await apiRequest("POST", "/api/conversations", {
+        title: "New Conversation"
+      });
       return response.json();
     },
     onSuccess: (conversation: Conversation) => {
       setCurrentConversationId(conversation.id);
       queryClient.invalidateQueries({ queryKey: ["/api/conversations"] });
     },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: "Failed to create conversation",
+        variant: "destructive",
+      });
+    }
   });
 
+  // Send message mutation
   const sendMessageMutation = useMutation({
     mutationFn: async (content: string) => {
       if (!currentConversationId) throw new Error("No conversation selected");
       const response = await apiRequest("POST", `/api/conversations/${currentConversationId}/messages`, {
         content,
-        selectedModel: selectedServer,
+        selectedModel: selectedAIModel,
+        language: currentLanguage // Include language support
       });
       return response.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/conversations", currentConversationId, "messages"] });
+    onSuccess: (data: any) => {
+      queryClient.invalidateQueries({ 
+        queryKey: ["/api/conversations", currentConversationId, "messages"] 
+      });
       setMessageContent("");
       setIsTyping(false);
+      
+      // Automatically speak the AI response for conversational models
+      if (data.aiMessage && data.aiMessage.content) {
+        console.log('🤖 AI Response received, selected model:', selectedAIModel);
+        console.log('🤖 Response content:', data.aiMessage.content.substring(0, 100) + '...');
+        
+
+      }
     },
-    onError: () => {
+    onError: (error: any) => {
       setIsTyping(false);
-      toast({ title: "Error", description: "Failed to send message", variant: "destructive" });
+      toast({
+        title: "Error",
+        description: error.message || "Failed to send message",
+        variant: "destructive",
+      });
     }
   });
 
+  // Initialize conversation on first load
   useEffect(() => {
-    if (!currentConversationId && conversations.length === 0) {
+    if (!currentConversationId && conversations && conversations.length === 0) {
       createConversationMutation.mutate();
-    } else if (!currentConversationId && conversations.length > 0) {
+    } else if (!currentConversationId && conversations && conversations.length > 0) {
       setCurrentConversationId(conversations[0].id);
     }
   }, [conversations, currentConversationId]);
 
+  // Auto-scroll to bottom
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "instant" });
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isTyping]);
 
+  // Auto-resize textarea
   useEffect(() => {
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
-      textareaRef.current.style.height = Math.min(textareaRef.current.scrollHeight, 128) + 'px';
+      textareaRef.current.style.height = Math.min(textareaRef.current.scrollHeight, 120) + 'px';
     }
   }, [messageContent]);
 
-  const handleSendMessage = () => {
+
+
+  const handleSendMessage = async () => {
     if (!messageContent.trim() || sendMessageMutation.isPending) return;
+
     setIsTyping(true);
     sendMessageMutation.mutate(messageContent.trim());
-  };
+  }
+
+  const handleDocumentAnalysis = (analysis: any) => {
+    // Add the analysis result as a message in the current conversation
+    if (currentConversationId && analysis) {
+      const analysisMessage = `📄 **Document Analysis: ${analysis.filename}**\n\n**Analysis Type:** ${analysis.analysisType}\n\n**Result:**\n${analysis.analysis}`;
+      
+      // Send the analysis as a regular message
+      sendMessageMutation.mutate(analysisMessage);
+      setShowDocumentUpload(false);
+    }
+  };;
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -124,76 +188,140 @@ export default function Chat() {
     }
   };
 
-  const renderMarkdown = (text: string) => {
-    const parts = text.split(/(```[\s\S]*?```)/g);
-    return parts.map((part, i) => {
-      if (part.startsWith('```') && part.endsWith('```')) {
-        const lines = part.slice(3, -3).split('\n');
-        const lang = lines[0]?.trim() || '';
-        const code = lines.slice(lang ? 1 : 0).join('\n').trim();
-        return (
-          <div key={i} className="my-3 rounded-lg overflow-hidden bg-gray-900 border border-gray-700">
-            {lang && <div className="px-3 py-1 text-xs text-gray-400 bg-gray-800 border-b border-gray-700">{lang}</div>}
-            <pre className="p-3 overflow-x-auto text-sm"><code className="text-green-300">{code}</code></pre>
-          </div>
-        );
-      }
-      const formatted = part
-        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-        .replace(/`([^`]+)`/g, '<code class="bg-gray-700 px-1 py-0.5 rounded text-sm text-green-300">$1</code>');
-      return <span key={i} dangerouslySetInnerHTML={{ __html: formatted }} />;
+
+
+  // Language change handler
+  const handleLanguageChange = (languageCode: string) => {
+    setCurrentLanguage(languageCode);
+    localStorage.setItem('turbo_language', languageCode);
+    toast({
+      title: "Language Changed",
+      description: `Switched to ${languageCode.toUpperCase()}`,
     });
   };
 
+
+
+  // Camera analysis handlers
+  const handleCameraCapture = (imageData: string) => {
+    console.log('Camera captured image');
+  };
+
+  const handleImageAnalysis = async (imageData: string) => {
+    try {
+      const response = await apiRequest("POST", "/api/analyze-image", {
+        imageData,
+        query: "What do you see in this image?"
+      });
+      const analysis = await response.json();
+      
+      if (analysis.description) {
+        // Send the analysis as a message
+        sendMessageMutation.mutate(`📸 **Camera Analysis**: ${analysis.description}`);
+      }
+    } catch (error) {
+      console.error('Image analysis error:', error);
+      toast({
+        title: "Camera Analysis Failed",
+        description: "Unable to analyze the image. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+
+
+  // Live camera analysis result handler
+  const handleLiveCameraAnalysis = (analysis: string) => {
+    // Add the analysis result as a message in the current conversation
+    if (currentConversationId && analysis) {
+      const analysisMessage = `📹 **Live Camera**: ${analysis}`;
+      sendMessageMutation.mutate(analysisMessage);
+    }
+  };
+
+  const formatTimestamp = (timestamp: string | Date) => {
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    
+    if (diffMins < 1) return "Just now";
+    if (diffMins < 60) return `${diffMins} minute${diffMins > 1 ? 's' : ''} ago`;
+    
+    const diffHours = Math.floor(diffMins / 60);
+    if (diffHours < 24) return `${diffHours} hour${diffHours > 1 ? 's' : ''} ago`;
+    
+    return date.toLocaleDateString();
+  };
+
+  // Show loading screen on app start
+  if (isLoading) {
+    return <LoadingScreen message="Activating Maximum Power AI System..." />;
+  }
+
   return (
-    <div className="flex flex-col h-screen w-full bg-black fixed inset-0">
-      {/* Header */}
-      <header className="bg-black border-b border-gray-800 px-3 sm:px-4 py-2.5 shrink-0">
+    <div className="flex flex-col h-screen max-w-7xl mx-auto bg-black shadow-2xl">
+      {/* Simplified Intuitive Header */}
+      <header className="bg-black/95 backdrop-blur-sm border-b border-gray-800 px-4 py-3 relative z-40 shrink-0">
         <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-2 sm:space-x-3">
-            <img src={turboLogo} alt="Turbo Answer" className="w-10 h-10 sm:w-12 sm:h-12 object-contain" />
+          {/* Simplified Logo */}
+          <div className="flex items-center space-x-3">
+            <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
+              <Zap className="h-6 w-6 text-white" />
+            </div>
             <div>
-              <h1 className="text-base sm:text-xl font-bold text-white">Turbo Answer</h1>
-              <p className="text-[10px] sm:text-xs text-gray-400">Never Stop Innovating</p>
+              <h1 className="text-xl font-bold text-white">Turbo Answer</h1>
+              <p className="text-xs text-gray-400">AI Assistant</p>
             </div>
           </div>
-
-          <div className="flex items-center space-x-1 sm:space-x-3">
-            <div className="flex items-center space-x-1 sm:space-x-2">
+          
+          {/* Quick Controls */}
+          <div className="flex items-center space-x-3">
+            {/* AI Model Quick Selector */}
+            <div className="flex items-center space-x-2">
               <span className="text-xs text-gray-400 hidden sm:block">AI:</span>
-              <Select value={selectedServer} onValueChange={setSelectedServer}>
-                <SelectTrigger className="w-20 sm:w-24 h-8 bg-gray-900 border-gray-700 text-xs">
+              <Select value={selectedAIModel} onValueChange={setSelectedAIModel}>
+                <SelectTrigger className="w-24 h-8 bg-gray-900 border-gray-700 text-xs">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="auto">Auto</SelectItem>
-                  <SelectItem value="math">Math</SelectItem>
-                  <SelectItem value="code">Code</SelectItem>
-                  <SelectItem value="knowledge">Knowledge</SelectItem>
-                  <SelectItem value="creative">Creative</SelectItem>
+                  <SelectItem value="ultimate-fusion">Ultimate</SelectItem>
+                  <SelectItem value="conversational">Fast</SelectItem>
+                  <SelectItem value="research-pro">Research</SelectItem>
                 </SelectContent>
               </Select>
             </div>
+            
 
-            <Link href="/pricing">
-              <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-yellow-400 hover:text-yellow-300" title="Premium">
-                <Crown className="h-4 w-4" />
-              </Button>
-            </Link>
-
+            
+            {/* Settings */}
             <Link href="/ai-settings">
-              <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-gray-400 hover:text-white" title="Settings">
+              <Button 
+                variant="ghost" 
+                size="sm"
+                className="h-8 w-8 p-0 text-gray-400 hover:text-white"
+                title="Settings"
+              >
                 <Settings className="h-4 w-4" />
               </Button>
             </Link>
-
+            
+            {/* User Menu */}
             {user ? (
-              <Button onClick={handleLogout} variant="ghost" size="sm" className="h-8 w-8 p-0 text-gray-400 hover:text-red-400" title="Logout">
+              <Button
+                onClick={handleLogout}
+                variant="ghost"
+                size="sm"
+                className="h-8 w-8 p-0 text-gray-400 hover:text-red-400"
+                title="Logout"
+              >
                 <LogOut className="h-4 w-4" />
               </Button>
             ) : (
               <Link href="/login">
-                <Button variant="ghost" size="sm" className="text-xs sm:text-sm text-blue-400 hover:text-white px-2">
+                <Button variant="ghost" size="sm" className="text-sm text-blue-400 hover:text-white">
                   Sign In
                 </Button>
               </Link>
@@ -203,185 +331,191 @@ export default function Chat() {
       </header>
 
       {/* Quick Action Bar */}
-      <div className="bg-gray-900/50 border-b border-gray-800 px-3 sm:px-4 py-1.5 shrink-0">
+      <div className="bg-gray-900/50 border-b border-gray-800 px-4 py-2">
         <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-1">
+          <div className="flex items-center space-x-2">
             <Button
-              onClick={() => { setShowDocumentUpload(!showDocumentUpload); setShowCamera(false); setShowLiveCamera(false); }}
+              onClick={() => setShowDocumentUpload(!showDocumentUpload)}
               variant="ghost"
               size="sm"
               className={`h-8 px-2 ${showDocumentUpload ? 'text-blue-400' : 'text-gray-400'} hover:text-white`}
               title="Upload Document"
             >
               <FileText className="h-4 w-4" />
-              <span className="text-xs ml-1 hidden sm:inline">Document</span>
             </Button>
             <Button
-              onClick={() => { setShowCamera(!showCamera); setShowDocumentUpload(false); setShowLiveCamera(false); }}
+              onClick={() => setShowCamera(!showCamera)}
               variant="ghost"
               size="sm"
               className={`h-8 px-2 ${showCamera ? 'text-blue-400' : 'text-gray-400'} hover:text-white`}
               title="Camera"
             >
               <Camera className="h-4 w-4" />
-              <span className="text-xs ml-1 hidden sm:inline">Camera</span>
             </Button>
             <Button
-              onClick={() => { setShowLiveCamera(!showLiveCamera); setShowDocumentUpload(false); setShowCamera(false); }}
+              onClick={() => setShowLiveCamera(!showLiveCamera)}
               variant="ghost"
               size="sm"
               className={`h-8 px-2 ${showLiveCamera ? 'text-red-400' : 'text-gray-400'} hover:text-white`}
               title="Live Camera"
             >
               <Globe className="h-4 w-4" />
-              <span className="text-xs ml-1 hidden sm:inline">Live</span>
             </Button>
           </div>
-
-          <LanguageSelector currentLanguage={currentLanguage} onLanguageChange={handleLanguageChange} />
+          
+          <div className="flex items-center space-x-2">
+            <LanguageSelector 
+              currentLanguage={currentLanguage} 
+              onLanguageChange={handleLanguageChange} 
+            />
+          </div>
         </div>
       </div>
 
       {/* Document Upload Panel */}
       {showDocumentUpload && (
-        <div className="bg-zinc-950 border-b border-zinc-800 px-3 sm:px-6 py-4 shrink-0">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-medium text-white flex items-center gap-2">
-              <FileText className="h-4 w-4 text-blue-400" />
-              Upload Document
-            </h3>
-            <Button onClick={() => setShowDocumentUpload(false)} variant="ghost" size="sm" className="h-6 w-6 p-0 text-gray-400">
-              <X className="h-3 w-3" />
+        <div className="bg-zinc-950 border-b border-zinc-800 px-4 py-4 sm:px-6 relative z-30">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-medium text-white">Document Analysis</h3>
+            <Button
+              onClick={() => setShowDocumentUpload(false)}
+              variant="ghost"
+              size="sm"
+              className="text-zinc-400 hover:text-white"
+            >
+              <X className="h-4 w-4" />
             </Button>
           </div>
-          <DocumentUpload conversationId={currentConversationId || undefined} onAnalysisComplete={(analysis: any) => {
-            if (analysis?.text) setMessageContent(analysis.text);
-            setShowDocumentUpload(false);
-          }} />
+          <DocumentUpload 
+            conversationId={currentConversationId} 
+            onAnalysisComplete={handleDocumentAnalysis}
+          />
         </div>
       )}
 
       {/* Camera Panel */}
       {showCamera && (
-        <div className="bg-zinc-950 border-b border-zinc-800 px-3 sm:px-6 py-4 shrink-0">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-medium text-white flex items-center gap-2">
-              <Camera className="h-4 w-4 text-blue-400" />
-              Camera Capture
-            </h3>
-            <Button onClick={() => setShowCamera(false)} variant="ghost" size="sm" className="h-6 w-6 p-0 text-gray-400">
-              <X className="h-3 w-3" />
+        <div className="bg-zinc-950 border-b border-zinc-800 px-4 py-4 sm:px-6 relative z-30">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-medium text-white">Camera Analysis</h3>
+            <Button
+              onClick={() => setShowCamera(false)}
+              variant="ghost"
+              size="sm"
+              className="text-zinc-400 hover:text-white"
+            >
+              <X className="h-4 w-4" />
             </Button>
           </div>
-          <CameraCapture
-            onCapture={(imageData: string) => {
-              setMessageContent(`[Camera Photo] Describe what you need help with`);
-              setShowCamera(false);
-            }}
-            onAnalyze={(imageData: string) => {
-              setMessageContent(`[Camera Analysis] Analyzing captured image...`);
-            }}
-            isAnalyzing={false}
-            language={currentLanguage}
-            onContinuousMode={() => {}}
-            continuousMode={false}
+          <CameraCapture 
+            onCapture={handleCameraCapture}
+            onAnalysis={handleImageAnalysis}
           />
         </div>
       )}
 
-      {/* Live Camera Panel */}
+      {/* Live Camera Feed Panel */}
       {showLiveCamera && (
-        <div className="bg-zinc-950 border-b border-zinc-800 px-3 sm:px-6 py-4 shrink-0">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-medium text-white flex items-center gap-2">
-              <Globe className="h-4 w-4 text-red-400" />
-              Live Camera Feed
+        <div className="bg-gradient-to-r from-red-950 to-red-900 border-b border-red-800 px-4 py-4 sm:px-6 relative z-30">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-medium text-white flex items-center">
+              <Camera className="h-5 w-5 mr-2 text-red-400" />
+              Live Camera Feed - Real-time AI Analysis
             </h3>
-            <Button onClick={() => setShowLiveCamera(false)} variant="ghost" size="sm" className="h-6 w-6 p-0 text-gray-400">
-              <X className="h-3 w-3" />
+            <Button
+              onClick={() => setShowLiveCamera(false)}
+              variant="ghost"
+              size="sm"
+              className="text-red-400 hover:text-white"
+            >
+              <X className="h-4 w-4" />
             </Button>
           </div>
-          <LiveCameraFeed
+          <LiveCameraFeed 
             language={currentLanguage}
-            onAnalysisResult={(analysis: string) => {
-              setMessageContent(analysis);
-              setShowLiveCamera(false);
-            }}
-            voiceEnabled={false}
+            onAnalysisResult={handleLiveCameraAnalysis}
           />
         </div>
       )}
 
-      {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto">
-        <div className="max-w-3xl mx-auto px-3 sm:px-6 py-4 sm:py-6">
-          {/* Welcome / Empty State */}
+
+
+
+
+      {/* Messages - Stable container */}
+      <div className="flex-1 overflow-y-auto bg-zinc-900 relative z-10">
+        <div className="px-4 py-6 sm:px-6">
           {messages.length === 0 && !isTyping && (
-            <div className="flex flex-col items-center justify-center min-h-[50vh]">
-              <img src={turboLogo} alt="Turbo Answer" className="w-16 h-16 sm:w-20 sm:h-20 object-contain mb-4" />
-              <h2 className="text-lg sm:text-xl font-bold text-white mb-1">Welcome to Turbo Answer</h2>
-              <p className="text-xs sm:text-sm text-gray-400 mb-6 text-center max-w-md">
-                Your self-hosted AI assistant. Ask me anything about math, coding, science, or just chat.
-              </p>
-              <div className="grid grid-cols-2 gap-2 sm:gap-3 w-full max-w-md">
-                {[
-                  { text: "Solve a math problem", icon: Calculator, color: "text-green-400" },
-                  { text: "Write some code", icon: Code, color: "text-yellow-400" },
-                  { text: "Explain a concept", icon: BookOpen, color: "text-purple-400" },
-                  { text: "Help me brainstorm", icon: Palette, color: "text-pink-400" },
-                ].map(({ text, icon: Icon, color }) => (
-                  <button
-                    key={text}
-                    onClick={() => setMessageContent(text)}
-                    className="flex items-center gap-2 p-3 bg-gray-900 hover:bg-gray-800 rounded-xl text-xs sm:text-sm text-gray-300 text-left border border-gray-800"
-                  >
-                    <Icon className={`h-4 w-4 ${color} flex-shrink-0`} />
-                    <span>{text}</span>
-                  </button>
-                ))}
+            <div className="flex items-start space-x-3 mb-8">
+              <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center flex-shrink-0 shadow-lg shadow-purple-500/30">
+                <Bot className="text-white text-sm" />
+              </div>
+              <div className="flex-1">
+                <Card className="bg-zinc-800 rounded-2xl rounded-tl-md px-4 py-3 shadow-xl border border-zinc-700">
+                  <p className="text-zinc-100 leading-relaxed">
+                    🚀 Welcome to <strong>TURBO ANSWER</strong> - The Ultimate AI Assistant! I can have natural conversations, understand your emotions, and talk back to you like a real person. Choose "Conversational AI" for natural chat or "Emotional AI" for deep emotional support. Ready to experience ultimate AI power?
+                  </p>
+                  <div className="mt-3 flex items-center space-x-2 text-xs text-zinc-400">
+                    <Brain className="h-3 w-3" />
+                    <span>AI Model: {selectedAIModel === 'auto' ? 'Auto-Select (Intelligent Routing)' : selectedAIModel}</span>
+                  </div>
+                </Card>
+                <div className="text-xs text-zinc-500 mt-2 ml-1">
+                  Just now
+                </div>
               </div>
             </div>
           )}
 
-          {/* Messages */}
           {messages.map((message) => (
-            <div key={message.id} className="mb-4 sm:mb-6">
-              <div className={`flex gap-2 sm:gap-3 ${message.role === 'user' ? 'justify-end' : ''}`}>
-                {message.role === 'assistant' && (
-                  <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center flex-shrink-0 mt-1">
-                    <Bot className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-white" />
-                  </div>
-                )}
-                <div className={`max-w-[85%] sm:max-w-[80%]`}>
-                  <div className={`px-3 sm:px-4 py-2.5 sm:py-3 rounded-2xl text-xs sm:text-sm leading-relaxed ${
-                    message.role === 'user'
-                      ? 'bg-blue-600 text-white rounded-br-md'
-                      : 'bg-gray-900 text-gray-200 border border-gray-800'
-                  }`}>
-                    {message.role === 'assistant' ? renderMarkdown(message.content) : message.content}
-                  </div>
+            <div key={message.id} className={`flex items-start space-x-3 mb-6 ${message.role === 'user' ? 'justify-end' : ''}`}>
+              {message.role === 'assistant' && (
+                <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center flex-shrink-0 shadow-lg shadow-purple-500/30">
+                  <Bot className="text-white text-sm" />
                 </div>
-                {message.role === 'user' && (
-                  <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-gray-700 flex items-center justify-center flex-shrink-0 mt-1">
-                    <User className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-gray-300" />
-                  </div>
-                )}
+              )}
+              
+              <div className={`flex-1 ${message.role === 'user' ? 'max-w-xs sm:max-w-md' : ''}`}>
+                <Card className={`px-4 py-3 shadow-xl relative group ${
+                  message.role === 'user' 
+                    ? 'bg-gradient-to-r from-purple-600 to-purple-500 text-white rounded-2xl rounded-tr-md' 
+                    : 'bg-zinc-800 rounded-2xl rounded-tl-md border border-zinc-700'
+                }`}>
+                  <p className={`leading-relaxed ${message.role === 'user' ? 'text-white' : 'text-zinc-100'}`}>
+                    {message.content}
+                  </p>
+
+                </Card>
+                <div className={`text-xs text-zinc-500 mt-2 ${message.role === 'user' ? 'mr-1 text-right' : 'ml-1'}`}>
+                  {formatTimestamp(message.timestamp)}
+                </div>
               </div>
+
+              {message.role === 'user' && (
+                <div className="w-8 h-8 bg-zinc-700 rounded-full flex items-center justify-center flex-shrink-0">
+                  <User className="text-zinc-300 text-sm" />
+                </div>
+              )}
             </div>
           ))}
 
           {/* Typing Indicator */}
           {isTyping && (
-            <div className="flex gap-3 mb-6">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center flex-shrink-0">
-                <Bot className="h-4 w-4 text-white" />
+            <div className="flex items-start space-x-3 mb-6">
+              <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center flex-shrink-0 shadow-lg shadow-purple-500/30">
+                <Bot className="text-white text-sm" />
               </div>
-              <div className="bg-gray-900 border border-gray-800 rounded-2xl px-4 py-3">
-                <div className="flex items-center gap-1">
-                  <div className="w-2 h-2 bg-gray-500 rounded-full"></div>
-                  <div className="w-2 h-2 bg-gray-500 rounded-full"></div>
-                  <div className="w-2 h-2 bg-gray-500 rounded-full"></div>
-                </div>
+              <div className="flex-1">
+                <Card className="bg-zinc-800 rounded-2xl rounded-tl-md px-4 py-3 shadow-xl border border-zinc-700">
+                  <div className="flex items-center space-x-2">
+                    <div className="flex space-x-1">
+                      <div className="w-2 h-2 bg-purple-400 rounded-full"></div>
+                      <div className="w-2 h-2 bg-purple-400 rounded-full"></div>
+                      <div className="w-2 h-2 bg-purple-400 rounded-full"></div>
+                    </div>
+                    <span className="text-zinc-400 text-sm">AI is processing...</span>
+                  </div>
+                </Card>
               </div>
             </div>
           )}
@@ -390,36 +524,45 @@ export default function Chat() {
         </div>
       </div>
 
-      {/* Message Input */}
-      <div className="bg-black border-t border-gray-800 p-3 sm:p-4 shrink-0">
-        <div className="max-w-3xl mx-auto">
-          <div className="relative">
-            <Textarea
-              ref={textareaRef}
-              value={messageContent}
-              onChange={(e) => setMessageContent(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder="Type your message here..."
-              className="w-full px-3 sm:px-4 py-2.5 sm:py-3 pr-12 bg-gray-900 border border-gray-700 rounded-xl text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none min-h-[44px] max-h-32 text-sm"
-              rows={1}
-            />
-            <Button
-              onClick={handleSendMessage}
-              disabled={!messageContent.trim() || sendMessageMutation.isPending}
-              className="absolute right-2 bottom-2 h-8 w-8 p-0 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50"
-              title="Send message"
-            >
-              <Send className="h-4 w-4" />
-            </Button>
-          </div>
+      {/* Simplified Message Input */}
+      <div className="bg-black border-t border-gray-800 p-4">
+        <div className="max-w-4xl mx-auto">
+          <div className="flex items-center space-x-3">
 
-          <div className="flex items-center justify-between mt-1.5 text-[10px] sm:text-xs text-gray-500">
-            <div className="flex items-center space-x-2 sm:space-x-3">
+            
+            {/* Message Input */}
+            <div className="w-full relative">
+              <Textarea
+                ref={textareaRef}
+                value={messageContent}
+                onChange={(e) => setMessageContent(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder="Type your message here..."
+                className="w-full px-4 py-3 pr-12 bg-gray-900 border border-gray-700 rounded-xl text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none min-h-[44px] max-h-32"
+                rows={1}
+              />
+              
+              {/* Send Button */}
+              <Button
+                onClick={handleSendMessage}
+                disabled={!messageContent.trim() || sendMessageMutation.isPending}
+                className="absolute right-2 bottom-2 h-8 w-8 p-0 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                title="Send message"
+              >
+                <Send className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+          
+          {/* Status and Tips */}
+          <div className="flex items-center justify-between mt-2 text-xs text-gray-500">
+            <div className="flex items-center space-x-3">
               <span className="flex items-center space-x-1">
-                <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-green-400 rounded-full"></div>
+                <div className="w-2 h-2 bg-green-400 rounded-full"></div>
                 <span>AI Ready</span>
               </span>
-              <span className="hidden sm:inline">Press Enter to send</span>
+
+              <span>Press Enter to send</span>
             </div>
             <span>{messageContent.length}/2000</span>
           </div>

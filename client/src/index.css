@@ -2,49 +2,15 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Completely disable all animations and movement for stability */
+/* Disable all animations for better performance */
 * {
   animation: none !important;
   transition: none !important;
-  transform: none !important;
 }
 
-/* Remove any possible movement */
+/* Simplify hover effects */
 *:hover {
   transition: none !important;
-  transform: none !important;
-}
-
-/* Prevent any layout shifts */
-* {
-  will-change: auto !important;
-}
-
-/* Disable scroll-behavior smooth */
-html {
-  scroll-behavior: auto !important;
-  position: fixed;
-  width: 100%;
-  height: 100%;
-}
-
-/* Prevent any horizontal or vertical shifting */
-#root {
-  position: fixed;
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-}
-
-/* Prevent flex items from growing/shrinking */
-.flex {
-  flex-shrink: 0;
-}
-
-/* Force elements to stay in place */
-* {
-  box-sizing: border-box;
-  max-width: 100%;
 }
 
 /* Ensure buttons are clickable */
@@ -84,12 +50,6 @@ body {
   margin: 0;
   padding: 0;
   overflow-x: hidden;
-  position: fixed;
-  width: 100%;
-  height: 100%;
-  position: fixed;
-  width: 100%;
-  height: 100%;
 }
 
 /* Scrollbar styling */

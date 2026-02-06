@@ -148,7 +148,7 @@ async function callGeminiModel(model: string, prompt: string): Promise<string> {
   if (!gemini) return '';
   
   try {
-    const genModel = gemini.getGenerativeModel({ model: 'gemini-2.0-flash' });
+    const genModel = gemini.getGenerativeModel({ model: 'gemini-2.0-flash-experimental' });
     const result = await genModel.generateContent(prompt);
     return result.response.text() || '';
   } catch (error) {

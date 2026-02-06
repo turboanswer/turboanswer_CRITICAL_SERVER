@@ -314,15 +314,15 @@ export default function Chat() {
             <div className="flex items-center space-x-3">
               <div className="relative w-10 h-10 shrink-0">
                 <img 
-                  src="/turboanswer-logo.png" 
-                  alt="TURBO ANSWER AI Robot" 
+                  src="/src/assets/file_00000000d40c61f9a186294bbf2c842a_1752206962243.png" 
+                  alt="TURBOANSWER AI Robot" 
                   className="w-full h-full object-contain hover:scale-110 transition-all duration-300"
                 />
                 <div className="absolute -top-1 -right-1 w-2 h-2 bg-green-400 rounded-full animate-ping"></div>
               </div>
               <div className="flex flex-col">
                 <h1 className="text-xl font-bold bg-gradient-to-r from-purple-400 via-pink-400 to-cyan-400 bg-clip-text text-transparent">
-                  Turbo Answer
+                  TurboAnswer
                 </h1>
                 <div className="flex items-center space-x-3 mt-1">
                   <Select value={selectedAIModel} onValueChange={setSelectedAIModel}>

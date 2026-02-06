@@ -7,7 +7,7 @@ import { storage } from "./storage";
 import { db } from "./db";
 import { insertConversationSchema, insertMessageSchema, users } from "@shared/schema";
 import { eq } from "drizzle-orm";
-import { generateLocalAIResponse } from "./services/local-ai";
+import { generateAIResponse } from "./services/multi-ai";
 import { 
   extractTextFromFile, 
   analyzeDocument, 
@@ -131,20 +131,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Conversation not found" });
       }
       res.json(conversation);
-    } catch (error: any) {
-      res.status(500).json({ message: error.message });
-    }
-  });
-
-  // Delete a conversation and its messages
-  app.delete("/api/conversations/:id", async (req, res) => {
-    try {
-      const id = parseInt(req.params.id);
-      const deleted = await storage.deleteConversation(id);
-      if (!deleted) {
-        return res.status(404).json({ message: "Conversation not found" });
-      }
-      res.json({ success: true });
     } catch (error: any) {
       res.status(500).json({ message: error.message });
     }
@@ -274,15 +260,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         content: msg.content
       }));
 
-      const { generateLocalAIResponse } = await import('./services/local-ai.js');
-      const userId = `user_${Math.random().toString(36).substr(2, 9)}`;
-      const aiResponseContent = await generateLocalAIResponse(
+      // Use MAXIMUM PERFORMANCE AI system with breakthrough intelligence
+      const { generateAIResponse } = await import('./services/multi-ai.js');
+      const userId = `user_${Math.random().toString(36).substr(2, 9)}`; // Simple user ID for context
+      const aiResponseContent = await generateAIResponse(
         content,
         conversationHistory,
-        "premium",
-        req.body.selectedModel || "auto-select",
+        "premium", // Use premium tier for maximum performance
+        req.body.selectedModel || "auto-select", // Intelligent model selection
         userId,
-        req.body.language || "en"
+        req.body.language || "en" // Support multi-language responses
       );
 
       // Create AI message
@@ -1146,7 +1133,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       User message: ${message}`;
       
-      const aiResponse = await generateLocalAIResponse(businessPrompt, [], 'free', 'auto-select');
+      const aiResponse = await generateAIResponse(businessPrompt, [], 'free', 'gemini-pro');
       
       // Store AI response
       await storage.createMessage({

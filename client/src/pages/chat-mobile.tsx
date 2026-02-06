@@ -306,14 +306,14 @@ export default function ChatMobile() {
         <div className="flex items-center space-x-3">
           <div className="relative">
             <img 
-              src="/turboanswer-logo.png" 
-              alt="TURBO ANSWER AI Robot" 
+              src="/src/assets/file_00000000d40c61f9a186294bbf2c842a_1752206962243.png" 
+              alt="TURBOANSWER AI Robot" 
               className="w-10 h-10 object-contain hover:scale-110 transition-all duration-300"
             />
             <div className="absolute -top-1 -right-1 w-2 h-2 bg-cyan-400 rounded-full animate-ping"></div>
           </div>
           <div>
-            <h1 className="text-lg font-semibold bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">TURBO ANSWER</h1>
+            <h1 className="text-lg font-semibold bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">TURBOANSWER</h1>
             <p className="text-xs text-cyan-400 font-medium">NEVER STOP INNOVATING</p>
           </div>
         </div>
@@ -374,11 +374,11 @@ export default function ChatMobile() {
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {messages.length === 0 ? (
           <div className="text-center py-8 px-6">
-            {/* Main TURBO ANSWER Robot Logo */}
+            {/* Main TURBOANSWER Robot Logo */}
             <div className="relative mx-auto mb-6">
               <img 
-                src="/turboanswer-logo.png" 
-                alt="TURBO ANSWER AI Robot" 
+                src="/src/assets/file_00000000d40c61f9a186294bbf2c842a_1752206962243.png" 
+                alt="TURBOANSWER AI Robot" 
                 className="w-24 h-24 object-contain hover:scale-110 transition-all duration-300 mx-auto"
               />
               <div className="absolute -top-2 -right-2 w-3 h-3 bg-cyan-400 rounded-full animate-ping"></div>
@@ -386,7 +386,7 @@ export default function ChatMobile() {
             
             {/* Welcome Message */}
             <h1 className="text-2xl font-bold mb-3 bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 bg-clip-text text-transparent">
-              Welcome to TURBO ANSWER
+              Welcome to TURBOANSWER
             </h1>
             <p className="text-cyan-400 mb-6 font-medium text-lg">NEVER STOP INNOVATING</p>
             

@@ -23,7 +23,6 @@ import { megaFusionAI } from './mega-fusion-ai';
 import { powerAmplifier } from './power-amplifier';
 import { generateUltimateFusionResponse, getUltimateFusionInfo } from './ultimate-fusion-ai';
 import { detectLanguage, getLanguageConfig, formatResponseForLanguage } from './language-detector';
-import { GoogleGenAI } from "@google/genai";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import OpenAI from "openai";
 import Anthropic from "@anthropic-ai/sdk";
@@ -185,7 +184,7 @@ export const AI_MODELS = {
       isPaid: true,
       description: "Advanced marketing intelligence for brand strategy, content creation, campaign optimization, and market psychology"
     },
-    "gemini-2.0-flash": {
+    "gemini-2.0-flash-exp": {
       name: "Gemini 2.0 Flash Experimental",
       provider: "google",
       strengths: ["Breakthrough intelligence", "Ultra-fast responses", "Advanced reasoning", "Maximum performance"],
@@ -599,15 +598,6 @@ const ai = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY || "" });
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY || "" });
 
-// Replit AI Integration - Gemini access without own API key (uses Replit credits)
-const replitAI = new GoogleGenAI({
-  apiKey: process.env.AI_INTEGRATIONS_GEMINI_API_KEY || "",
-  httpOptions: {
-    apiVersion: "",
-    baseUrl: process.env.AI_INTEGRATIONS_GEMINI_BASE_URL || "",
-  },
-});
-
 // Advanced user intent analysis with complexity scoring
 function analyzeUserIntent(message: string, conversationHistory: Array<{role: string, content: string}>): {
   complexity: 'simple' | 'moderate' | 'complex' | 'expert';
@@ -663,22 +653,22 @@ function analyzeUserIntent(message: string, conversationHistory: Array<{role: st
   
   // MAXIMUM POWER Model recommendation logic - Always use best available
   let recommended_tier: 'maximum' | 'premium' | 'advanced' | 'specialized' = 'maximum';
-  let recommended_model = 'gemini-2.0-flash'; // Always use the fastest, most advanced model
+  let recommended_model = 'gemini-2.0-flash-exp'; // Always use the fastest, most advanced model
   
   // For maximum performance, always use Gemini 2.0 Flash Experimental
   // This provides the best balance of speed, intelligence, and capability
   if (complexity === 'expert' || (complexity === 'complex' && (reasoning || creativity))) {
     recommended_tier = 'maximum';
-    recommended_model = 'gemini-2.0-flash'; // Maximum intelligence
+    recommended_model = 'gemini-2.0-flash-exp'; // Maximum intelligence
   } else if (complexity === 'complex' || technical) {
     recommended_tier = 'maximum';
-    recommended_model = 'gemini-2.0-flash'; // High performance for technical tasks
+    recommended_model = 'gemini-2.0-flash-exp'; // High performance for technical tasks
   } else if (complexity === 'moderate') {
     recommended_tier = 'maximum';
-    recommended_model = 'gemini-2.0-flash'; // Fast responses for moderate tasks
+    recommended_model = 'gemini-2.0-flash-exp'; // Fast responses for moderate tasks
   } else {
     recommended_tier = 'maximum';
-    recommended_model = 'gemini-2.0-flash'; // Ultra-fast for simple tasks
+    recommended_model = 'gemini-2.0-flash-exp'; // Ultra-fast for simple tasks
   }
   
   return {
@@ -752,28 +742,14 @@ ${contextText ? `Context: ${contextText}\n` : ''}User: ${userMessage}
 Assistant:`;
 
       try {
-        const model = ai.getGenerativeModel({ model: "gemini-2.0-flash" });
+        const model = ai.getGenerativeModel({ model: "gemini-2.0-flash-exp" });
         const result = await model.generateContent(speedPrompt);
         const response = await result.response;
 
         return response.text() || "Hey! What's up?";
       } catch (error) {
-        console.log('[Conversational AI] Gemini failed, trying OpenAI fallback');
-        try {
-          const openaiResponse = await openai.chat.completions.create({
-            model: "gpt-3.5-turbo",
-            max_tokens: 100,
-            temperature: 0.3,
-            messages: [
-              { role: "system", content: "You are Turbo, a helpful AI assistant. Be conversational and friendly." },
-              { role: "user", content: userMessage }
-            ]
-          });
-          return openaiResponse.choices[0].message.content || "Hey! What's up?";
-        } catch (fallbackError) {
-          console.error('All conversational AI failed:', fallbackError);
-          return "Hey! I'm here to help.";
-        }
+        console.error('Ultra-fast conversational AI failed:', error);
+        return "Hey! I'm here to help.";
       }
     }
     
@@ -942,7 +918,7 @@ ${researchResponse}
         console.error('Research Pro Ultra failed:', error);
         // Fallback to Gemini with research mode
         try {
-          const fallbackModel = ai.getGenerativeModel({ model: "gemini-2.0-flash" });
+          const fallbackModel = ai.getGenerativeModel({ model: "gemini-2.0-flash-exp" });
           const fallbackResult = await fallbackModel.generateContent(researchPrompt);
           const fallbackResponse = await fallbackResult.response;
           return fallbackResponse.text() || "Research analysis complete with fallback model.";
@@ -1125,7 +1101,7 @@ Query: ${userMessage}
 Apply rigorous scientific methodology with evidence-based analysis, technical accuracy, and research-grade standards.`;
 
       try {
-        const model = ai.getGenerativeModel({ model: "gemini-2.0-flash" });
+        const model = ai.getGenerativeModel({ model: "gemini-2.0-flash-exp" });
         const result = await model.generateContent(scientificPrompt);
         const response = await result.response;
         const scientificResponse = response.text() || "Scientific analysis in progress...";
@@ -1389,7 +1365,7 @@ Query: ${userMessage}
 Provide expert marketing intelligence with strategic insights, creative solutions, and data-driven campaign recommendations.`;
 
       try {
-        const model = ai.getGenerativeModel({ model: "gemini-2.0-flash" });
+        const model = ai.getGenerativeModel({ model: "gemini-2.0-flash-exp" });
         const result = await model.generateContent(marketingPrompt);
         const response = await result.response;
         const marketingResponse = response.text() || "Marketing analysis in progress...";
@@ -1497,7 +1473,7 @@ Query: ${userMessage}
 Provide expert UX design guidance with user-centered design principles and interface optimization.`;
 
       try {
-        const model = ai.getGenerativeModel({ model: "gemini-2.0-flash" });
+        const model = ai.getGenerativeModel({ model: "gemini-2.0-flash-exp" });
         const result = await model.generateContent(uxPrompt);
         const response = await result.response;
         const uxResponse = response.text() || "UX design analysis in progress...";
@@ -1713,7 +1689,7 @@ Query: ${userMessage}
 Provide expert HR guidance with talent management strategies and organizational development insights.`;
 
       try {
-        const model = ai.getGenerativeModel({ model: "gemini-2.0-flash" });
+        const model = ai.getGenerativeModel({ model: "gemini-2.0-flash-exp" });
         const result = await model.generateContent(hrPrompt);
         const response = await result.response;
         const hrResponse = response.text() || "HR analysis in progress...";
@@ -1819,7 +1795,7 @@ Query: ${userMessage}
 Provide expert QA guidance with testing strategies and quality management best practices.`;
 
       try {
-        const model = ai.getGenerativeModel({ model: "gemini-2.0-flash" });
+        const model = ai.getGenerativeModel({ model: "gemini-2.0-flash-exp" });
         const result = await model.generateContent(qaPrompt);
         const response = await result.response;
         const qaResponse = response.text() || "QA analysis in progress...";
@@ -1925,7 +1901,7 @@ Query: ${userMessage}
 Provide expert education guidance with learning design principles and instructional best practices.`;
 
       try {
-        const model = ai.getGenerativeModel({ model: "gemini-2.0-flash" });
+        const model = ai.getGenerativeModel({ model: "gemini-2.0-flash-exp" });
         const result = await model.generateContent(educationPrompt);
         const response = await result.response;
         const educationResponse = response.text() || "Education analysis in progress...";
@@ -2033,7 +2009,7 @@ Query: ${userMessage}
 Provide expert gaming guidance with game design principles and interactive entertainment insights.`;
 
       try {
-        const model = ai.getGenerativeModel({ model: "gemini-2.0-flash" });
+        const model = ai.getGenerativeModel({ model: "gemini-2.0-flash-exp" });
         const result = await model.generateContent(gamingPrompt);
         const response = await result.response;
         const gamingResponse = response.text() || "Gaming analysis in progress...";
@@ -2246,20 +2222,20 @@ Coordinates: ${locationData.latitude}°, ${locationData.longitude}°`;
     if (isSimpleConversation && userMessage.length < 30) {
       console.log(`[Speed AI] Using ultra-fast mode for simple conversation`);
       
-      try {
-        const quickResult = await replitAI.models.generateContent({
-          model: "gemini-2.5-flash",
-          contents: [{ role: 'user', parts: [{ text: userMessage }] }],
-          config: { 
-            maxOutputTokens: 80, 
-            temperature: 0.7,
-            thinkingConfig: { thinkingBudget: 0 },
-          }
-        });
-        return quickResult.text || "Hey there!";
-      } catch (geminiError) {
-        console.log('[Speed AI] Replit Gemini failed, falling back');
-      }
+      // Ultra-fast direct response for simple messages
+      const quickModel = ai.getGenerativeModel({ 
+        model: "gemini-2.0-flash-exp",
+        generationConfig: {
+          temperature: 0.2,
+          maxOutputTokens: 40,
+          topP: 0.8,
+          topK: 20
+        }
+      });
+      const quickResult = await quickModel.generateContent(`User: ${userMessage}\nTurbo (brief friendly response):`);
+      const quickResponse = await quickResult.response;
+      
+      return quickResponse.text() || "Hey there!";
     }
 
     // For non-emotional queries, continue with standard AI routing
@@ -2345,46 +2321,21 @@ Coordinates: ${locationData.latitude}°, ${locationData.longitude}°`;
     
     console.log(`[AI Router] Selected model: ${finalModel}`);
     
-    // Try Replit AI Integration first (most reliable), then own Gemini key, then fallbacks
-    const hasReplitAI = !!process.env.AI_INTEGRATIONS_GEMINI_API_KEY && !!process.env.AI_INTEGRATIONS_GEMINI_BASE_URL;
-    
-    if (hasReplitAI) {
-      try {
-        return await generateReplitGeminiResponse(enhancedMessage, conversationHistory, intent, additionalContext, userLanguage);
-      } catch (replitError: any) {
-        console.log('[AI Router] Replit Gemini failed:', replitError.message?.substring(0, 100));
-      }
-    }
-    
+    // FORCE GEMINI for maximum power with available API key
     if (hasGemini) {
-      try {
-        return await generateGeminiResponse(enhancedMessage, conversationHistory, finalModel, intent, additionalContext, userLanguage);
-      } catch (geminiError: any) {
-        console.log('[AI Router] Own Gemini key failed:', geminiError.message?.substring(0, 100));
-      }
+      return await generateGeminiResponse(enhancedMessage, conversationHistory, finalModel, intent, additionalContext, userLanguage);
+    } else if (hasAnthropic && (finalModel.includes('claude') || finalModel.includes('sonnet'))) {
+      return await generateAnthropicResponse(enhancedMessage, conversationHistory, finalModel, intent, additionalContext);
+    } else if (hasOpenAI && finalModel === 'gpt-3.5-turbo') {
+      return await generateOpenAIResponse(enhancedMessage, conversationHistory, 'gpt-3.5-turbo', intent, additionalContext);
+    } else {
+      throw new Error("No working AI API keys available. Please check your API key configuration.");
     }
     
-    if (hasOpenAI) {
-      try {
-        return await generateOpenAIResponse(enhancedMessage, conversationHistory, 'gpt-3.5-turbo', intent, additionalContext);
-      } catch (openaiError: any) {
-        console.log('[AI Router] OpenAI failed:', openaiError.message?.substring(0, 100));
-      }
-    }
-    
-    if (hasAnthropic) {
-      try {
-        return await generateAnthropicResponse(enhancedMessage, conversationHistory, 'claude-3-sonnet', intent, additionalContext);
-      } catch (anthropicError: any) {
-        console.log('[AI Router] Anthropic failed:', anthropicError.message?.substring(0, 100));
-      }
-    }
-    
-    throw new Error("All AI providers failed. Please check your API configuration.");
-    
-  } catch (error: any) {
+  } catch (error) {
     console.error('[AI Router] Error:', error);
     
+    // Provide helpful error message based on the issue
     if (error.message?.includes('API key not configured')) {
       return "I need an AI API key to respond. Please add one of these to your environment:\n\n• OPENAI_API_KEY for GPT models\n• ANTHROPIC_API_KEY for Claude models\n• GEMINI_API_KEY for Gemini models\n\nOnce configured, I'll be able to provide intelligent responses!";
     }
@@ -2424,7 +2375,7 @@ async function generateGeminiResponse(
     ${additionalContext}`;
   
   try {
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -2457,54 +2408,6 @@ async function generateGeminiResponse(
     
   } catch (error) {
     console.error('[Gemini] Error:', error);
-    throw error;
-  }
-}
-
-// Replit AI Integration Gemini response (no own API key needed)
-async function generateReplitGeminiResponse(
-  userMessage: string,
-  context: Array<{role: string, content: string}>,
-  userIntent: any,
-  additionalContext: string,
-  userLanguage: string = "en"
-): Promise<string> {
-  const isSimpleQuery = userMessage.length < 80 && (userIntent.complexity === 'simple' || userMessage.split(' ').length < 15);
-  const languageInstruction = userLanguage !== "en" ? 
-    `IMPORTANT: Always respond in ${userLanguage.toUpperCase()} language.` : "";
-  
-  const systemPrompt = isSimpleQuery ? 
-    `You are Turbo, a knowledgeable and helpful AI assistant. Answer questions accurately and directly. For simple questions, give a clear correct answer in 1-3 sentences. Be friendly but prioritize accuracy. ${languageInstruction}` :
-    `You are Turbo Answer, an advanced AI assistant. Provide accurate, clear, and helpful responses. Give correct factual answers. For complex topics, provide thorough explanations with examples. ${languageInstruction}
-${additionalContext ? `Context: ${additionalContext}` : ''}`;
-
-  try {
-    const chatHistory = context.slice(-4).map(msg => ({
-      role: msg.role === 'user' ? 'user' as const : 'model' as const,
-      parts: [{ text: msg.content }]
-    }));
-
-    const result = await replitAI.models.generateContent({
-      model: "gemini-2.5-flash",
-      contents: [
-        ...chatHistory,
-        { role: 'user' as const, parts: [{ text: `${systemPrompt}\n\n${userMessage}` }] }
-      ],
-      config: {
-        temperature: isSimpleQuery ? 0.3 : 0.7,
-        maxOutputTokens: isSimpleQuery ? 200 : 1000,
-        thinkingConfig: { thinkingBudget: 0 },
-      }
-    });
-    
-    const content = result.text;
-    if (!content) {
-      throw new Error('No content received from Replit Gemini');
-    }
-    
-    return content;
-  } catch (error) {
-    console.error('[Replit Gemini] Error:', error);
     throw error;
   }
 }
