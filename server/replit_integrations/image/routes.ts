@@ -4,7 +4,7 @@ import { openai } from "./client";
 export function registerImageRoutes(app: Express): void {
   app.post("/api/generate-image", async (req: Request, res: Response) => {
     try {
-      const { prompt, size = "512x512", quality = "low", count = 5 } = req.body;
+      const { prompt, size = "auto", quality = "low", count = 5 } = req.body;
 
       if (!prompt) {
         return res.status(400).json({ error: "Prompt is required" });
@@ -18,7 +18,7 @@ export function registerImageRoutes(app: Express): void {
           model: "gpt-image-1",
           prompt,
           n: 1,
-          size: size as "1024x1024" | "512x512" | "256x256",
+          size: size as "1024x1024" | "1024x1536" | "1536x1024" | "auto",
           quality: quality as "low" | "medium" | "high",
         }).catch(err => {
           console.error("[Image] Single request failed:", err.message);

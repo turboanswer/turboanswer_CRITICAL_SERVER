@@ -13,7 +13,7 @@ export const openai = new OpenAI({
  */
 export async function generateImageBuffer(
   prompt: string,
-  size: "1024x1024" | "512x512" | "256x256" = "512x512",
+  size: "1024x1024" | "1024x1536" | "1536x1024" | "auto" = "auto",
   quality: "low" | "medium" | "high" = "low"
 ): Promise<Buffer> {
   const startTime = Date.now();

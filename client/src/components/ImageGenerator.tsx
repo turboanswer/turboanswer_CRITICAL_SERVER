@@ -44,7 +44,7 @@ export function ImageGenerator({ onImageGenerated, onClose }: ImageGeneratorProp
       const response = await fetch("/api/generate-image", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt: imagePrompt, size: "512x512", quality: "low", count: 5 }),
+        body: JSON.stringify({ prompt: imagePrompt, size: "auto", quality: "low", count: 5 }),
       });
       if (!response.ok) {
         const error = await response.json();
