@@ -263,12 +263,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const subscriptionPrices = {
-        'price_monthly_999': {
-          amount: 999,
+        'price_monthly_699': {
+          amount: 699,
           tier: 'pro'
         },
-        'price_yearly_14999': {
-          amount: 14999,
+        'price_yearly_6999': {
+          amount: 6999,
           tier: 'pro'
         }
       };
@@ -420,7 +420,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           price_data: {
             currency: 'usd',
             product: 'prod_turbo_answer_pro',
-            unit_amount: 399,
+            unit_amount: 699,
             recurring: {
               interval: 'month'
             }

@@ -139,7 +139,7 @@ export default function Subscribe() {
             </div>
             <div className="text-center mb-6">
               <h3 className="text-2xl font-bold text-white mb-2">Pro Plan</h3>
-              <div className="text-3xl font-bold text-white mb-4">$3.99<span className="text-base font-normal">/month</span></div>
+              <div className="text-3xl font-bold text-white mb-4">$6.99<span className="text-base font-normal">/month</span></div>
             </div>
             <ul className="space-y-3 mb-6">
               <li className="flex items-center gap-3">

@@ -4,11 +4,10 @@ import { apiRequest } from "@/lib/queryClient";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Send, Bot, User, FileText, X, Brain, Settings, LogOut, Zap, Menu, QrCode, ImageIcon } from "lucide-react";
+import { Send, Bot, User, FileText, X, Brain, Settings, LogOut, Zap, Menu, QrCode, ImageIcon, Crown, CheckCircle, Star } from "lucide-react";
 import { QRCodeCanvas } from "qrcode.react";
 import { Link } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
-import { LoadingScreen } from "@/components/LoadingScreen";
 import { useToast } from "@/hooks/use-toast";
 import { DocumentUpload } from "@/components/DocumentUpload";
 import { ImageGenerator } from "@/components/ImageGenerator";
@@ -31,7 +30,7 @@ export default function Chat() {
   const [showToolbar, setShowToolbar] = useState(false);
   const [showQR, setShowQR] = useState(false);
 
-  const [isLoading, setIsLoading] = useState(true);
+  const [showProPopup, setShowProPopup] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -44,10 +43,6 @@ export default function Chat() {
     if (savedLanguage) {
       setCurrentLanguage(savedLanguage);
     }
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 2000);
-    return () => clearTimeout(timer);
   }, []);
 
   const { data: conversations } = useQuery<Conversation[]>({
@@ -214,9 +209,13 @@ export default function Chat() {
     return date.toLocaleDateString();
   };
 
-  if (isLoading) {
-    return <LoadingScreen message="Activating Maximum Power AI System..." />;
-  }
+  const handleModelChange = (value: string) => {
+    if (value === 'gemini-pro' || value === 'gemini-pro-research') {
+      setShowProPopup(true);
+    } else {
+      setSelectedAIModel(value);
+    }
+  };
 
   return (
     <div className="flex flex-col h-[100dvh] bg-black">
@@ -233,14 +232,14 @@ export default function Chat() {
           </div>
           
           <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
-            <Select value={selectedAIModel} onValueChange={setSelectedAIModel}>
+            <Select value={selectedAIModel} onValueChange={handleModelChange}>
               <SelectTrigger className="w-20 sm:w-28 h-7 sm:h-8 bg-gray-900 border-gray-700 text-[10px] sm:text-xs">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="gemini-flash">Free</SelectItem>
-                <SelectItem value="gemini-pro">Pro</SelectItem>
-                <SelectItem value="gemini-pro-research">Research</SelectItem>
+                <SelectItem value="gemini-pro">Pro $6.99</SelectItem>
+                <SelectItem value="gemini-pro-research">Research $6.99</SelectItem>
               </SelectContent>
             </Select>
 
@@ -478,6 +477,57 @@ export default function Chat() {
           </div>
         </div>
       </div>
+
+      {showProPopup && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4" onClick={() => setShowProPopup(false)}>
+          <div className="bg-zinc-900 border border-zinc-700 rounded-2xl max-w-sm w-full p-6 relative" onClick={(e) => e.stopPropagation()}>
+            <button onClick={() => setShowProPopup(false)} className="absolute top-3 right-3 text-zinc-400 hover:text-white">
+              <X className="h-5 w-5" />
+            </button>
+
+            <div className="text-center mb-5">
+              <div className="w-14 h-14 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Crown className="text-white h-7 w-7" />
+              </div>
+              <h2 className="text-xl font-bold text-white mb-1">Upgrade to Pro</h2>
+              <p className="text-zinc-400 text-sm">Unlock the most powerful AI models</p>
+            </div>
+
+            <div className="text-center mb-5">
+              <span className="text-4xl font-bold text-white">$6.99</span>
+              <span className="text-zinc-400 text-base">/month</span>
+            </div>
+
+            <ul className="space-y-3 mb-6">
+              <li className="flex items-center gap-3">
+                <CheckCircle className="w-4 h-4 text-green-400 flex-shrink-0" />
+                <span className="text-zinc-200 text-sm">Gemini 2.5 Pro - advanced reasoning</span>
+              </li>
+              <li className="flex items-center gap-3">
+                <CheckCircle className="w-4 h-4 text-green-400 flex-shrink-0" />
+                <span className="text-zinc-200 text-sm">Deep Research mode - thorough analysis</span>
+              </li>
+              <li className="flex items-center gap-3">
+                <CheckCircle className="w-4 h-4 text-green-400 flex-shrink-0" />
+                <span className="text-zinc-200 text-sm">Priority response speed</span>
+              </li>
+              <li className="flex items-center gap-3">
+                <CheckCircle className="w-4 h-4 text-green-400 flex-shrink-0" />
+                <span className="text-zinc-200 text-sm">Everything in Free included</span>
+              </li>
+            </ul>
+
+            <Link href="/subscribe">
+              <Button className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold py-5 rounded-xl text-base">
+                <Star className="w-4 h-4 mr-2" />
+                Subscribe Now - $6.99/mo
+              </Button>
+            </Link>
+
+            <p className="text-center text-zinc-500 text-xs mt-3">Cancel anytime. Secure payment via Stripe.</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
