@@ -4,7 +4,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Send, Bot, User, FileText, X, Brain, Settings, LogOut, Camera, Globe, Zap, Menu, QrCode, ImageIcon } from "lucide-react";
+import { Send, Bot, User, FileText, X, Brain, Settings, LogOut, Zap, Menu, QrCode, ImageIcon } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { Link } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
@@ -12,7 +12,7 @@ import { LoadingScreen } from "@/components/LoadingScreen";
 import { useToast } from "@/hooks/use-toast";
 import { DocumentUpload } from "@/components/DocumentUpload";
 import { ImageGenerator } from "@/components/ImageGenerator";
-import CameraCapture from "@/components/CameraCapture";
+
 import LanguageSelector from "@/components/LanguageSelector";
 
 
@@ -26,8 +26,6 @@ export default function Chat() {
 
   const [showDocumentUpload, setShowDocumentUpload] = useState(false);
   const [showImageGenerator, setShowImageGenerator] = useState(false);
-  const [showCamera, setShowCamera] = useState(false);
-  const [showLiveCamera, setShowLiveCamera] = useState(false);
   const [selectedAIModel, setSelectedAIModel] = useState("auto");
   const [currentLanguage, setCurrentLanguage] = useState("en");
   const [showToolbar, setShowToolbar] = useState(false);
@@ -203,14 +201,6 @@ export default function Chat() {
     );
   };
 
-  const [cameraContinuousMode, setCameraContinuousMode] = useState(false);
-
-  const handleCameraCapture = (imageData: string) => {
-    console.log('Camera captured image');
-  };
-
-  const handleCameraAnalyze = (_imageData: string) => {
-  };
 
   const formatTimestamp = (timestamp: string | Date) => {
     const date = new Date(timestamp);
@@ -287,12 +277,6 @@ export default function Chat() {
               <Button onClick={() => { setShowImageGenerator(!showImageGenerator); setShowToolbar(false); }} variant="ghost" size="sm" className={`h-8 px-2 text-xs ${showImageGenerator ? 'text-pink-400' : 'text-gray-400'}`}>
                 <ImageIcon className="h-4 w-4 mr-1" /> Image
               </Button>
-              <Button onClick={() => { setShowCamera(!showCamera); setShowToolbar(false); }} variant="ghost" size="sm" className={`h-8 px-2 text-xs ${showCamera ? 'text-blue-400' : 'text-gray-400'}`}>
-                <Camera className="h-4 w-4 mr-1" /> Cam
-              </Button>
-              <Button onClick={() => { setShowLiveCamera(!showLiveCamera); setShowToolbar(false); }} variant="ghost" size="sm" className={`h-8 px-2 text-xs ${showLiveCamera ? 'text-red-400' : 'text-gray-400'}`}>
-                <Globe className="h-4 w-4 mr-1" /> Live
-              </Button>
             </div>
             <div className="flex items-center gap-1">
               <LanguageSelector currentLanguage={currentLanguage} onLanguageChange={handleLanguageChange} />
@@ -349,12 +333,6 @@ export default function Chat() {
             <Button onClick={() => setShowImageGenerator(!showImageGenerator)} variant="ghost" size="sm" className={`h-8 px-2 ${showImageGenerator ? 'text-pink-400' : 'text-gray-400'} hover:text-white`} title="Generate Image">
               <ImageIcon className="h-4 w-4" />
             </Button>
-            <Button onClick={() => setShowCamera(!showCamera)} variant="ghost" size="sm" className={`h-8 px-2 ${showCamera ? 'text-blue-400' : 'text-gray-400'} hover:text-white`} title="Camera">
-              <Camera className="h-4 w-4" />
-            </Button>
-            <Button onClick={() => setShowLiveCamera(!showLiveCamera)} variant="ghost" size="sm" className={`h-8 px-2 ${showLiveCamera ? 'text-red-400' : 'text-gray-400'} hover:text-white`} title="Live Camera">
-              <Globe className="h-4 w-4" />
-            </Button>
           </div>
           <div className="flex items-center space-x-2">
             <LanguageSelector currentLanguage={currentLanguage} onLanguageChange={handleLanguageChange} />
@@ -388,18 +366,6 @@ export default function Chat() {
         </div>
       )}
 
-      {(showCamera || showLiveCamera) && (
-        <div className="bg-zinc-950 border-b border-zinc-800 px-3 sm:px-6 py-3 sm:py-4 relative z-30 shrink-0">
-          <CameraCapture
-            onCapture={handleCameraCapture}
-            onAnalyze={handleCameraAnalyze}
-            isAnalyzing={false}
-            language={currentLanguage}
-            onContinuousMode={setCameraContinuousMode}
-            continuousMode={cameraContinuousMode}
-          />
-        </div>
-      )}
 
       <div className="flex-1 overflow-y-auto bg-zinc-900 relative z-10">
         <div className="px-3 sm:px-6 py-4 sm:py-6 max-w-4xl mx-auto">
