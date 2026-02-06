@@ -1,6 +1,8 @@
-import React, { useRef, useEffect, useState } from 'react';
-import { Camera, X, Maximize2, Minimize2, Volume2 } from 'lucide-react';
+import { useRef, useEffect, useState, useCallback } from 'react';
+import { Camera, X, Monitor, Volume2, VolumeX, Eye, Loader2, MonitorPlay } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { apiRequest } from '@/lib/queryClient';
+import { useToast } from '@/hooks/use-toast';
 
 interface CameraCaptureProps {
   onCapture: (imageData: string) => void;
@@ -11,10 +13,12 @@ interface CameraCaptureProps {
   continuousMode: boolean;
 }
 
+type SourceMode = 'camera' | 'screen';
+
 export default function CameraCapture({ 
   onCapture, 
   onAnalyze, 
-  isAnalyzing, 
+  isAnalyzing: externalAnalyzing, 
   language,
   onContinuousMode,
   continuousMode
@@ -22,129 +26,184 @@ export default function CameraCapture({
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   
   const [isActive, setIsActive] = useState(false);
-  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [sourceMode, setSourceMode] = useState<SourceMode>('camera');
   const [error, setError] = useState<string | null>(null);
-  const [hasPermission, setHasPermission] = useState(false);
-
-  const messages = {
-    en: {
-      startCamera: 'Start Camera',
-      stopCamera: 'Stop Camera',
-      capture: 'Capture Photo',
-      analyzing: 'Analyzing...',
-      continuous: 'Continuous Analysis',
-      fullscreen: 'Fullscreen',
-      minimize: 'Minimize',
-      cameraError: 'Camera access denied or not available',
-      permissionError: 'Please allow camera access to use this feature'
-    },
-    es: {
-      startCamera: 'Iniciar Cámara',
-      stopCamera: 'Detener Cámara',
-      capture: 'Capturar Foto',
-      analyzing: 'Analizando...',
-      continuous: 'Análisis Continuo',
-      fullscreen: 'Pantalla Completa',
-      minimize: 'Minimizar',
-      cameraError: 'Acceso a la cámara denegado o no disponible',
-      permissionError: 'Permita el acceso a la cámara para usar esta función'
-    },
-    fr: {
-      startCamera: 'Démarrer Caméra',
-      stopCamera: 'Arrêter Caméra',
-      capture: 'Capturer Photo',
-      analyzing: 'Analyse...',
-      continuous: 'Analyse Continue',
-      fullscreen: 'Plein Écran',
-      minimize: 'Réduire',
-      cameraError: 'Accès à la caméra refusé ou non disponible',
-      permissionError: 'Veuillez autoriser l\'accès à la caméra pour utiliser cette fonctionnalité'
-    }
-  };
-
-  const currentMessages = messages[language as keyof typeof messages] || messages.en;
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [lastAnalysis, setLastAnalysis] = useState('');
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [autoVoice, setAutoVoice] = useState(true);
+  const [blueDetected, setBlueDetected] = useState(false);
+  const { toast } = useToast();
 
   useEffect(() => {
     return () => {
-      stopCamera();
+      stopStream();
+      stopSpeaking();
     };
   }, []);
 
   useEffect(() => {
-    if (continuousMode && isActive) {
+    if (isActive && continuousMode) {
       startContinuousAnalysis();
     } else {
       stopContinuousAnalysis();
     }
   }, [continuousMode, isActive]);
 
+  const stopStream = () => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
+    }
+    stopContinuousAnalysis();
+    setIsActive(false);
+  };
+
   const startCamera = async () => {
+    stopStream();
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ 
-        video: { 
-          width: { ideal: 1280 },
-          height: { ideal: 720 },
-          facingMode: 'environment' // Use back camera if available
-        } 
+        video: { width: { ideal: 1920 }, height: { ideal: 1080 }, facingMode: 'environment' } 
       });
-      
       streamRef.current = stream;
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
         videoRef.current.play();
       }
-      
       setIsActive(true);
-      setHasPermission(true);
+      setSourceMode('camera');
       setError(null);
     } catch (err) {
       console.error('Camera access error:', err);
-      setError(currentMessages.cameraError);
-      setHasPermission(false);
+      setError('Camera access denied. Please allow camera access.');
     }
   };
 
-  const stopCamera = () => {
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach(track => {
-        track.stop();
+  const startScreenShare = async () => {
+    stopStream();
+    try {
+      const stream = await navigator.mediaDevices.getDisplayMedia({ 
+        video: { width: { ideal: 1920 }, height: { ideal: 1080 } } as any,
+        audio: false
       });
-      streamRef.current = null;
+      stream.getVideoTracks()[0].onended = () => {
+        stopStream();
+      };
+      streamRef.current = stream;
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        videoRef.current.play();
+      }
+      setIsActive(true);
+      setSourceMode('screen');
+      setError(null);
+      toast({ title: "Screen Sharing Active", description: "Mark items in blue to get instant AI analysis and voice answers." });
+    } catch (err) {
+      console.error('Screen share error:', err);
+      setError('Screen sharing was cancelled or denied.');
     }
-    
-    stopContinuousAnalysis();
-    setIsActive(false);
-    setIsFullscreen(false);
   };
 
-  const captureImage = () => {
-    if (!videoRef.current || !canvasRef.current) return;
-    
-    const canvas = canvasRef.current;
-    const context = canvas.getContext('2d');
-    if (!context) return;
-    
-    canvas.width = videoRef.current.videoWidth;
-    canvas.height = videoRef.current.videoHeight;
-    
-    context.drawImage(videoRef.current, 0, 0);
-    const imageData = canvas.toDataURL('image/jpeg', 0.8);
-    
-    onCapture(imageData);
-    onAnalyze(imageData);
+  const detectBlueHighlight = useCallback((canvas: HTMLCanvasElement): boolean => {
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return false;
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const data = imageData.data;
+    let bluePixels = 0;
+    const totalPixels = data.length / 4;
+    const sampleStep = 8;
+    for (let i = 0; i < data.length; i += 4 * sampleStep) {
+      const r = data[i];
+      const g = data[i + 1];
+      const b = data[i + 2];
+      if (b > 150 && b > r * 1.5 && b > g * 1.3) {
+        bluePixels++;
+      }
+    }
+    const blueRatio = bluePixels / (totalPixels / sampleStep);
+    return blueRatio > 0.005;
+  }, []);
+
+  const speakText = useCallback((text: string) => {
+    if (!('speechSynthesis' in window)) return;
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.rate = 1.0;
+    utterance.pitch = 1.0;
+    utterance.volume = 0.9;
+    const voices = window.speechSynthesis.getVoices();
+    const langMap: Record<string, string> = { en: 'en', es: 'es', fr: 'fr', de: 'de', it: 'it', pt: 'pt', ja: 'ja', ko: 'ko', zh: 'zh' };
+    const langCode = langMap[language] || 'en';
+    const preferredVoice = voices.find(v => v.lang.startsWith(langCode) && v.name.toLowerCase().includes('natural'))
+      || voices.find(v => v.lang.startsWith(langCode) && v.name.toLowerCase().includes('google'))
+      || voices.find(v => v.lang.startsWith(langCode));
+    if (preferredVoice) utterance.voice = preferredVoice;
+    utterance.onstart = () => setIsSpeaking(true);
+    utterance.onend = () => setIsSpeaking(false);
+    utterance.onerror = () => setIsSpeaking(false);
+    window.speechSynthesis.speak(utterance);
+  }, [language]);
+
+  const stopSpeaking = () => {
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+      setIsSpeaking(false);
+    }
   };
+
+  const analyzeFrame = useCallback(async (extraPrompt?: string) => {
+    if (!videoRef.current || !canvasRef.current || isAnalyzing) return;
+    setIsAnalyzing(true);
+    try {
+      const canvas = canvasRef.current;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+      canvas.width = videoRef.current.videoWidth;
+      canvas.height = videoRef.current.videoHeight;
+      ctx.drawImage(videoRef.current, 0, 0);
+
+      const hasBlue = detectBlueHighlight(canvas);
+      setBlueDetected(hasBlue);
+
+      const imageData = canvas.toDataURL('image/jpeg', 0.7);
+
+      let query = extraPrompt || "What do you see?";
+      if (hasBlue) {
+        query = "Focus on the content highlighted or marked in BLUE. Read and analyze that specific content. Give the answer directly in 1-2 short sentences.";
+      }
+
+      const response = await apiRequest("POST", "/api/analyze-image", {
+        imageData,
+        query,
+        simple: true
+      });
+      const result = await response.json();
+      const analysis = result.description || result.analysis || '';
+      
+      if (analysis) {
+        setLastAnalysis(analysis);
+        onAnalyze(imageData);
+        if (autoVoice && (hasBlue || extraPrompt)) {
+          speakText(analysis);
+        }
+      }
+    } catch (err) {
+      console.error('Analysis error:', err);
+    } finally {
+      setIsAnalyzing(false);
+    }
+  }, [isAnalyzing, detectBlueHighlight, autoVoice, speakText, onAnalyze]);
 
   const startContinuousAnalysis = () => {
     if (intervalRef.current) return;
-    
     intervalRef.current = setInterval(() => {
       if (isActive && !isAnalyzing) {
-        captureForAnalysis();
+        analyzeFrame();
       }
-    }, 3000); // Analyze every 3 seconds
+    }, 2500);
   };
 
   const stopContinuousAnalysis = () => {
@@ -154,128 +213,154 @@ export default function CameraCapture({
     }
   };
 
-  const captureForAnalysis = () => {
+  const captureAndAnalyze = () => {
     if (!videoRef.current || !canvasRef.current) return;
-    
     const canvas = canvasRef.current;
-    const context = canvas.getContext('2d');
-    if (!context) return;
-    
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
     canvas.width = videoRef.current.videoWidth;
     canvas.height = videoRef.current.videoHeight;
-    
-    context.drawImage(videoRef.current, 0, 0);
-    const imageData = canvas.toDataURL('image/jpeg', 0.6);
-    
-    onAnalyze(imageData);
+    ctx.drawImage(videoRef.current, 0, 0);
+    const imageData = canvas.toDataURL('image/jpeg', 0.8);
+    onCapture(imageData);
+    analyzeFrame("Describe what you see clearly in 1-2 simple sentences.");
   };
 
-  const toggleFullscreen = () => {
-    setIsFullscreen(!isFullscreen);
-  };
-
-  const toggleContinuousMode = () => {
-    onContinuousMode(!continuousMode);
-  };
-
-  if (!hasPermission && error) {
+  if (error && !isActive) {
     return (
-      <div className="flex flex-col items-center justify-center p-8 bg-red-900/20 rounded-lg border border-red-500">
-        <Camera className="w-12 h-12 text-red-400 mb-4" />
-        <p className="text-red-400 text-center mb-4">{error}</p>
-        <Button 
-          onClick={startCamera}
-          className="bg-red-600 hover:bg-red-700"
-        >
-          {currentMessages.startCamera}
-        </Button>
+      <div className="flex flex-col items-center justify-center p-6 bg-red-900/20 rounded-xl border border-red-800">
+        <Camera className="w-10 h-10 text-red-400 mb-3" />
+        <p className="text-red-400 text-center text-sm mb-3">{error}</p>
+        <div className="flex gap-2">
+          <Button onClick={startCamera} size="sm" className="bg-green-600 hover:bg-green-700">
+            <Camera className="w-4 h-4 mr-1" /> Camera
+          </Button>
+          <Button onClick={startScreenShare} size="sm" className="bg-blue-600 hover:bg-blue-700">
+            <Monitor className="w-4 h-4 mr-1" /> Screen
+          </Button>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className={`camera-capture ${isFullscreen ? 'fixed inset-0 z-50 bg-black' : 'relative'}`}>
-      <div className="flex flex-col space-y-4">
-        {/* Camera Controls */}
-        <div className="flex flex-wrap gap-2 justify-center">
-          {!isActive ? (
-            <Button 
-              onClick={startCamera}
-              className="bg-green-600 hover:bg-green-700"
-            >
-              <Camera className="w-4 h-4 mr-2" />
-              {currentMessages.startCamera}
+    <div className="flex flex-col space-y-3">
+      {!isActive ? (
+        <div className="flex flex-col items-center justify-center py-8 space-y-4">
+          <div className="flex items-center gap-2 mb-2">
+            <Eye className="w-6 h-6 text-purple-400" />
+            <h3 className="text-lg font-semibold text-white">AI Vision</h3>
+          </div>
+          <p className="text-zinc-400 text-sm text-center max-w-sm">
+            Use your camera or share your screen. Mark anything in blue for instant AI answers read aloud.
+          </p>
+          <div className="flex gap-3">
+            <Button onClick={startCamera} size="lg" className="bg-green-600 hover:bg-green-700 px-6">
+              <Camera className="w-5 h-5 mr-2" /> Camera
             </Button>
-          ) : (
-            <>
-              <Button 
-                onClick={stopCamera}
-                variant="destructive"
-              >
-                <X className="w-4 h-4 mr-2" />
-                {currentMessages.stopCamera}
-              </Button>
-              
-              <Button 
-                onClick={captureImage}
-                className="bg-blue-600 hover:bg-blue-700"
-                disabled={isAnalyzing}
-              >
-                <Camera className="w-4 h-4 mr-2" />
-                {isAnalyzing ? currentMessages.analyzing : currentMessages.capture}
-              </Button>
-              
-              <Button 
-                onClick={toggleContinuousMode}
-                variant={continuousMode ? "default" : "outline"}
-                className={continuousMode ? "bg-orange-600 hover:bg-orange-700" : ""}
-              >
-                <Volume2 className="w-4 h-4 mr-2" />
-                {currentMessages.continuous}
-              </Button>
-              
-              <Button 
-                onClick={toggleFullscreen}
-                variant="outline"
-              >
-                {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
-              </Button>
-            </>
-          )}
+            <Button onClick={startScreenShare} size="lg" className="bg-blue-600 hover:bg-blue-700 px-6">
+              <MonitorPlay className="w-5 h-5 mr-2" /> Share Screen
+            </Button>
+          </div>
         </div>
-
-        {/* Camera View */}
-        {isActive && (
-          <div className={`relative ${isFullscreen ? 'w-full h-full' : 'w-full max-w-2xl mx-auto'}`}>
+      ) : (
+        <>
+          <div className="relative w-full rounded-xl overflow-hidden border-2 border-zinc-700 bg-black" style={{ minHeight: '400px' }}>
             <video
               ref={videoRef}
               autoPlay
               playsInline
               muted
-              className={`w-full rounded-lg border-2 border-gray-600 ${isFullscreen ? 'h-full object-cover' : 'h-auto'}`}
+              className="w-full h-full object-contain"
+              style={{ minHeight: '400px', maxHeight: '70vh' }}
             />
-            
-            {/* Analysis Overlay */}
-            {isAnalyzing && (
-              <div className="absolute inset-0 bg-black/50 flex items-center justify-center rounded-lg">
-                <div className="bg-white/90 px-4 py-2 rounded-lg text-black font-semibold">
-                  {currentMessages.analyzing}
-                </div>
+
+            {sourceMode === 'screen' && (
+              <div className="absolute top-3 left-3 bg-blue-600/90 text-white px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1.5">
+                <Monitor className="w-3 h-3" /> Screen Share
               </div>
             )}
-            
-            {/* Continuous Mode Indicator */}
+
+            {blueDetected && (
+              <div className="absolute top-3 right-3 bg-blue-500/90 text-white px-3 py-1 rounded-full text-xs font-bold animate-pulse">
+                BLUE DETECTED
+              </div>
+            )}
+
+            {isAnalyzing && (
+              <div className="absolute bottom-3 left-3 bg-black/70 text-white px-3 py-1.5 rounded-lg text-xs flex items-center gap-2">
+                <Loader2 className="w-3 h-3 animate-spin" /> Analyzing...
+              </div>
+            )}
+
             {continuousMode && (
-              <div className="absolute top-4 right-4 bg-orange-600 text-white px-3 py-1 rounded-full text-sm font-semibold">
+              <div className="absolute top-3 left-1/2 -translate-x-1/2 bg-red-600/90 text-white px-3 py-1 rounded-full text-xs font-bold">
                 LIVE
               </div>
             )}
           </div>
-        )}
-        
-        {/* Hidden Canvas for Capture */}
-        <canvas ref={canvasRef} className="hidden" />
-      </div>
+
+          {lastAnalysis && (
+            <div className="bg-zinc-800/80 rounded-xl p-3 border border-zinc-700">
+              <div className="flex items-start justify-between gap-2">
+                <p className="text-sm text-zinc-200 leading-relaxed flex-1">{lastAnalysis}</p>
+                <button
+                  onClick={() => speakText(lastAnalysis)}
+                  className="flex-shrink-0 p-1.5 rounded-lg bg-zinc-700 hover:bg-zinc-600 text-zinc-300"
+                  title="Read aloud"
+                >
+                  <Volume2 className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          )}
+
+          <div className="flex flex-wrap gap-2 justify-center">
+            <Button onClick={captureAndAnalyze} disabled={isAnalyzing} size="sm" className="bg-purple-600 hover:bg-purple-700">
+              <Eye className="w-4 h-4 mr-1" /> Analyze Now
+            </Button>
+
+            <Button onClick={() => onContinuousMode(!continuousMode)} size="sm"
+              className={continuousMode ? "bg-red-600 hover:bg-red-700" : "bg-zinc-700 hover:bg-zinc-600"}>
+              {continuousMode ? "Stop Live" : "Go Live"}
+            </Button>
+
+            {sourceMode === 'camera' ? (
+              <Button onClick={startScreenShare} size="sm" className="bg-blue-600 hover:bg-blue-700">
+                <MonitorPlay className="w-4 h-4 mr-1" /> Screen
+              </Button>
+            ) : (
+              <Button onClick={startCamera} size="sm" className="bg-green-600 hover:bg-green-700">
+                <Camera className="w-4 h-4 mr-1" /> Camera
+              </Button>
+            )}
+
+            <Button onClick={() => setAutoVoice(!autoVoice)} size="sm"
+              className={autoVoice ? "bg-amber-600 hover:bg-amber-700" : "bg-zinc-700 hover:bg-zinc-600"}>
+              {autoVoice ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
+            </Button>
+
+            {isSpeaking && (
+              <Button onClick={stopSpeaking} size="sm" variant="destructive">
+                <VolumeX className="w-4 h-4 mr-1" /> Stop
+              </Button>
+            )}
+
+            <Button onClick={stopStream} size="sm" variant="destructive">
+              <X className="w-4 h-4 mr-1" /> Close
+            </Button>
+          </div>
+
+          <p className="text-[11px] text-zinc-500 text-center">
+            {sourceMode === 'screen' 
+              ? "Highlight text in blue on your screen for instant AI analysis with voice readout"
+              : "Point camera at anything. Blue-marked items get auto-analyzed and read aloud"
+            }
+          </p>
+        </>
+      )}
+
+      <canvas ref={canvasRef} className="hidden" />
     </div>
   );
 }

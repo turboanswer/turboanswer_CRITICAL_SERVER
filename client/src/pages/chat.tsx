@@ -15,7 +15,7 @@ import { ImageGenerator } from "@/components/ImageGenerator";
 import CameraCapture from "@/components/CameraCapture";
 import LanguageSelector from "@/components/LanguageSelector";
 
-import LiveCameraFeed from "@/components/LiveCameraFeed";
+
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { Conversation, Message } from "@shared/schema";
 
@@ -203,35 +203,13 @@ export default function Chat() {
     );
   };
 
+  const [cameraContinuousMode, setCameraContinuousMode] = useState(false);
+
   const handleCameraCapture = (imageData: string) => {
     console.log('Camera captured image');
   };
 
-  const handleImageAnalysis = async (imageData: string) => {
-    try {
-      const response = await apiRequest("POST", "/api/analyze-image", {
-        imageData,
-        query: "What do you see in this image?"
-      });
-      const analysis = await response.json();
-      if (analysis.description) {
-        sendMessageMutation.mutate(`📸 **Camera Analysis**: ${analysis.description}`);
-      }
-    } catch (error) {
-      console.error('Image analysis error:', error);
-      toast({
-        title: "Camera Analysis Failed",
-        description: "Unable to analyze the image. Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleLiveCameraAnalysis = (analysis: string) => {
-    if (currentConversationId && analysis) {
-      const analysisMessage = `📹 **Live Camera**: ${analysis}`;
-      sendMessageMutation.mutate(analysisMessage);
-    }
+  const handleCameraAnalyze = (_imageData: string) => {
   };
 
   const formatTimestamp = (timestamp: string | Date) => {
@@ -410,30 +388,16 @@ export default function Chat() {
         </div>
       )}
 
-      {showCamera && (
+      {(showCamera || showLiveCamera) && (
         <div className="bg-zinc-950 border-b border-zinc-800 px-3 sm:px-6 py-3 sm:py-4 relative z-30 shrink-0">
-          <div className="flex items-center justify-between mb-3 sm:mb-4">
-            <h3 className="text-base sm:text-lg font-medium text-white">Camera Analysis</h3>
-            <Button onClick={() => setShowCamera(false)} variant="ghost" size="sm" className="text-zinc-400 hover:text-white">
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
-          <CameraCapture onCapture={handleCameraCapture} onAnalyze={handleImageAnalysis} isAnalyzing={false} language={currentLanguage} onContinuousMode={() => {}} continuousMode={false} />
-        </div>
-      )}
-
-      {showLiveCamera && (
-        <div className="bg-gradient-to-r from-red-950 to-red-900 border-b border-red-800 px-3 sm:px-6 py-3 sm:py-4 relative z-30 shrink-0">
-          <div className="flex items-center justify-between mb-3 sm:mb-4">
-            <h3 className="text-base sm:text-lg font-medium text-white flex items-center">
-              <Camera className="h-4 w-4 sm:h-5 sm:w-5 mr-2 text-red-400" />
-              Live Camera - AI Analysis
-            </h3>
-            <Button onClick={() => setShowLiveCamera(false)} variant="ghost" size="sm" className="text-red-400 hover:text-white">
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
-          <LiveCameraFeed language={currentLanguage} onAnalysisResult={handleLiveCameraAnalysis} />
+          <CameraCapture
+            onCapture={handleCameraCapture}
+            onAnalyze={handleCameraAnalyze}
+            isAnalyzing={false}
+            language={currentLanguage}
+            onContinuousMode={setCameraContinuousMode}
+            continuousMode={cameraContinuousMode}
+          />
         </div>
       )}
 

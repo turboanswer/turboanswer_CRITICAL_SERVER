@@ -23,25 +23,10 @@ export async function analyzeImage(imageData: string, userQuery?: string): Promi
     const base64Data = imageData.replace(/^data:image\/[a-z]+;base64,/, '');
     
     const prompt = userQuery 
-      ? `Analyze this image and specifically answer: ${userQuery}
+      ? `Look at this image and answer simply and directly: ${userQuery}
 
-Please provide:
-1. A detailed description of what you see
-2. List of objects/items visible
-3. Any text you can read
-4. Main colors present
-5. Type of scene/setting
-6. Helpful suggestions or insights
-7. Answer the specific question: ${userQuery}`
-      : `Analyze this image in detail. Tell me:
-1. What do you see in this image?
-2. What objects or items are visible?
-3. Can you read any text?
-4. What are the main colors?
-5. What type of scene or setting is this?
-6. Any helpful observations or suggestions?
-
-Be descriptive and helpful!`;
+Keep your answer short - 1-3 sentences max. Be clear and conversational. If there's text visible, read it out. No bullet points or lists.`
+      : `What's in this image? Give a simple, clear answer in 1-3 sentences. If there's text, read it. Be direct.`;
 
     const result = await model.generateContent([
       prompt,
