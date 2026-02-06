@@ -44,7 +44,7 @@ export class MegaFusionAI {
     
     // Check available API keys and add models
     if (process.env.GEMINI_API_KEY) {
-      this.availableModels.push('gemini-2.0-flash', 'gemini-2.0-flash-thinking', 'gemini-2.5-pro', 'gemini-pro');
+      this.availableModels.push('gemini-2.5-flash', 'gemini-2.5-flash-thinking', 'gemini-2.5-pro', 'gemini-pro');
     }
     if (process.env.OPENAI_API_KEY) {
       this.availableModels.push('gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo', 'gpt-4', 'gpt-3.5-turbo');
@@ -165,8 +165,8 @@ export class MegaFusionAI {
   private getTopModels(count: number): string[] {
     const priorityOrder = [
       // Tier 1: Ultimate Power Models
-      'gemini-2.0-flash-thinking',
-      'gemini-2.0-flash',
+      'gemini-2.5-flash-thinking',
+      'gemini-2.5-flash',
       'claude-3-5-sonnet-20241022',
       'gpt-4o',
       'grok-2-1212',

@@ -76,7 +76,7 @@ export class ConversationalAI {
         systemInstruction: conversationalPrompt,
         generationConfig: {
           temperature: 0.3,
-          maxOutputTokens: 60,
+          maxOutputTokens: 1000,
         }
       });
 
