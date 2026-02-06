@@ -4,9 +4,7 @@ import path from "path";
 import Stripe from "stripe";
 import multer from "multer";
 import { storage } from "./storage";
-import { db } from "./db";
-import { insertConversationSchema, insertMessageSchema, users } from "@shared/schema";
-import { eq } from "drizzle-orm";
+import { insertConversationSchema, insertMessageSchema } from "@shared/schema";
 import { generateAIResponse, getAvailableModels } from "./services/multi-ai";
 import { 
   extractTextFromFile, 
@@ -15,6 +13,7 @@ import {
   getAnalysisOptions,
   SUPPORTED_FILE_TYPES 
 } from "./services/document-analysis";
+import { setupAuth, registerAuthRoutes, isAuthenticated } from "./replit_integrations/auth";
 
 import widgetRoutes from './routes/widget-routes';
 
@@ -25,80 +24,19 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
   apiVersion: "2025-06-30.basil",
 });
 
-// Configure multer for file uploads
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: {
-    fileSize: 10 * 1024 * 1024, // 10MB limit
-    files: 1 // Single file upload
+    fileSize: 10 * 1024 * 1024,
+    files: 1
   }
 });
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Register widget routes
+  await setupAuth(app);
+  registerAuthRoutes(app);
+
   app.use(widgetRoutes);
-  // User authentication routes
-  app.post('/api/register', async (req, res) => {
-    try {
-      const { username, email, password } = req.body;
-      
-      if (!username || !password) {
-        return res.status(400).json({ error: 'Username and password are required' });
-      }
-
-      // Check if user already exists
-      const existingUser = await storage.getUserByUsername(username);
-      if (existingUser) {
-        return res.status(400).json({ error: 'Username already exists' });
-      }
-
-      if (email) {
-        const existingEmail = await storage.getUserByEmail(email);
-        if (existingEmail) {
-          return res.status(400).json({ error: 'Email already exists' });
-        }
-      }
-
-      const user = await storage.createUser({ username, email, password });
-      const { password: _, ...userWithoutPassword } = user;
-      res.json({ success: true, user: userWithoutPassword });
-    } catch (error) {
-      console.error('Registration error:', error);
-      res.status(500).json({ error: 'Failed to create account' });
-    }
-  });
-
-  app.post('/api/login', async (req, res) => {
-    try {
-      const { username, password } = req.body;
-      
-      if (!username || !password) {
-        return res.status(400).json({ error: 'Username and password are required' });
-      }
-
-      const user = await storage.validateUserCredentials(username, password);
-      if (!user) {
-        return res.status(401).json({ error: 'Invalid credentials' });
-      }
-
-      const { password: _, ...userWithoutPassword } = user;
-      res.json({ success: true, user: userWithoutPassword });
-    } catch (error) {
-      console.error('Login error:', error);
-      res.status(500).json({ error: 'Login failed' });
-    }
-  });
-
-  app.post('/api/logout', async (req, res) => {
-    try {
-      // For now, just return success since we're using simple authentication
-      // In a real app, this would destroy the session
-      res.json({ success: true, message: 'Logged out successfully' });
-    } catch (error) {
-      console.error('Logout error:', error);
-      res.status(500).json({ error: 'Logout failed' });
-    }
-  });
 
   // Create a new conversation
   app.post("/api/conversations", async (req, res) => {
@@ -175,7 +113,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Image data is required" });
       }
       
-      // Import live camera service
       const { analyzeLiveCamera } = await import('./services/live-camera.js');
       
       const result = await analyzeLiveCamera({
@@ -240,46 +177,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Message content is required" });
       }
 
-      // Verify conversation exists
       const conversation = await storage.getConversation(conversationId);
       if (!conversation) {
         return res.status(404).json({ message: "Conversation not found" });
       }
 
-      // Create user message
       const userMessage = await storage.createMessage({
         conversationId,
         content,
         role: "user"
       });
 
-      // Get conversation history for context
       const existingMessages = await storage.getMessagesByConversation(conversationId);
       const conversationHistory = existingMessages.map(msg => ({
         role: msg.role,
         content: msg.content
       }));
 
-      // Use MAXIMUM PERFORMANCE AI system with breakthrough intelligence
       const { generateAIResponse } = await import('./services/multi-ai.js');
-      const userId = `user_${Math.random().toString(36).substr(2, 9)}`; // Simple user ID for context
+      const userId = `user_${Math.random().toString(36).substr(2, 9)}`;
       const aiResponseContent = await generateAIResponse(
         content,
         conversationHistory,
-        "premium", // Use premium tier for maximum performance
-        req.body.selectedModel || "auto-select", // Intelligent model selection
+        "premium",
+        req.body.selectedModel || "auto-select",
         userId,
-        req.body.language || "en" // Support multi-language responses
+        req.body.language || "en"
       );
 
-      // Create AI message
       const aiMessage = await storage.createMessage({
         conversationId,
         content: aiResponseContent,
         role: "assistant"
       });
 
-      // Return both messages
       res.json({
         userMessage,
         aiMessage
@@ -291,28 +222,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Enhanced subscription endpoint with multiple tiers
-  app.post('/api/create-subscription', async (req, res) => {
+  app.post('/api/create-subscription', isAuthenticated, async (req, res) => {
     try {
       const { planId, priceId } = req.body;
       
-      // For demo purposes, create a demo user
-      let user = await storage.getUser(1);
+      const userId = (req as any).user.claims.sub;
+      const user = await storage.getUser(userId);
       if (!user) {
-        user = await storage.createUser({
-          username: "demo_user",
-          password: "demo_password",
-          email: "demo@turboAnswer.com"
-        });
+        return res.status(401).json({ error: 'User not found' });
       }
 
-      // Define subscription prices
       const subscriptionPrices = {
         'price_monthly_999': {
-          amount: 999, // $9.99
+          amount: 999,
           tier: 'pro'
         },
         'price_yearly_14999': {
-          amount: 14999, // $149.99
+          amount: 14999,
           tier: 'pro'
         }
       };
@@ -322,18 +248,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: 'Invalid price ID' });
       }
 
-      // Create Stripe customer if doesn't exist
       let stripeCustomerId = user.stripeCustomerId;
       if (!stripeCustomerId) {
         const customer = await stripe.customers.create({
-          email: user.email || "demo@turboAnswer.com",
-          name: user.username,
+          email: user.email || undefined,
+          name: user.firstName || user.email || 'User',
         });
         stripeCustomerId = customer.id;
         await storage.updateStripeCustomerId(user.id, stripeCustomerId);
       }
 
-      // Create recurring subscription
       const interval = priceId.includes('yearly') ? 'year' : 'month';
       const subscription = await stripe.subscriptions.create({
         customer: stripeCustomerId,
@@ -351,7 +275,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         expand: ['latest_invoice.payment_intent'],
       });
 
-      // Update user subscription info
       await storage.updateUserStripeInfo(user.id, stripeCustomerId, subscription.id);
       await storage.updateUserSubscription(user.id, 'active', priceConfig.tier);
 
@@ -373,7 +296,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get available AI models for user's subscription tier
   app.get('/api/models', async (req, res) => {
     try {
-      // For demo, assume free tier - in real app get from authenticated user
       const subscriptionTier = "free";
       const availableModels = getAvailableModels(subscriptionTier);
       res.json({ models: availableModels, currentTier: subscriptionTier });
@@ -384,27 +306,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // 5-Day Trial Subscription endpoint
-  app.post('/api/start-trial', async (req, res) => {
+  app.post('/api/start-trial', isAuthenticated, async (req, res) => {
     try {
-      // For demo purposes, create a demo user
-      let user = await storage.getUser(1);
+      const userId = (req as any).user.claims.sub;
+      const user = await storage.getUser(userId);
       if (!user) {
-        user = await storage.createUser({
-          username: "trial_user",
-          password: "trial_password",
-          email: "trial@turboAnswer.com"
-        });
+        return res.status(401).json({ error: 'User not found' });
       }
 
-      // Check if user already had a trial
       if (user.subscriptionTier === 'trial_used' || user.subscriptionStatus === 'trial_expired') {
         return res.status(400).json({ error: 'Trial already used. Please upgrade to continue.' });
       }
 
-      // Set trial subscription (no Stripe needed for free trial)
       const trialStartDate = new Date();
       const trialEndDate = new Date();
-      trialEndDate.setDate(trialEndDate.getDate() + 5); // 5 days from now
+      trialEndDate.setDate(trialEndDate.getDate() + 5);
 
       await storage.updateUserSubscription(user.id, 'trial_active', 'lifetime');
 
@@ -415,7 +331,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         trialType: 'lifetime',
         user: {
           id: user.id,
-          username: user.username,
+          name: user.firstName || user.email || 'User',
           subscriptionTier: 'lifetime',
           subscriptionStatus: 'trial'
         }
@@ -428,20 +344,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Legacy Pro plan endpoint
-  app.post('/api/get-or-create-subscription', async (req, res) => {
+  app.post('/api/get-or-create-subscription', isAuthenticated, async (req, res) => {
     try {
-      // For demo purposes, create a demo user
-      // In real app, this would use authenticated user
-      let user = await storage.getUser(1);
+      const userId = (req as any).user.claims.sub;
+      const user = await storage.getUser(userId);
       if (!user) {
-        user = await storage.createUser({
-          username: "demo_user",
-          password: "demo_password",
-          email: "demo@turboAnswer.com"
-        });
+        return res.status(401).json({ error: 'User not found' });
       }
 
-      // Check if user already has an active subscription
       if (user.stripeSubscriptionId) {
         const subscription = await stripe.subscriptions.retrieve(user.stripeSubscriptionId, {
           expand: ['latest_invoice.payment_intent']
@@ -464,25 +374,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      // Create Stripe customer if doesn't exist
       let stripeCustomerId = user.stripeCustomerId;
       if (!stripeCustomerId) {
         const customer = await stripe.customers.create({
-          email: user.email || "demo@turboAnswer.com",
-          name: user.username,
+          email: user.email || undefined,
+          name: user.firstName || user.email || 'User',
         });
         stripeCustomerId = customer.id;
         await storage.updateStripeCustomerId(user.id, stripeCustomerId);
       }
 
-      // Create subscription for $3.99/month
       const subscription = await stripe.subscriptions.create({
         customer: stripeCustomerId,
         items: [{
           price_data: {
             currency: 'usd',
             product: 'prod_turbo_answer_pro',
-            unit_amount: 399, // $3.99 in cents
+            unit_amount: 399,
             recurring: {
               interval: 'month'
             }
@@ -492,7 +400,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         expand: ['latest_invoice.payment_intent'],
       });
 
-      // Update user with subscription info
       await storage.updateUserStripeInfo(user.id, stripeCustomerId, subscription.id);
 
       const invoice = subscription.latest_invoice;
@@ -509,89 +416,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Create demo employee account (for setup purposes)
-  app.post('/api/setup-employee', async (req, res) => {
-    try {
-      const { username, password, email } = req.body;
-      
-      if (!username || !password) {
-        return res.status(400).json({ message: 'Username and password required' });
-      }
-
-      // Check if employee already exists
-      const existingUser = await storage.getUserByUsername(username);
-      if (existingUser) {
-        return res.status(400).json({ message: 'Username already exists' });
-      }
-
-      // Create employee user
-      const employee = await storage.createUser({
-        username,
-        password,
-        email: email || null
-      });
-
-      // Update user to be an employee
-      const [updatedEmployee] = await db
-        .update(users)
-        .set({ isEmployee: true })
-        .where(eq(users.id, employee.id))
-        .returning();
-
-      res.json({ 
-        message: 'Employee account created successfully',
-        employee: {
-          id: updatedEmployee.id,
-          username: updatedEmployee.username,
-          email: updatedEmployee.email
-        }
-      });
-    } catch (error: any) {
-      console.error('Setup employee error:', error);
-      res.status(500).json({ message: 'Failed to create employee account' });
-    }
-  });
-
-  // Employee Authentication Routes
-  app.post('/api/employee/login', async (req, res) => {
-    try {
-      const { username, password } = req.body;
-      
-      if (!username || !password) {
-        return res.status(400).json({ message: 'Username and password required' });
-      }
-
-      const employee = await storage.validateEmployeeCredentials(username, password);
-      
-      if (!employee) {
-        return res.status(401).json({ message: 'Invalid employee credentials' });
-      }
-
-      // In a real app, you'd set up proper session management here
-      res.json({ 
-        message: 'Employee login successful',
-        employee: {
-          id: employee.id,
-          username: employee.username,
-          email: employee.email
-        }
-      });
-    } catch (error: any) {
-      console.error('Employee login error:', error);
-      res.status(500).json({ message: 'Internal server error' });
-    }
-  });
-
   // Get all users (Employee only)
-  app.get('/api/employee/users', async (req, res) => {
+  app.get('/api/employee/users', isAuthenticated, async (req, res) => {
     try {
-      // In a real app, verify employee authentication here
-      const users = await storage.getAllUsers();
+      const allUsers = await storage.getAllUsers();
       
-      // Remove sensitive data like passwords
-      const sanitizedUsers = users.map(user => ({
+      const sanitizedUsers = allUsers.map(user => ({
         id: user.id,
-        username: user.username,
+        firstName: user.firstName,
+        lastName: user.lastName,
         email: user.email,
         subscriptionTier: user.subscriptionTier,
         subscriptionStatus: user.subscriptionStatus,
@@ -611,9 +444,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Ban user (Employee only)
-  app.post('/api/employee/users/:id/ban', async (req, res) => {
+  app.post('/api/employee/users/:id/ban', isAuthenticated, async (req, res) => {
     try {
-      const userId = parseInt(req.params.id);
+      const userId = req.params.id;
       const { reason } = req.body;
       
       if (!reason || !reason.trim()) {
@@ -621,7 +454,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const user = await storage.banUser(userId, reason.trim());
-      res.json({ message: 'User banned successfully', user: { id: user.id, username: user.username } });
+      res.json({ message: 'User banned successfully', user: { id: user.id, name: user.firstName || user.email || user.id } });
     } catch (error: any) {
       console.error('Ban user error:', error);
       res.status(500).json({ message: error.message || 'Failed to ban user' });
@@ -629,11 +462,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Unban user (Employee only)
-  app.post('/api/employee/users/:id/unban', async (req, res) => {
+  app.post('/api/employee/users/:id/unban', isAuthenticated, async (req, res) => {
     try {
-      const userId = parseInt(req.params.id);
+      const userId = req.params.id;
       const user = await storage.unbanUser(userId);
-      res.json({ message: 'User unbanned successfully', user: { id: user.id, username: user.username } });
+      res.json({ message: 'User unbanned successfully', user: { id: user.id, name: user.firstName || user.email || user.id } });
     } catch (error: any) {
       console.error('Unban user error:', error);
       res.status(500).json({ message: error.message || 'Failed to unban user' });
@@ -641,9 +474,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Flag user (Employee only)
-  app.post('/api/employee/users/:id/flag', async (req, res) => {
+  app.post('/api/employee/users/:id/flag', isAuthenticated, async (req, res) => {
     try {
-      const userId = parseInt(req.params.id);
+      const userId = req.params.id;
       const { reason } = req.body;
       
       if (!reason || !reason.trim()) {
@@ -651,7 +484,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const user = await storage.flagUser(userId, reason.trim());
-      res.json({ message: 'User flagged successfully', user: { id: user.id, username: user.username } });
+      res.json({ message: 'User flagged successfully', user: { id: user.id, name: user.firstName || user.email || user.id } });
     } catch (error: any) {
       console.error('Flag user error:', error);
       res.status(500).json({ message: error.message || 'Failed to flag user' });
@@ -659,11 +492,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Unflag user (Employee only)
-  app.post('/api/employee/users/:id/unflag', async (req, res) => {
+  app.post('/api/employee/users/:id/unflag', isAuthenticated, async (req, res) => {
     try {
-      const userId = parseInt(req.params.id);
+      const userId = req.params.id;
       const user = await storage.unflagUser(userId);
-      res.json({ message: 'User unflagged successfully', user: { id: user.id, username: user.username } });
+      res.json({ message: 'User unflagged successfully', user: { id: user.id, name: user.firstName || user.email || user.id } });
     } catch (error: any) {
       console.error('Unflag user error:', error);
       res.status(500).json({ message: error.message || 'Failed to unflag user' });
@@ -671,9 +504,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Suspend user (Employee only)
-  app.post('/api/employee/users/:id/suspend', async (req, res) => {
+  app.post('/api/employee/users/:id/suspend', isAuthenticated, async (req, res) => {
     try {
-      const userId = parseInt(req.params.id);
+      const userId = req.params.id;
       const { reason, employeeId, employeeUsername } = req.body;
       
       if (!reason || !reason.trim()) {
@@ -689,7 +522,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         message: 'User suspended successfully', 
         user: { 
           id: user.id, 
-          username: user.username, 
+          name: user.firstName || user.email || user.id, 
           isSuspended: user.isSuspended,
           suspensionReason: user.suspensionReason,
           suspendedBy: user.suspendedBy
@@ -702,9 +535,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Unsuspend user (Employee only)
-  app.post('/api/employee/users/:id/unsuspend', async (req, res) => {
+  app.post('/api/employee/users/:id/unsuspend', isAuthenticated, async (req, res) => {
     try {
-      const userId = parseInt(req.params.id);
+      const userId = req.params.id;
       const { employeeId, employeeUsername } = req.body;
 
       if (!employeeId || !employeeUsername) {
@@ -716,7 +549,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         message: 'User unsuspended successfully', 
         user: { 
           id: user.id, 
-          username: user.username, 
+          name: user.firstName || user.email || user.id, 
           isSuspended: user.isSuspended
         }
       });
@@ -727,7 +560,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get audit logs (Employee only)
-  app.get('/api/employee/audit-logs', async (req, res) => {
+  app.get('/api/employee/audit-logs', isAuthenticated, async (req, res) => {
     try {
       const limit = parseInt(req.query.limit as string) || 100;
       const auditLogs = await storage.getAuditLogs(limit);
@@ -739,9 +572,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get audit logs for specific user (Employee only)
-  app.get('/api/employee/users/:id/audit-logs', async (req, res) => {
+  app.get('/api/employee/users/:id/audit-logs', isAuthenticated, async (req, res) => {
     try {
-      const userId = parseInt(req.params.id);
+      const userId = req.params.id;
       const auditLogs = await storage.getAuditLogsByUser(userId);
       res.json(auditLogs);
     } catch (error: any) {
@@ -751,9 +584,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get audit logs for specific employee (Employee only)
-  app.get('/api/employee/employees/:id/audit-logs', async (req, res) => {
+  app.get('/api/employee/employees/:id/audit-logs', isAuthenticated, async (req, res) => {
     try {
-      const employeeId = parseInt(req.params.id);
+      const employeeId = req.params.id;
       const auditLogs = await storage.getAuditLogsByEmployee(employeeId);
       res.json(auditLogs);
     } catch (error: any) {
@@ -763,15 +596,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Enhanced super admin endpoints for chat history tracking
-  app.get('/api/super-admin/all-conversations', async (req, res) => {
+  app.get('/api/super-admin/all-conversations', isAuthenticated, async (req, res) => {
     try {
-      // Check if user has super admin privileges
-      const { username } = req.query;
-      if (username !== 'tiagotschantret') {
-        return res.status(403).json({ message: 'Access denied. Super admin privileges required.' });
-      }
-
-      const user = await storage.getUserByUsername(username as string);
+      const userId = (req as any).user.claims.sub;
+      const user = await storage.getUser(userId);
       if (!user || !user.canViewAllChats || user.employeeRole !== 'super_admin') {
         return res.status(403).json({ message: 'Insufficient privileges' });
       }
@@ -787,18 +615,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/super-admin/search-conversations', async (req, res) => {
+  app.get('/api/super-admin/search-conversations', isAuthenticated, async (req, res) => {
     try {
-      const { username, search } = req.query;
-      if (username !== 'tiagotschantret') {
-        return res.status(403).json({ message: 'Access denied. Super admin privileges required.' });
-      }
-
-      const user = await storage.getUserByUsername(username as string);
+      const authUserId = (req as any).user.claims.sub;
+      const user = await storage.getUser(authUserId);
       if (!user || !user.canViewAllChats || user.employeeRole !== 'super_admin') {
         return res.status(403).json({ message: 'Insufficient privileges' });
       }
 
+      const { search } = req.query;
       if (!search || typeof search !== 'string') {
         return res.status(400).json({ message: 'Search term is required' });
       }
@@ -815,24 +640,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/super-admin/user/:id/conversations', async (req, res) => {
+  app.get('/api/super-admin/user/:id/conversations', isAuthenticated, async (req, res) => {
     try {
-      const { username } = req.query;
-      if (username !== 'tiagotschantret') {
-        return res.status(403).json({ message: 'Access denied. Super admin privileges required.' });
-      }
-
-      const user = await storage.getUserByUsername(username as string);
-      if (!user || !user.canViewAllChats || user.employeeRole !== 'super_admin') {
+      const authUserId = (req as any).user.claims.sub;
+      const adminUser = await storage.getUser(authUserId);
+      if (!adminUser || !adminUser.canViewAllChats || adminUser.employeeRole !== 'super_admin') {
         return res.status(403).json({ message: 'Insufficient privileges' });
       }
 
-      const userId = parseInt(req.params.id);
-      const userConversations = await storage.getUserConversationsWithMessages(userId);
-      const targetUser = await storage.getUser(userId);
+      const targetUserId = req.params.id;
+      const userConversations = await storage.getConversationsByUser(targetUserId);
+      const targetUser = await storage.getUser(targetUserId);
       
       res.json({
-        user: targetUser ? { id: targetUser.id, username: targetUser.username, email: targetUser.email } : null,
+        user: targetUser ? { id: targetUser.id, firstName: targetUser.firstName, email: targetUser.email } : null,
         total: userConversations.length,
         conversations: userConversations
       });
@@ -852,16 +673,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { originalname, mimetype, size, buffer } = req.file;
       const { analysisType = 'general', conversationId } = req.body;
 
-      // Validate file
       const validation = validateFile(size, mimetype);
       if (!validation.valid) {
         return res.status(400).json({ message: validation.error });
       }
 
-      // Extract text from file
       const fileContent = await extractTextFromFile(buffer, mimetype, originalname);
       
-      // Get conversation history if conversationId provided
       let conversationHistory: Array<{role: string, content: string}> = [];
       if (conversationId) {
         const messages = await storage.getMessagesByConversation(parseInt(conversationId));
@@ -871,7 +689,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }));
       }
 
-      // Analyze document
       const analysisResult = await analyzeDocument(
         fileContent, 
         originalname, 
@@ -948,58 +765,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     } catch (error: any) {
       res.status(500).json({ message: error.message });
-    }
-  });
-
-  // Create demo user for promo codes
-  app.post("/api/create-demo-user", async (req, res) => {
-    try {
-      // Check if demo user already exists
-      let user = await storage.getUserByUsername("demo_user");
-      
-      if (!user) {
-        user = await storage.createUser({
-          username: "demo_user",
-          password: "demo_password",
-          email: "demo@turboai.com"
-        });
-      }
-
-      const { password: _, ...userWithoutPassword } = user;
-      res.json({ success: true, user: userWithoutPassword });
-    } catch (error: any) {
-      res.status(500).json({ error: "Failed to create demo user: " + error.message });
-    }
-  });
-
-  // Promo code application route
-  app.post("/api/apply-promo", async (req, res) => {
-    try {
-      const { userId, promoCode } = req.body;
-      
-      if (!userId || !promoCode) {
-        return res.status(400).json({ message: "User ID and promo code are required" });
-      }
-
-      const result = await storage.applyPromoCode(userId, promoCode);
-      
-      if (result.success) {
-        res.json({ 
-          success: true, 
-          message: result.message, 
-          user: result.user 
-        });
-      } else {
-        res.status(400).json({ 
-          success: false, 
-          message: result.message 
-        });
-      }
-    } catch (error: any) {
-      res.status(500).json({ 
-        success: false, 
-        message: "Error applying promo code: " + error.message 
-      });
     }
   });
 
@@ -1091,7 +856,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { domain, userAgent } = req.body;
       
-      // Create anonymous conversation for widget users
       const conversation = await storage.createConversation({
         title: `Widget Chat - ${domain}`
       });
@@ -1116,14 +880,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: 'Message and conversationId required' });
       }
       
-      // Store user message
       await storage.createMessage({
         conversationId,
         content: message,
         role: 'user'
       });
       
-      // Generate AI response optimized for business use
       const businessPrompt = `You are a helpful business AI assistant embedded in a website widget. 
       The user is visiting: ${domain}
       
@@ -1134,7 +896,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const aiResponse = await generateAIResponse(businessPrompt, [], 'free', 'gemini-pro');
       
-      // Store AI response
       await storage.createMessage({
         conversationId,
         content: aiResponse,
