@@ -88,7 +88,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Visual AI analysis endpoint
-  app.post("/api/analyze-image", isAuthenticated, async (req: any, res) => {
+  app.post("/api/analyze-image", async (req: any, res) => {
     try {
       const { imageData, query } = req.body;
       

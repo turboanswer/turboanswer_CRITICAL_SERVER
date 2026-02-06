@@ -1,7 +1,6 @@
 import { useRef, useEffect, useState, useCallback } from 'react';
-import { Camera, X, Monitor, Volume2, VolumeX, Eye, Loader2, MonitorPlay, Crosshair, Square } from 'lucide-react';
+import { Camera, X, Monitor, Volume2, VolumeX, Eye, Loader2, MonitorPlay, Crosshair } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 
 interface CameraCaptureProps {
@@ -36,6 +35,7 @@ export default function CameraCapture({
   const streamRef = useRef<MediaStream | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const analyzingRef = useRef(false);
   
   const [isActive, setIsActive] = useState(false);
   const [sourceMode, setSourceMode] = useState<SourceMode>('camera');
@@ -87,6 +87,8 @@ export default function CameraCapture({
     setVideoReady(false);
     setSelection(null);
     setSelectMode(false);
+    analyzingRef.current = false;
+    setIsAnalyzing(false);
   };
 
   const handleVideoReady = () => {
@@ -181,17 +183,19 @@ export default function CameraCapture({
   };
 
   const analyzeFrame = useCallback(async (extraPrompt?: string, cropRect?: SelectionRect) => {
-    if (!videoRef.current || !canvasRef.current || isAnalyzing) return;
+    if (!videoRef.current || !canvasRef.current) return;
+    if (analyzingRef.current) return;
     
     const vw = videoRef.current.videoWidth;
     const vh = videoRef.current.videoHeight;
     if (vw === 0 || vh === 0) return;
 
+    analyzingRef.current = true;
     setIsAnalyzing(true);
     try {
       const canvas = canvasRef.current;
       const ctx = canvas.getContext('2d');
-      if (!ctx) return;
+      if (!ctx) { analyzingRef.current = false; setIsAnalyzing(false); return; }
 
       if (cropRect) {
         const videoEl = videoRef.current;
@@ -205,6 +209,7 @@ export default function CameraCapture({
         const sh = Math.abs(cropRect.endY - cropRect.startY) * scaleY;
         
         if (sw < 10 || sh < 10) {
+          analyzingRef.current = false;
           setIsAnalyzing(false);
           return;
         }
@@ -230,11 +235,27 @@ export default function CameraCapture({
         query = "Focus on the content highlighted or marked in BLUE. Read and analyze that specific content. Give the answer directly in 1-2 short sentences.";
       }
 
-      const response = await apiRequest("POST", "/api/analyze-image", {
-        imageData,
-        query,
-        simple: true
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 30000);
+
+      const response = await fetch("/api/analyze-image", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ imageData, query, simple: true }),
+        signal: controller.signal
       });
+      clearTimeout(timeout);
+
+      if (!response.ok) {
+        const errText = await response.text();
+        console.error('Analysis API error:', response.status, errText);
+        if (response.status === 401) {
+          setLastAnalysis("Please log in to use AI analysis.");
+        }
+        return;
+      }
+
       const result = await response.json();
       const analysis = result.description || result.analysis || '';
       
@@ -245,20 +266,27 @@ export default function CameraCapture({
           speakText(analysis);
         }
       }
-    } catch (err) {
-      console.error('Analysis error:', err);
+    } catch (err: any) {
+      if (err.name === 'AbortError') {
+        console.error('Analysis timed out');
+        setLastAnalysis("Analysis timed out. Try again.");
+      } else {
+        console.error('Analysis error:', err);
+        setLastAnalysis("Analysis failed. Try again.");
+      }
     } finally {
+      analyzingRef.current = false;
       setIsAnalyzing(false);
     }
-  }, [isAnalyzing, detectBlueHighlight, autoVoice, speakText, onAnalyze]);
+  }, [detectBlueHighlight, autoVoice, speakText, onAnalyze]);
 
   const startContinuousAnalysis = () => {
     if (intervalRef.current) return;
     intervalRef.current = setInterval(() => {
-      if (isActive && !isAnalyzing && videoReady) {
+      if (!analyzingRef.current) {
         analyzeFrame();
       }
-    }, 2500);
+    }, 3000);
   };
 
   const stopContinuousAnalysis = () => {
@@ -316,10 +344,7 @@ export default function CameraCapture({
     if (w > 20 && h > 20) {
       analyzeFrame(undefined, selection);
     }
-    setTimeout(() => {
-      setSelection(null);
-      clearOverlay();
-    }, 500);
+    clearOverlay();
   };
 
   const drawSelectionOverlay = (curX: number, curY: number) => {
@@ -431,7 +456,7 @@ export default function CameraCapture({
               />
             )}
 
-            {sourceMode === 'screen' && (
+            {sourceMode === 'screen' && !selectMode && (
               <div className="absolute top-3 left-3 bg-blue-600/90 text-white px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1.5 z-20 pointer-events-none">
                 <Monitor className="w-3 h-3" /> Screen Share
               </div>
@@ -443,7 +468,7 @@ export default function CameraCapture({
               </div>
             )}
 
-            {blueDetected && (
+            {blueDetected && !selectMode && (
               <div className="absolute top-3 right-3 bg-blue-500/90 text-white px-3 py-1 rounded-full text-xs font-bold z-20 pointer-events-none">
                 BLUE DETECTED
               </div>
@@ -455,7 +480,7 @@ export default function CameraCapture({
               </div>
             )}
 
-            {continuousMode && (
+            {continuousMode && !selectMode && (
               <div className="absolute top-3 left-1/2 -translate-x-1/2 bg-red-600/90 text-white px-3 py-1 rounded-full text-xs font-bold z-20 pointer-events-none">
                 LIVE
               </div>
@@ -482,7 +507,7 @@ export default function CameraCapture({
               <Eye className="w-4 h-4 mr-1" /> Analyze Now
             </Button>
 
-            <Button onClick={() => { setSelectMode(!selectMode); if (selectMode) { setSelection(null); clearOverlay(); } }} size="sm"
+            <Button onClick={() => { setSelectMode(!selectMode); setSelection(null); clearOverlay(); }} size="sm"
               className={selectMode ? "bg-blue-600 hover:bg-blue-700 ring-2 ring-blue-400" : "bg-zinc-700 hover:bg-zinc-600"}>
               <Crosshair className="w-4 h-4 mr-1" /> {selectMode ? "Selecting" : "Select"}
             </Button>
