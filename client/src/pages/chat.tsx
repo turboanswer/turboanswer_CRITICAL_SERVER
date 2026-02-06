@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Send, Bot, User, FileText, X, Brain, Settings, LogOut, Zap, Menu, QrCode, ImageIcon } from "lucide-react";
-import { QRCodeSVG } from "qrcode.react";
+import { QRCodeCanvas } from "qrcode.react";
 import { Link } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { LoadingScreen } from "@/components/LoadingScreen";
@@ -309,17 +309,17 @@ export default function Chat() {
           </div>
           <div className="flex flex-col items-center gap-3">
             <p className="text-xs sm:text-sm text-gray-400 text-center">Scan this QR code with your phone camera to open Turbo Answer</p>
-            <div className="bg-white p-3 sm:p-4 rounded-xl">
-              <QRCodeSVG
-                value={window.location.origin}
-                size={160}
+            <div className="bg-white p-4 sm:p-5 rounded-xl">
+              <QRCodeCanvas
+                value={window.location.href.split('?')[0]}
+                size={200}
                 bgColor="#ffffff"
                 fgColor="#000000"
                 level="H"
-                includeMargin={false}
+                marginSize={2}
               />
             </div>
-            <p className="text-[10px] sm:text-xs text-gray-500 break-all max-w-xs text-center">{window.location.origin}</p>
+            <p className="text-[10px] sm:text-xs text-gray-500 break-all max-w-xs text-center">{window.location.href.split('?')[0]}</p>
           </div>
         </div>
       )}
