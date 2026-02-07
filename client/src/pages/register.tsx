@@ -5,23 +5,25 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-// Logo integrated directly in component
-import { apiRequest } from "@/lib/queryClient";
+import { useQueryClient } from "@tanstack/react-query";
+import TurboLogo from "@/components/TurboLogo";
 
 export default function Register() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
-    username: "",
     email: "",
+    firstName: "",
+    lastName: "",
     password: "",
-    confirmPassword: ""
+    confirmPassword: "",
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (formData.password !== formData.confirmPassword) {
       toast({
         title: "Error",
@@ -33,7 +35,7 @@ export default function Register() {
 
     if (formData.password.length < 6) {
       toast({
-        title: "Error", 
+        title: "Error",
         description: "Password must be at least 6 characters",
         variant: "destructive",
       });
@@ -41,33 +43,40 @@ export default function Register() {
     }
 
     setIsLoading(true);
-    
+
     try {
-      const response = await apiRequest("POST", "/api/register", {
-        username: formData.username,
-        email: formData.email || undefined,
-        password: formData.password
+      const response = await fetch("/api/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          email: formData.email,
+          password: formData.password,
+          firstName: formData.firstName || undefined,
+          lastName: formData.lastName || undefined,
+        }),
       });
 
+      const data = await response.json();
+
       if (response.ok) {
-        const data = await response.json();
+        await queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
         toast({
-          title: "Success",
-          description: "Account created successfully! Please log in.",
+          title: "Account created!",
+          description: "Welcome to Turbo Answer!",
         });
-        setLocation("/login");
+        setLocation("/");
       } else {
-        const error = await response.json();
         toast({
           title: "Error",
-          description: error.error || "Failed to create account",
+          description: data.message || "Failed to create account",
           variant: "destructive",
         });
       }
     } catch (error: any) {
       toast({
         title: "Error",
-        description: error.message || "Failed to create account",
+        description: "Registration failed. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -80,53 +89,61 @@ export default function Register() {
       <Card className="w-full max-w-md bg-gray-900 border-gray-800">
         <CardHeader className="text-center">
           <div className="flex justify-center mb-4">
-            <div className="relative">
-              <img 
-                src="/src/assets/file_00000000d40c61f9a186294bbf2c842a_1752206962243.png" 
-                alt="TURBOANSWER AI Robot" 
-                className="w-12 h-12 object-contain hover:scale-110 transition-all duration-300"
-              />
-              <div className="absolute -top-1 -right-1 w-3 h-3 bg-cyan-400 rounded-full animate-ping"></div>
-            </div>
+            <TurboLogo size={48} animated={true} />
           </div>
-          <CardTitle className="text-2xl font-bold bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">Join TURBOANSWER</CardTitle>
+          <CardTitle className="text-2xl font-bold bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">
+            Join TURBOANSWER
+          </CardTitle>
           <CardDescription className="text-cyan-400 font-medium">
             NEVER STOP INNOVATING
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="username" className="text-white">Username</Label>
-              <Input
-                id="username"
-                type="text"
-                placeholder="Enter your username"
-                value={formData.username}
-                onChange={(e) => setFormData(prev => ({ ...prev, username: e.target.value }))}
-                required
-                className="bg-gray-800 border-gray-700 text-white placeholder-gray-400"
-              />
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label htmlFor="firstName" className="text-white">First Name</Label>
+                <Input
+                  id="firstName"
+                  type="text"
+                  placeholder="First name"
+                  value={formData.firstName}
+                  onChange={(e) => setFormData(prev => ({ ...prev, firstName: e.target.value }))}
+                  className="bg-gray-800 border-gray-700 text-white placeholder-gray-400"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="lastName" className="text-white">Last Name</Label>
+                <Input
+                  id="lastName"
+                  type="text"
+                  placeholder="Last name"
+                  value={formData.lastName}
+                  onChange={(e) => setFormData(prev => ({ ...prev, lastName: e.target.value }))}
+                  className="bg-gray-800 border-gray-700 text-white placeholder-gray-400"
+                />
+              </div>
             </div>
-            
+
             <div className="space-y-2">
-              <Label htmlFor="email" className="text-white">Email (Optional)</Label>
+              <Label htmlFor="email" className="text-white">Email</Label>
               <Input
                 id="email"
                 type="email"
                 placeholder="Enter your email"
                 value={formData.email}
                 onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                required
                 className="bg-gray-800 border-gray-700 text-white placeholder-gray-400"
               />
             </div>
-            
+
             <div className="space-y-2">
               <Label htmlFor="password" className="text-white">Password</Label>
               <Input
                 id="password"
                 type="password"
-                placeholder="Enter your password"
+                placeholder="At least 6 characters"
                 value={formData.password}
                 onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
                 required
@@ -134,7 +151,7 @@ export default function Register() {
                 className="bg-gray-800 border-gray-700 text-white placeholder-gray-400"
               />
             </div>
-            
+
             <div className="space-y-2">
               <Label htmlFor="confirmPassword" className="text-white">Confirm Password</Label>
               <Input
@@ -148,7 +165,7 @@ export default function Register() {
                 className="bg-gray-800 border-gray-700 text-white placeholder-gray-400"
               />
             </div>
-            
+
             <Button
               type="submit"
               disabled={isLoading}
@@ -157,7 +174,7 @@ export default function Register() {
               {isLoading ? "Creating Account..." : "Create Account"}
             </Button>
           </form>
-          
+
           <div className="mt-6 text-center">
             <p className="text-gray-400">
               Already have an account?{" "}

@@ -68,7 +68,7 @@ export default function LandingPage() {
             <button onClick={toggleTheme} className={`p-2 rounded-lg ${isDark ? 'hover:bg-zinc-800 text-gray-400' : 'hover:bg-gray-100 text-gray-500'}`}>
               {isDark ? <span className="text-lg">&#9728;</span> : <span className="text-lg">&#9790;</span>}
             </button>
-            <a href="/api/login">
+            <a href="/login">
               <Button size="sm" className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 font-semibold px-5">
                 Login / Sign Up
               </Button>
@@ -105,7 +105,7 @@ export default function LandingPage() {
                 Mobile
               </Button>
             </a>
-            <a href="/api/login" className="block">
+            <a href="/login" className="block">
               <Button className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 font-semibold">
                 Login / Sign Up
               </Button>
@@ -143,7 +143,7 @@ export default function LandingPage() {
           </p>
 
           <div className="flex flex-col sm:flex-row gap-3 justify-center mb-8">
-            <a href="/api/login">
+            <a href="/login">
               <Button size="lg" className="w-full sm:w-auto bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-lg px-10 py-6 font-semibold shadow-lg shadow-blue-500/25">
                 Login / Sign Up Free
                 <ArrowRight className="h-5 w-5 ml-2" />
@@ -249,7 +249,7 @@ export default function LandingPage() {
                   </li>
                 ))}
               </ul>
-              <a href="/api/login">
+              <a href="/login">
                 <Button variant="outline" className={`w-full ${isDark ? 'border-gray-700 hover:bg-gray-800' : 'border-gray-300 hover:bg-gray-100'}`}>
                   Get Started Free
                 </Button>
@@ -278,7 +278,7 @@ export default function LandingPage() {
                   </li>
                 ))}
               </ul>
-              <a href="/api/login">
+              <a href="/login">
                 <Button className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 font-semibold">
                   Upgrade to Pro
                 </Button>
@@ -304,7 +304,7 @@ export default function LandingPage() {
                   </li>
                 ))}
               </ul>
-              <a href="/api/login">
+              <a href="/login">
                 <Button className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 font-semibold">
                   Upgrade to Research
                 </Button>
@@ -393,7 +393,7 @@ export default function LandingPage() {
             <p className={`text-lg mb-8 max-w-xl mx-auto ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
               Join thousands using TurboAnswer to work smarter, learn faster, and create more. It's completely free to start.
             </p>
-            <a href="/api/login">
+            <a href="/login">
               <Button size="lg" className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-lg px-10 py-6 font-semibold shadow-lg shadow-blue-500/25">
                 Login / Sign Up Free
                 <ArrowRight className="h-5 w-5 ml-2" />

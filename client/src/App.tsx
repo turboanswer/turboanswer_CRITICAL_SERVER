@@ -23,6 +23,8 @@ import Simple from "@/pages/simple";
 import WhereToAdd from "@/pages/where-to-add";
 import WidgetDemo from "@/pages/widget-demo";
 import LandingPage from "@/pages/landing";
+import Login from "@/pages/login";
+import Register from "@/pages/register";
 
 function AuthenticatedRouter() {
   return (
@@ -51,6 +53,8 @@ function UnauthenticatedRouter() {
   return (
     <Switch>
       <Route path="/" component={LandingPage} />
+      <Route path="/login" component={Login} />
+      <Route path="/register" component={Register} />
       <Route path="/pricing" component={Pricing} />
       <Route path="/support" component={Support} />
       <Route path="/privacy-policy" component={PrivacyPolicy} />

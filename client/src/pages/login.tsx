@@ -5,50 +5,66 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-// Logo integrated directly in component
-import { apiRequest } from "@/lib/queryClient";
+import { useQueryClient } from "@tanstack/react-query";
+import TurboLogo from "@/components/TurboLogo";
 
 export default function Login() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [isLoading, setIsLoading] = useState(false);
+  const [requires2FA, setRequires2FA] = useState(false);
   const [formData, setFormData] = useState({
-    username: "",
-    password: ""
+    email: "",
+    password: "",
+    totpCode: "",
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    
+
     try {
-      const response = await apiRequest("POST", "/api/login", {
-        username: formData.username,
-        password: formData.password
+      const response = await fetch("/api/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          email: formData.email,
+          password: formData.password,
+          ...(requires2FA ? { totpCode: formData.totpCode } : {}),
+        }),
       });
 
-      if (response.ok) {
-        const data = await response.json();
+      const data = await response.json();
+
+      if (response.ok && data.requires2FA) {
+        setRequires2FA(true);
         toast({
-          title: "Success",
-          description: "Welcome back to Turbo Answer!",
+          title: "2FA Required",
+          description: "Please enter your authenticator code.",
         });
-        
-        // Store user data in localStorage for simple auth
-        localStorage.setItem('turbo_user', JSON.stringify(data.user));
+        return;
+      }
+
+      if (response.ok) {
+        await queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+        toast({
+          title: "Welcome back!",
+          description: "You're now signed in to Turbo Answer.",
+        });
         setLocation("/");
       } else {
-        const error = await response.json();
         toast({
           title: "Error",
-          description: error.error || "Invalid credentials",
+          description: data.message || "Invalid credentials",
           variant: "destructive",
         });
       }
     } catch (error: any) {
       toast({
         title: "Error",
-        description: error.message || "Login failed",
+        description: "Login failed. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -61,16 +77,11 @@ export default function Login() {
       <Card className="w-full max-w-md bg-gray-900 border-gray-800">
         <CardHeader className="text-center">
           <div className="flex justify-center mb-4">
-            <div className="relative">
-              <img 
-                src="/src/assets/file_00000000d40c61f9a186294bbf2c842a_1752206962243.png" 
-                alt="TURBOANSWER AI Robot" 
-                className="w-12 h-12 object-contain hover:scale-110 transition-all duration-300"
-              />
-              <div className="absolute -top-1 -right-1 w-3 h-3 bg-cyan-400 rounded-full animate-ping"></div>
-            </div>
+            <TurboLogo size={48} animated={true} />
           </div>
-          <CardTitle className="text-2xl font-bold bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">Welcome Back to TURBOANSWER</CardTitle>
+          <CardTitle className="text-2xl font-bold bg-gradient-to-r from-cyan-400 to-blue-400 bg-clip-text text-transparent">
+            Welcome Back to TURBOANSWER
+          </CardTitle>
           <CardDescription className="text-cyan-400 font-medium">
             NEVER STOP INNOVATING
           </CardDescription>
@@ -78,18 +89,19 @@ export default function Login() {
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="username" className="text-white">Username or Email</Label>
+              <Label htmlFor="email" className="text-white">Email</Label>
               <Input
-                id="username"
-                type="text"
-                placeholder="Enter your username or email"
-                value={formData.username}
-                onChange={(e) => setFormData(prev => ({ ...prev, username: e.target.value }))}
+                id="email"
+                type="email"
+                placeholder="Enter your email"
+                value={formData.email}
+                onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
                 required
+                disabled={requires2FA}
                 className="bg-gray-800 border-gray-700 text-white placeholder-gray-400"
               />
             </div>
-            
+
             <div className="space-y-2">
               <Label htmlFor="password" className="text-white">Password</Label>
               <Input
@@ -99,19 +111,54 @@ export default function Login() {
                 value={formData.password}
                 onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
                 required
+                disabled={requires2FA}
                 className="bg-gray-800 border-gray-700 text-white placeholder-gray-400"
               />
             </div>
-            
+
+            {requires2FA && (
+              <div className="space-y-2">
+                <Label htmlFor="totpCode" className="text-white">Authenticator Code</Label>
+                <Input
+                  id="totpCode"
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  maxLength={6}
+                  placeholder="Enter 6-digit code"
+                  value={formData.totpCode}
+                  onChange={(e) => setFormData(prev => ({ ...prev, totpCode: e.target.value.replace(/\D/g, "") }))}
+                  required
+                  autoFocus
+                  className="bg-gray-800 border-gray-700 text-white placeholder-gray-400 text-center text-lg tracking-widest"
+                />
+                <p className="text-xs text-gray-400">Open your authenticator app to get the code</p>
+              </div>
+            )}
+
             <Button
               type="submit"
               disabled={isLoading}
               className="w-full bg-purple-600 hover:bg-purple-700 text-white"
             >
-              {isLoading ? "Signing In..." : "Sign In"}
+              {isLoading ? "Signing In..." : requires2FA ? "Verify & Sign In" : "Sign In"}
             </Button>
+
+            {requires2FA && (
+              <Button
+                type="button"
+                variant="ghost"
+                className="w-full text-gray-400 hover:text-white"
+                onClick={() => {
+                  setRequires2FA(false);
+                  setFormData(prev => ({ ...prev, totpCode: "" }));
+                }}
+              >
+                Back to login
+              </Button>
+            )}
           </form>
-          
+
           <div className="mt-6 text-center">
             <p className="text-gray-400">
               Don't have an account?{" "}
