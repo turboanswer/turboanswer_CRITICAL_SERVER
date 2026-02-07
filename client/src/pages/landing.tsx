@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Zap, Brain, FileText, Globe, Shield, MessageSquare, Menu, X, QrCode, ImageIcon, Camera, Sparkles, ArrowRight, Check, Star, Mic, Languages, Lock, Clock, Palette, Volume2, Search, Code, BookOpen, Lightbulb, HeartPulse, Scale, TrendingUp, Wrench, Crown } from "lucide-react";
+import { Zap, Brain, FileText, Globe, Shield, MessageSquare, Menu, X, QrCode, ImageIcon, Camera, Sparkles, ArrowRight, Check, Star, Languages, Lock, Clock, Palette, Search, Code, BookOpen, Lightbulb, HeartPulse, Scale, TrendingUp, Wrench, Crown } from "lucide-react";
 import { Link } from "wouter";
 import { QRCodeSVG } from "qrcode.react";
 import { useTheme } from "@/hooks/use-theme";
@@ -18,14 +18,12 @@ export default function LandingPage() {
     { icon: <FileText className="h-6 w-6" />, title: "Document Analysis", desc: "Upload any document and get instant summaries, key insights, and detailed answers. Supports TXT, CSV, JSON, and more.", color: "green" },
     { icon: <ImageIcon className="h-6 w-6" />, title: "AI Image Generation", desc: "Create stunning images from text descriptions using DALL-E 3. Generate art, designs, and visuals instantly.", color: "pink" },
     { icon: <Globe className="h-6 w-6" />, title: "100+ Languages", desc: "Chat in any language with automatic detection and native-quality responses. Supports over 100 languages worldwide.", color: "purple" },
-    { icon: <Mic className="h-6 w-6" />, title: "Voice Commands", desc: "Talk to Turbo with voice commands. Speech recognition, text-to-speech, and optional 'Hey Turbo' wake word.", color: "orange" },
     { icon: <Camera className="h-6 w-6" />, title: "Camera Vision", desc: "Point your camera at anything and get instant AI analysis. Identify objects, read text, solve problems visually.", color: "cyan" },
     { icon: <Zap className="h-6 w-6" />, title: "Ultra-Fast Responses", desc: "Get answers in under a second with our optimized AI pipeline. No waiting, no lag, just instant intelligence.", color: "yellow" },
     { icon: <Search className="h-6 w-6" />, title: "Deep Research Mode", desc: "Research tier gives you Gemini 2.5 Pro for comprehensive, in-depth analysis with extended responses.", color: "indigo" },
     { icon: <Palette className="h-6 w-6" />, title: "Dark & Light Themes", desc: "Switch between dark and light themes instantly. Your preference is saved and remembered across sessions.", color: "rose" },
     { icon: <Shield className="h-6 w-6" />, title: "Privacy & Security", desc: "Your conversations stay private. Secure authentication, encrypted data, and no data selling. Ever.", color: "emerald" },
     { icon: <QrCode className="h-6 w-6" />, title: "Mobile Ready", desc: "Works perfectly on any device. Scan a QR code to instantly open TurboAnswer on your phone or tablet.", color: "violet" },
-    { icon: <Code className="h-6 w-6" />, title: "Embeddable Widget", desc: "Add TurboAnswer AI to any website with a simple JavaScript widget. Perfect for businesses and developers.", color: "amber" },
   ];
 
   const knowledgeDomains = [
@@ -140,8 +138,8 @@ export default function LandingPage() {
           </h1>
 
           <p className={`text-lg sm:text-xl max-w-2xl mx-auto mb-8 leading-relaxed ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-            Chat naturally. Analyze documents. Generate images. Voice commands. 
-            100+ languages. All in one powerful AI assistant that works on any device.
+            Chat naturally. Analyze documents. Generate images. 100+ languages. 
+            All in one powerful AI assistant that works on any device.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-3 justify-center mb-8">
@@ -244,7 +242,7 @@ export default function LandingPage() {
               </div>
               <div className={`text-sm mb-4 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Gemini 2.5 Flash</div>
               <ul className="space-y-2.5 mb-6">
-                {["AI chat conversations", "Document analysis", "100+ languages", "Voice commands", "Dark & light themes", "Mobile access"].map((item, i) => (
+                {["AI chat conversations", "Document analysis", "100+ languages", "Dark & light themes", "Mobile access"].map((item, i) => (
                   <li key={i} className={`flex items-center gap-2 text-sm ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
                     <Check className="h-4 w-4 text-green-400 flex-shrink-0" />
                     {item}

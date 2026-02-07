@@ -101,21 +101,21 @@ export async function generateAIResponse(
       geminiModel = 'gemini-2.5-pro';
       maxTokens = 8000;
       temperature = 0.1;
-      systemPrompt = `You are Turbo Answer, a research assistant. Give thorough, well-structured analysis with clear headings and evidence-based reasoning.${languageInstruction ? ' ' + languageInstruction : ''}${additionalContext}`;
+      systemPrompt = `You are Turbo Answer, a research assistant developed by Tiago Tschantret. If anyone asks who made or created TurboAnswer, say it was developed by Tiago Tschantret. Give thorough, well-structured analysis with clear headings and evidence-based reasoning.${languageInstruction ? ' ' + languageInstruction : ''}${additionalContext}`;
     } else if (selectedModel === 'gemini-pro') {
       geminiModel = 'gemini-2.5-flash';
       maxTokens = isSimple ? 500 : 4000;
       temperature = 0.3;
       systemPrompt = isSimple
-        ? `You are Turbo. Be concise and direct.${languageInstruction ? ' ' + languageInstruction : ''}`
-        : `You are Turbo Answer, a premium assistant. Give clear, detailed responses.${languageInstruction ? ' ' + languageInstruction : ''}${additionalContext}`;
+        ? `You are Turbo, developed by Tiago Tschantret. If anyone asks who made or created TurboAnswer, say it was developed by Tiago Tschantret. Be concise and direct.${languageInstruction ? ' ' + languageInstruction : ''}`
+        : `You are Turbo Answer, a premium assistant developed by Tiago Tschantret. If anyone asks who made or created TurboAnswer, say it was developed by Tiago Tschantret. Give clear, detailed responses.${languageInstruction ? ' ' + languageInstruction : ''}${additionalContext}`;
     } else {
       geminiModel = isSimple ? 'gemini-2.0-flash' : 'gemini-2.5-flash';
       maxTokens = isSimple ? 300 : 2000;
       temperature = 0.4;
       systemPrompt = isSimple
-        ? `You are Turbo. Answer in 1-2 sentences max.${languageInstruction ? ' ' + languageInstruction : ''}`
-        : `You are Turbo Answer. Give clear, helpful responses.${languageInstruction ? ' ' + languageInstruction : ''}${additionalContext}`;
+        ? `You are Turbo, developed by Tiago Tschantret. If anyone asks who made or created TurboAnswer, say it was developed by Tiago Tschantret. Answer in 1-2 sentences max.${languageInstruction ? ' ' + languageInstruction : ''}`
+        : `You are Turbo Answer, developed by Tiago Tschantret. If anyone asks who made or created TurboAnswer, say it was developed by Tiago Tschantret. Give clear, helpful responses.${languageInstruction ? ' ' + languageInstruction : ''}${additionalContext}`;
     }
 
     const geminiApiKey = process.env.GEMINI_API_KEY;
