@@ -59,19 +59,23 @@ export function moderateContent(content: string): ModerationResult {
     }
   }
 
+  const inappropriateMatches: string[] = [];
   for (const pattern of INAPPROPRIATE_PATTERNS) {
     const match = lowerContent.match(pattern);
-    if (match && !profanityMatches.includes(match[0])) {
-      profanityMatches.push(match[0]);
+    if (match) {
+      inappropriateMatches.push(match[0]);
     }
   }
 
-  if (profanityMatches.length > 0) {
-    const severity = profanityMatches.length >= 3 ? "high" : profanityMatches.length >= 2 ? "medium" : "low";
+  if (profanityMatches.length > 0 || inappropriateMatches.length > 0) {
+    const allMatches = Array.from(new Set([...profanityMatches, ...inappropriateMatches]));
+    const hasDirectProfanity = profanityMatches.length > 0;
+    const totalCount = allMatches.length;
+    const severity = totalCount >= 3 ? "high" : totalCount >= 2 ? "medium" : "low";
     return {
       isFlagged: true,
-      type: "profanity",
-      matchedWords: profanityMatches,
+      type: hasDirectProfanity ? "profanity" : "inappropriate",
+      matchedWords: allMatches,
       severity,
     };
   }

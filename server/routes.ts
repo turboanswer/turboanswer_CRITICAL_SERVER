@@ -176,6 +176,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Message content is required" });
       }
 
+      const sendingUserId = req.user?.claims?.sub;
+      if (sendingUserId) {
+        const sender = await storage.getUser(sendingUserId);
+        if (sender?.isSuspended) {
+          return res.status(403).json({ message: "Your account is temporarily suspended. Please contact support for assistance." });
+        }
+        if (sender?.isBanned) {
+          return res.status(403).json({ message: "Your account has been banned. Please contact support for assistance." });
+        }
+      }
+
       const conversation = await storage.getConversation(conversationId);
       if (!conversation) {
         return res.status(404).json({ message: "Conversation not found" });
@@ -186,10 +197,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const userId = req.user?.claims?.sub;
         if (userId) {
           const offender = await storage.getUser(userId);
+          const actions: string[] = [];
+
           try {
             await storage.suspendUser(userId, `Auto-suspended: ${modResult.type} detected - "${modResult.matchedWords.join(', ')}"`, "system", "AutoModerator");
+            actions.push("Account temporarily suspended");
+          } catch (e: any) {
+            console.error("Auto-suspend failed:", e.message);
+            actions.push("Suspend attempted but failed");
+          }
+
+          try {
             await storage.flagUser(userId, `Inappropriate content: ${modResult.type}`);
-          } catch (e) {}
+            actions.push("Account flagged");
+          } catch (e: any) {
+            console.error("Auto-flag failed:", e.message);
+            actions.push("Flag attempted but failed");
+          }
 
           await storage.createAdminNotification({
             type: modResult.type,
@@ -199,7 +223,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             userLastName: offender?.lastName || "User",
             flaggedContent: content,
             conversationId,
-            actionTaken: `Account temporarily suspended and flagged. Severity: ${modResult.severity}. Matched: ${modResult.matchedWords.join(', ')}`,
+            actionTaken: `${actions.join(". ")}. Severity: ${modResult.severity}. Matched: ${modResult.matchedWords.join(', ')}`,
           });
         }
 

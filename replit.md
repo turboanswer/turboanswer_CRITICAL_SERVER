@@ -49,6 +49,7 @@ Subscription preference: Lifetime free premium access through promo code system 
 - **Comprehensive Knowledge Coverage**: Expert-level knowledge in technical, scientific, creative, business, and general domains, including real-time weather and world time zone intelligence.
 - **Subscription Management**: PayPal Subscriptions API integration for Pro ($6.99/month) and Research ($15/month) plans. Payment popups trigger from model selector. Uses PayPal REST API with auto-created billing plans.
 - **Employee Management API**: Endpoints for user management (ban, flag, suspend) and audit logging.
+- **Content Moderation System**: Automatic profanity/threat detection on user messages. Flagged users are auto-suspended with admin notifications sent to the admin panel showing full user details, flagged content, and action taken.
 - **AI Image & Video Generation**: Integration with OpenAI DALL-E 3 and a framework for video generation with multi-provider architecture.
 - **Embeddable AI Widget System**: A universal JavaScript widget (`turbo-answer-widget.js`) for seamless integration into any website.
 
