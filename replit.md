@@ -26,7 +26,7 @@ Subscription preference: Lifetime free premium access through promo code system 
 - **State Management**: TanStack React Query
 - **Routing**: Wouter
 - **Form Handling**: React Hook Form with Zod validation
-- **Authentication**: Replit Auth (OpenID Connect) with session management
+- **Authentication**: Custom email/password auth with bcrypt hashing and PostgreSQL session storage. Admin auto-detection for support@turboanswer.it.com
 - **UI/UX Decisions**: Dark/light theme with TurboAnswer branding, mobile-first optimization, floating bubble backgrounds, chat bubble message design, theme toggle in header.
 
 ### Backend Architecture

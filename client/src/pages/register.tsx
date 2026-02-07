@@ -102,24 +102,26 @@ export default function Register() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
-                <Label htmlFor="firstName" className="text-white">First Name</Label>
+                <Label htmlFor="firstName" className="text-white">First Name *</Label>
                 <Input
                   id="firstName"
                   type="text"
                   placeholder="First name"
                   value={formData.firstName}
                   onChange={(e) => setFormData(prev => ({ ...prev, firstName: e.target.value }))}
+                  required
                   className="bg-gray-800 border-gray-700 text-white placeholder-gray-400"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="lastName" className="text-white">Last Name</Label>
+                <Label htmlFor="lastName" className="text-white">Last Name *</Label>
                 <Input
                   id="lastName"
                   type="text"
                   placeholder="Last name"
                   value={formData.lastName}
                   onChange={(e) => setFormData(prev => ({ ...prev, lastName: e.target.value }))}
+                  required
                   className="bg-gray-800 border-gray-700 text-white placeholder-gray-400"
                 />
               </div>

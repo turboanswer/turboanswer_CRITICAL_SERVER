@@ -12,7 +12,7 @@ import {
   getAnalysisOptions,
   SUPPORTED_FILE_TYPES 
 } from "./services/document-analysis";
-import { setupAuth, registerAuthRoutes, isAuthenticated } from "./replit_integrations/auth";
+import { setupAuth, registerAuthRoutes, isAuthenticated, isAdmin } from "./replit_integrations/auth";
 import { registerImageRoutes } from "./replit_integrations/image";
 import { createSubscription, getSubscriptionDetails, getPayPalClientId, ensureSubscriptionPlans } from "./paypal";
 
@@ -380,7 +380,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get all users (Employee only)
-  app.get('/api/employee/users', isAuthenticated, async (req, res) => {
+  app.get('/api/employee/users', isAdmin, async (req, res) => {
     try {
       const allUsers = await storage.getAllUsers();
       
@@ -395,8 +395,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         isFlagged: user.isFlagged,
         flagReason: user.flagReason,
         banReason: user.banReason,
+        isSuspended: user.isSuspended,
+        suspensionReason: user.suspensionReason,
+        suspendedBy: user.suspendedBy,
+        suspendedAt: user.suspendedAt,
         createdAt: user.createdAt,
-        lastLoginAt: user.lastLoginAt
+        lastLoginAt: user.lastLoginAt,
       }));
       
       res.json(sanitizedUsers);
@@ -407,7 +411,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Ban user (Employee only)
-  app.post('/api/employee/users/:id/ban', isAuthenticated, async (req, res) => {
+  app.post('/api/employee/users/:id/ban', isAdmin, async (req, res) => {
     try {
       const userId = req.params.id;
       const { reason } = req.body;
@@ -425,7 +429,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Unban user (Employee only)
-  app.post('/api/employee/users/:id/unban', isAuthenticated, async (req, res) => {
+  app.post('/api/employee/users/:id/unban', isAdmin, async (req, res) => {
     try {
       const userId = req.params.id;
       const user = await storage.unbanUser(userId);
@@ -437,7 +441,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Flag user (Employee only)
-  app.post('/api/employee/users/:id/flag', isAuthenticated, async (req, res) => {
+  app.post('/api/employee/users/:id/flag', isAdmin, async (req, res) => {
     try {
       const userId = req.params.id;
       const { reason } = req.body;
@@ -455,7 +459,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Unflag user (Employee only)
-  app.post('/api/employee/users/:id/unflag', isAuthenticated, async (req, res) => {
+  app.post('/api/employee/users/:id/unflag', isAdmin, async (req, res) => {
     try {
       const userId = req.params.id;
       const user = await storage.unflagUser(userId);
@@ -467,7 +471,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Suspend user (Employee only)
-  app.post('/api/employee/users/:id/suspend', isAuthenticated, async (req, res) => {
+  app.post('/api/employee/users/:id/suspend', isAdmin, async (req, res) => {
     try {
       const userId = req.params.id;
       const { reason, employeeId, employeeUsername } = req.body;
@@ -498,7 +502,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Unsuspend user (Employee only)
-  app.post('/api/employee/users/:id/unsuspend', isAuthenticated, async (req, res) => {
+  app.post('/api/employee/users/:id/unsuspend', isAdmin, async (req, res) => {
     try {
       const userId = req.params.id;
       const { employeeId, employeeUsername } = req.body;
@@ -523,7 +527,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get audit logs (Employee only)
-  app.get('/api/employee/audit-logs', isAuthenticated, async (req, res) => {
+  app.get('/api/employee/audit-logs', isAdmin, async (req, res) => {
     try {
       const limit = parseInt(req.query.limit as string) || 100;
       const auditLogs = await storage.getAuditLogs(limit);
@@ -535,7 +539,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get audit logs for specific user (Employee only)
-  app.get('/api/employee/users/:id/audit-logs', isAuthenticated, async (req, res) => {
+  app.get('/api/employee/users/:id/audit-logs', isAdmin, async (req, res) => {
     try {
       const userId = req.params.id;
       const auditLogs = await storage.getAuditLogsByUser(userId);
@@ -547,7 +551,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get audit logs for specific employee (Employee only)
-  app.get('/api/employee/employees/:id/audit-logs', isAuthenticated, async (req, res) => {
+  app.get('/api/employee/employees/:id/audit-logs', isAdmin, async (req, res) => {
     try {
       const employeeId = req.params.id;
       const auditLogs = await storage.getAuditLogsByEmployee(employeeId);
@@ -559,7 +563,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Enhanced super admin endpoints for chat history tracking
-  app.get('/api/super-admin/all-conversations', isAuthenticated, async (req, res) => {
+  app.get('/api/super-admin/all-conversations', isAdmin, async (req, res) => {
     try {
       const userId = (req as any).user.claims.sub;
       const user = await storage.getUser(userId);
@@ -578,7 +582,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/super-admin/search-conversations', isAuthenticated, async (req, res) => {
+  app.get('/api/super-admin/search-conversations', isAdmin, async (req, res) => {
     try {
       const authUserId = (req as any).user.claims.sub;
       const user = await storage.getUser(authUserId);
@@ -603,7 +607,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/super-admin/user/:id/conversations', isAuthenticated, async (req, res) => {
+  app.get('/api/super-admin/user/:id/conversations', isAdmin, async (req, res) => {
     try {
       const authUserId = (req as any).user.claims.sub;
       const adminUser = await storage.getUser(authUserId);

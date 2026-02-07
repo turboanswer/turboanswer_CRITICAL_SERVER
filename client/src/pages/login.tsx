@@ -13,11 +13,9 @@ export default function Login() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isLoading, setIsLoading] = useState(false);
-  const [requires2FA, setRequires2FA] = useState(false);
   const [formData, setFormData] = useState({
     email: "",
     password: "",
-    totpCode: "",
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -32,20 +30,10 @@ export default function Login() {
         body: JSON.stringify({
           email: formData.email,
           password: formData.password,
-          ...(requires2FA ? { totpCode: formData.totpCode } : {}),
         }),
       });
 
       const data = await response.json();
-
-      if (response.ok && data.requires2FA) {
-        setRequires2FA(true);
-        toast({
-          title: "2FA Required",
-          description: "Please enter your authenticator code.",
-        });
-        return;
-      }
 
       if (response.ok) {
         await queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
@@ -97,7 +85,6 @@ export default function Login() {
                 value={formData.email}
                 onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
                 required
-                disabled={requires2FA}
                 className="bg-gray-800 border-gray-700 text-white placeholder-gray-400"
               />
             </div>
@@ -111,52 +98,17 @@ export default function Login() {
                 value={formData.password}
                 onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
                 required
-                disabled={requires2FA}
                 className="bg-gray-800 border-gray-700 text-white placeholder-gray-400"
               />
             </div>
-
-            {requires2FA && (
-              <div className="space-y-2">
-                <Label htmlFor="totpCode" className="text-white">Authenticator Code</Label>
-                <Input
-                  id="totpCode"
-                  type="text"
-                  inputMode="numeric"
-                  pattern="[0-9]*"
-                  maxLength={6}
-                  placeholder="Enter 6-digit code"
-                  value={formData.totpCode}
-                  onChange={(e) => setFormData(prev => ({ ...prev, totpCode: e.target.value.replace(/\D/g, "") }))}
-                  required
-                  autoFocus
-                  className="bg-gray-800 border-gray-700 text-white placeholder-gray-400 text-center text-lg tracking-widest"
-                />
-                <p className="text-xs text-gray-400">Open your authenticator app to get the code</p>
-              </div>
-            )}
 
             <Button
               type="submit"
               disabled={isLoading}
               className="w-full bg-purple-600 hover:bg-purple-700 text-white"
             >
-              {isLoading ? "Signing In..." : requires2FA ? "Verify & Sign In" : "Sign In"}
+              {isLoading ? "Signing In..." : "Sign In"}
             </Button>
-
-            {requires2FA && (
-              <Button
-                type="button"
-                variant="ghost"
-                className="w-full text-gray-400 hover:text-white"
-                onClick={() => {
-                  setRequires2FA(false);
-                  setFormData(prev => ({ ...prev, totpCode: "" }));
-                }}
-              >
-                Back to login
-              </Button>
-            )}
           </form>
 
           <div className="mt-6 text-center">
