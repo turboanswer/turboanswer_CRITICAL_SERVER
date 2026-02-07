@@ -405,8 +405,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             let bestTier = 'pro';
             const activeSub = subscriptions.data[0];
             bestTier = await getTierFromSub(activeSub);
-            await storage.updateUserStripeInfo(userId, user.stripeCustomerId, activeSub.id);
-            await storage.updateUserSubscription(userId, 'active', bestTier);
+            await storage.updateUserStripeInfo(userId, user.stripeCustomerId, activeSub.id, bestTier);
             return res.json({ tier: bestTier, status: 'active' });
           }
         }

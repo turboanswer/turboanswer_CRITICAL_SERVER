@@ -82,8 +82,7 @@ app.post(
           if (customerId && subscriptionId) {
             const [user] = await db.select().from(users).where(eq(users.stripeCustomerId, customerId));
             if (user) {
-              await storage.updateUserStripeInfo(user.id, customerId, subscriptionId);
-              await storage.updateUserSubscription(user.id, 'active', tier);
+              await storage.updateUserStripeInfo(user.id, customerId, subscriptionId, tier);
               console.log(`[Stripe] Updated user ${user.id} to ${tier} subscription`);
             }
           }

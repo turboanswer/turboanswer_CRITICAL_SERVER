@@ -5,7 +5,7 @@ import { eq } from "drizzle-orm";
 export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
   updateStripeCustomerId(userId: string, stripeCustomerId: string): Promise<User>;
-  updateUserStripeInfo(userId: string, stripeCustomerId: string, stripeSubscriptionId: string): Promise<User>;
+  updateUserStripeInfo(userId: string, stripeCustomerId: string, stripeSubscriptionId: string, tier?: string): Promise<User>;
   updateUserSubscription(userId: string, subscriptionStatus: string, subscriptionTier: string): Promise<User>;
 
   getAllUsers(): Promise<User[]>;
@@ -109,15 +109,18 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
-  async updateUserStripeInfo(userId: string, stripeCustomerId: string, stripeSubscriptionId: string): Promise<User> {
+  async updateUserStripeInfo(userId: string, stripeCustomerId: string, stripeSubscriptionId: string, tier?: string): Promise<User> {
+    const updateData: any = {
+      stripeCustomerId,
+      stripeSubscriptionId,
+      subscriptionStatus: "active",
+    };
+    if (tier) {
+      updateData.subscriptionTier = tier;
+    }
     const [user] = await db
       .update(users)
-      .set({
-        stripeCustomerId,
-        stripeSubscriptionId,
-        subscriptionStatus: "active",
-        subscriptionTier: "pro"
-      })
+      .set(updateData)
       .where(eq(users.id, userId))
       .returning();
     if (!user) throw new Error("User not found");
