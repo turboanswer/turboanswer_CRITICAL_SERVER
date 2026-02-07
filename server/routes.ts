@@ -290,15 +290,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       let product = null;
       try {
-        const searchResult = await stripe.products.search({ query: `name:'${productName}'` });
-        product = searchResult.data[0] || null;
-      } catch (searchErr) {
-        console.log('Product search failed, trying list fallback');
-      }
-
-      if (!product) {
         const allProducts = await stripe.products.list({ limit: 100, active: true });
         product = allProducts.data.find(p => p.name === productName) || null;
+        if (!product) {
+          product = allProducts.data.find(p => p.metadata?.tier === tier) || null;
+        }
+      } catch (listErr) {
+        console.log('Product list failed, trying search');
+        try {
+          const searchResult = await stripe.products.search({ query: `name:'${productName}'` });
+          product = searchResult.data[0] || null;
+        } catch (searchErr) {
+          console.log('Product search also failed');
+        }
       }
 
       if (!product) {
@@ -339,8 +343,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.json({ url: session.url });
     } catch (error: any) {
-      console.error('Checkout error:', error);
-      res.status(500).json({ error: error.message });
+      console.error('Checkout error:', error.message);
+      res.status(500).json({ error: 'Something went wrong creating checkout. Please try again.' });
     }
   });
 

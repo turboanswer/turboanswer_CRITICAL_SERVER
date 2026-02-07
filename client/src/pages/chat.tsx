@@ -496,11 +496,16 @@ export default function Chat() {
               onClick={async () => {
                 setCheckoutLoading(true);
                 try {
-                  const response = await apiRequest("POST", "/api/checkout", { plan: "pro" });
-                  const data = await response.json();
+                  const res = await fetch("/api/checkout", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ plan: "pro" }),
+                    credentials: "include",
+                  });
+                  const data = await res.json();
                   if (data.url) window.location.href = data.url;
                   else toast({ title: "Error", description: data.error || "Could not start checkout", variant: "destructive" });
-                } catch (err: any) { toast({ title: "Error", description: err.message || "Checkout failed", variant: "destructive" }); }
+                } catch (err: any) { toast({ title: "Error", description: "Could not start checkout. Please try again.", variant: "destructive" }); }
                 finally { setCheckoutLoading(false); }
               }}>
               <Star className="w-4 h-4 mr-2" />
@@ -541,11 +546,16 @@ export default function Chat() {
               onClick={async () => {
                 setCheckoutLoading(true);
                 try {
-                  const response = await apiRequest("POST", "/api/checkout", { plan: "research" });
-                  const data = await response.json();
+                  const res = await fetch("/api/checkout", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ plan: "research" }),
+                    credentials: "include",
+                  });
+                  const data = await res.json();
                   if (data.url) window.location.href = data.url;
                   else toast({ title: "Error", description: data.error || "Could not start checkout", variant: "destructive" });
-                } catch (err: any) { toast({ title: "Error", description: err.message || "Checkout failed", variant: "destructive" }); }
+                } catch (err: any) { toast({ title: "Error", description: "Could not start checkout. Please try again.", variant: "destructive" }); }
                 finally { setCheckoutLoading(false); }
               }}>
               <Brain className="w-4 h-4 mr-2" />
