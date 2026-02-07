@@ -24,7 +24,7 @@ export default function PrivacyPolicy() {
             <div className="bg-gray-900 p-4 rounded-lg border border-gray-800 mt-3 space-y-1">
               <p><strong>Company Name:</strong> Turboanswer</p>
               <p><strong>Address:</strong> 33 Broderick Street, Colonie, New York, 12205</p>
-              <p><strong>Phone:</strong> 5186982524</p>
+              <p><strong>Phone:</strong> 5185732922</p>
               <p><strong>E-Mail:</strong> support@turboanswer.it.com</p>
             </div>
           </section>
@@ -336,7 +336,7 @@ export default function PrivacyPolicy() {
               <ul className="space-y-2">
                 <li><strong>Company:</strong> Turboanswer</li>
                 <li><strong>Address:</strong> 33 Broderick Street, Colonie, New York, 12205</li>
-                <li><strong>Phone:</strong> 5186982524</li>
+                <li><strong>Phone:</strong> 5185732922</li>
                 <li><strong>E-Mail:</strong> support@turboanswer.it.com</li>
               </ul>
             </div>
