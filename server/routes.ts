@@ -262,6 +262,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/checkout', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
+      console.log('[Checkout] Starting for user:', userId);
       const user = await storage.getUser(userId);
       if (!user) {
         return res.status(401).json({ error: 'User not found' });
@@ -269,13 +270,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const { plan } = req.body || {};
       const tier = plan === 'research' ? 'research' : 'pro';
-      const productName = tier === 'research' ? 'Turbo Answer Research' : 'Turbo Answer Pro';
-      const productDescription = tier === 'research'
-        ? 'Gemini 2.5 Pro powered deep research and comprehensive analysis'
-        : 'Unlock Gemini 2.5 Pro for advanced AI assistance';
       const priceAmount = tier === 'research' ? 1500 : 699;
+      console.log('[Checkout] Plan:', tier, 'Price:', priceAmount);
 
       const stripe = await getUncachableStripeClient();
+      console.log('[Checkout] Stripe client ready');
 
       let customerId = user.stripeCustomerId;
       if (!customerId) {
@@ -286,29 +285,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
         customerId = customer.id;
         await storage.updateStripeCustomerId(userId, customerId);
+        console.log('[Checkout] Created customer:', customerId);
       }
 
-      let product = null;
-      try {
-        const allProducts = await stripe.products.list({ limit: 100, active: true });
-        product = allProducts.data.find(p => p.name === productName) || null;
-        if (!product) {
-          product = allProducts.data.find(p => p.metadata?.tier === tier) || null;
-        }
-      } catch (listErr) {
-        console.log('Product list failed, trying search');
-        try {
-          const searchResult = await stripe.products.search({ query: `name:'${productName}'` });
-          product = searchResult.data[0] || null;
-        } catch (searchErr) {
-          console.log('Product search also failed');
-        }
-      }
+      const allProducts = await stripe.products.list({ limit: 100, active: true });
+      console.log('[Checkout] Found', allProducts.data.length, 'products:', allProducts.data.map(p => `${p.name} (${p.id})`).join(', '));
+
+      const productName = tier === 'research' ? 'Turbo Answer Research' : 'Turbo Answer Pro';
+      let product = allProducts.data.find(p => p.name === productName) 
+        || allProducts.data.find(p => p.metadata?.tier === tier) 
+        || null;
 
       if (!product) {
         product = await stripe.products.create({
           name: productName,
-          description: productDescription,
+          description: tier === 'research'
+            ? 'Gemini 2.5 Pro powered deep research and comprehensive analysis'
+            : 'Unlock Gemini 2.5 Pro for advanced AI assistance',
           metadata: { tier },
         });
         await stripe.prices.create({
@@ -317,18 +310,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
           currency: 'usd',
           recurring: { interval: 'month' },
         });
-        console.log(`Auto-created ${productName} product:`, product.id);
+        console.log('[Checkout] Auto-created product:', product.id);
       }
 
+      console.log('[Checkout] Using product:', product.name, product.id);
+
       const prices = await stripe.prices.list({ product: product.id, active: true });
-      const monthlyPrice = prices.data.find(p => p.recurring?.interval === 'month' && p.unit_amount === priceAmount);
-      if (!monthlyPrice) {
-        const fallbackPrice = prices.data.find(p => p.recurring?.interval === 'month');
-        if (!fallbackPrice) {
-          return res.status(400).json({ error: `${tier} plan price not found.` });
-        }
+      console.log('[Checkout] Prices:', prices.data.map(p => `${p.id} $${(p.unit_amount||0)/100}/${p.recurring?.interval}`).join(', '));
+      
+      const priceId = (prices.data.find(p => p.recurring?.interval === 'month' && p.unit_amount === priceAmount) 
+        || prices.data.find(p => p.recurring?.interval === 'month'))?.id;
+      
+      if (!priceId) {
+        console.error('[Checkout] No matching price found');
+        return res.status(400).json({ error: `No price found for ${tier} plan. Please contact support.` });
       }
-      const priceId = (prices.data.find(p => p.recurring?.interval === 'month' && p.unit_amount === priceAmount) || prices.data.find(p => p.recurring?.interval === 'month'))!.id;
+
+      console.log('[Checkout] Using price:', priceId);
 
       const baseUrl = `${req.protocol}://${req.get('host')}`;
       const session = await stripe.checkout.sessions.create({
@@ -341,10 +339,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         metadata: { userId, tier },
       });
 
+      console.log('[Checkout] Session created:', session.id);
       res.json({ url: session.url });
     } catch (error: any) {
-      console.error('Checkout error:', error.message);
-      res.status(500).json({ error: 'Something went wrong creating checkout. Please try again.' });
+      console.error('[Checkout] ERROR:', error.type, error.code, error.message);
+      console.error('[Checkout] Stack:', error.stack?.substring(0, 300));
+      res.status(500).json({ error: error.message || 'Checkout failed. Please try again.' });
     }
   });
 
