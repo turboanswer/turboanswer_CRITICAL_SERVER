@@ -99,28 +99,23 @@ export async function generateAIResponse(
 
     if (selectedModel === 'claude-research') {
       geminiModel = 'gemini-2.5-pro';
-      maxTokens = 16000;
-      temperature = 0.1;
-      systemPrompt = `You are Turbo Answer, a premium AI research assistant. Provide thorough, well-structured, in-depth analysis. Use clear headings, evidence-based reasoning, and comprehensive coverage. Go deeper than a standard response - cite reasoning, explore multiple angles, and give expert-level detail.
-${languageInstruction}
-${additionalContext}`;
-    } else if (selectedModel === 'gemini-pro') {
-      geminiModel = 'gemini-2.5-pro';
       maxTokens = 8000;
-      temperature = 0.3;
-      systemPrompt = `You are Turbo Answer, a premium AI assistant. Provide clear, detailed, high-quality responses. For simple questions, be concise. For complex topics, provide thorough explanations.
-${languageInstruction}
-${additionalContext}`;
-    } else {
+      temperature = 0.1;
+      systemPrompt = `You are Turbo Answer, a research assistant. Give thorough, well-structured analysis with clear headings and evidence-based reasoning.${languageInstruction ? ' ' + languageInstruction : ''}${additionalContext}`;
+    } else if (selectedModel === 'gemini-pro') {
       geminiModel = 'gemini-2.5-flash';
-      maxTokens = isSimple ? 1000 : 4000;
+      maxTokens = isSimple ? 500 : 4000;
+      temperature = 0.3;
+      systemPrompt = isSimple
+        ? `You are Turbo. Be concise and direct.${languageInstruction ? ' ' + languageInstruction : ''}`
+        : `You are Turbo Answer, a premium assistant. Give clear, detailed responses.${languageInstruction ? ' ' + languageInstruction : ''}${additionalContext}`;
+    } else {
+      geminiModel = isSimple ? 'gemini-2.0-flash' : 'gemini-2.5-flash';
+      maxTokens = isSimple ? 300 : 2000;
       temperature = 0.4;
       systemPrompt = isSimple
-        ? `You are Turbo, a fast AI assistant. Give direct, simple answers. Keep responses under 2 sentences for simple questions. Be conversational.
-${languageInstruction}`
-        : `You are Turbo Answer, a helpful AI assistant. Provide clear, helpful responses. For simple questions, keep answers brief. For complex questions, provide detailed explanations.
-${languageInstruction}
-${additionalContext}`;
+        ? `You are Turbo. Answer in 1-2 sentences max.${languageInstruction ? ' ' + languageInstruction : ''}`
+        : `You are Turbo Answer. Give clear, helpful responses.${languageInstruction ? ' ' + languageInstruction : ''}${additionalContext}`;
     }
 
     const geminiApiKey = process.env.GEMINI_API_KEY;
@@ -130,8 +125,10 @@ ${additionalContext}`;
 
     console.log(`[AI] Model: ${geminiModel}, Tokens: ${maxTokens}`);
 
-    const contextMessages = conversationHistory.slice(-4).map(m => `${m.role}: ${m.content}`).join('\n');
-    const fullPrompt = `${systemPrompt}\n\n${contextMessages ? `Recent conversation:\n${contextMessages}\n\n` : ''}User: ${enhancedMessage}`;
+    const recentHistory = conversationHistory.slice(-2).map(m => `${m.role}: ${m.content.slice(0, 500)}`).join('\n');
+    const fullPrompt = recentHistory
+      ? `${systemPrompt}\n\nContext:\n${recentHistory}\n\nUser: ${enhancedMessage}`
+      : `${systemPrompt}\n\nUser: ${enhancedMessage}`;
 
     return await callGemini(fullPrompt, geminiModel, maxTokens, temperature, geminiApiKey);
 
@@ -145,79 +142,52 @@ ${additionalContext}`;
 }
 
 async function callGemini(prompt: string, preferredModel: string, maxTokens: number, temperature: number, apiKey: string): Promise<string> {
-  const models = preferredModel === 'gemini-2.5-pro'
-    ? ['gemini-2.5-pro', 'gemini-2.5-flash']
-    : ['gemini-2.5-flash', 'gemini-2.0-flash'];
+  const fallback = preferredModel === 'gemini-2.5-pro' ? 'gemini-2.5-flash'
+    : preferredModel === 'gemini-2.5-flash' ? 'gemini-2.0-flash'
+    : null;
+  const models = fallback ? [preferredModel, fallback] : [preferredModel];
 
   const requestBody = JSON.stringify({
     contents: [{ parts: [{ text: prompt }] }],
-    generationConfig: { temperature, maxOutputTokens: maxTokens, topP: 0.8, topK: 40 }
+    generationConfig: { temperature, maxOutputTokens: maxTokens }
   });
 
-  const maxRetries = 2;
-  for (let attempt = 0; attempt <= maxRetries; attempt++) {
-    for (const model of models) {
-      try {
-        console.log(`[Gemini] Trying ${model} (attempt ${attempt + 1})`);
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 60000);
-        const response = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
-          { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: requestBody, signal: controller.signal }
-        );
-        clearTimeout(timeout);
+  for (const model of models) {
+    try {
+      const start = Date.now();
+      const controller = new AbortController();
+      const timeoutMs = model.includes('2.0-flash') ? 10000 : 20000;
+      const timeout = setTimeout(() => controller.abort(), timeoutMs);
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+        { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: requestBody, signal: controller.signal }
+      );
+      clearTimeout(timeout);
 
-        if (response.status === 429) {
-          const retryAfter = response.headers.get('retry-after');
-          const waitTime = retryAfter ? Math.min(parseInt(retryAfter) * 1000, 15000) : 5000;
-          console.log(`[Gemini] ${model} rate limited, waiting ${waitTime}ms...`);
-          if (attempt < maxRetries) {
-            await new Promise(r => setTimeout(r, waitTime));
-            break;
-          }
-          continue;
-        }
-
-        const data = await response.json();
-
-        if (data.error) {
-          console.error(`[Gemini] ${model} error:`, data.error.message);
-          if (data.error.code === 429) {
-            if (attempt < maxRetries) {
-              console.log(`[Gemini] Quota exceeded, waiting 10s before retry...`);
-              await new Promise(r => setTimeout(r, 10000));
-              break;
-            }
-            continue;
-          }
-          throw new Error(data.error.message);
-        }
-
-        const content = data.candidates?.[0]?.content?.parts?.[0]?.text;
-        if (!content) {
-          throw new Error('No content received from Gemini');
-        }
-
-        return content;
-
-      } catch (error: any) {
-        if (error.name === 'AbortError') {
-          console.log(`[Gemini] ${model} timed out, trying next...`);
-          continue;
-        }
-        if (error.message?.includes('quota') || error.message?.includes('429') || error.message?.includes('Rate')) {
-          if (attempt < maxRetries) {
-            await new Promise(r => setTimeout(r, 10000));
-            break;
-          }
-          continue;
-        }
-        throw error;
+      if (response.status === 429) {
+        console.log(`[Gemini] ${model} rate limited, trying fallback...`);
+        continue;
       }
+
+      const data = await response.json();
+      if (data.error) {
+        console.error(`[Gemini] ${model} error:`, data.error.message);
+        continue;
+      }
+
+      const content = data.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (!content) continue;
+
+      console.log(`[Gemini] ${model} responded in ${Date.now() - start}ms`);
+      return content;
+
+    } catch (error: any) {
+      console.log(`[Gemini] ${model} failed: ${error.message}, trying next...`);
+      continue;
     }
   }
 
-  throw new Error('All Gemini models are currently rate limited. Please wait a moment and try again.');
+  throw new Error('AI is temporarily busy. Please try again in a moment.');
 }
 
 async function callClaude(userMessage: string, systemPrompt: string, contextMessages: string, maxTokens: number, temperature: number, apiKey: string, baseUrl?: string): Promise<string> {
