@@ -34,6 +34,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.use(widgetRoutes);
 
+  app.get("/api/download/android-app", (req, res) => {
+    const filePath = path.resolve("turbo-answer-v2.0.0.aab");
+    res.download(filePath, "turbo-answer-v2.0.0.aab");
+  });
+
   // Create a new conversation
   app.post("/api/conversations", isAuthenticated, async (req: any, res) => {
     try {
