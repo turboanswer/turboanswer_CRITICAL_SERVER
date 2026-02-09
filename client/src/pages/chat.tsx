@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Send, User, FileText, X, Brain, Settings, LogOut, Zap, Menu, QrCode, ImageIcon, Crown, CheckCircle, Star, Sun, Moon, Shield } from "lucide-react";
+import { Send, User, FileText, X, Brain, Settings, LogOut, Zap, Menu, QrCode, ImageIcon, Crown, CheckCircle, Star, Sun, Moon, Shield, Heart } from "lucide-react";
 import { QRCodeCanvas } from "qrcode.react";
 import { Link } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
@@ -260,6 +260,11 @@ export default function Chat() {
                   </Button>
                 </Link>
               )}
+              <Link href="/crisis-support">
+                <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-pink-400 hover:text-pink-300" title="Crisis Support">
+                  <Heart className="h-4 w-4" />
+                </Button>
+              </Link>
               <Link href="/ai-settings">
                 <Button variant="ghost" size="sm" className={`h-8 w-8 p-0 ${isDark ? 'text-gray-400 hover:text-white' : 'text-gray-500 hover:text-gray-900'}`} title="Settings">
                   <Settings className="h-4 w-4" />
@@ -298,6 +303,11 @@ export default function Chat() {
                   </Button>
                 </Link>
               )}
+              <Link href="/crisis-support">
+                <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-pink-400 hover:text-pink-300" title="Crisis Support">
+                  <Heart className="h-4 w-4" />
+                </Button>
+              </Link>
               <Link href="/ai-settings">
                 <Button variant="ghost" size="sm" className={`h-8 w-8 p-0 ${isDark ? 'text-gray-400 hover:text-white' : 'text-gray-500 hover:text-gray-900'}`}>
                   <Settings className="h-4 w-4" />

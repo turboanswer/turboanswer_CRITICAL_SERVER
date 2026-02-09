@@ -23,6 +23,7 @@ import WidgetDemo from "@/pages/widget-demo";
 import LandingPage from "@/pages/landing";
 import Login from "@/pages/login";
 import Register from "@/pages/register";
+import CrisisSupport from "@/pages/crisis-support";
 
 function AuthenticatedRouter() {
   return (
@@ -41,6 +42,7 @@ function AuthenticatedRouter() {
       <Route path="/simple" component={Simple} />
       <Route path="/where-to-add" component={WhereToAdd} />
       <Route path="/widget-demo" component={WidgetDemo} />
+      <Route path="/crisis-support" component={CrisisSupport} />
       <Route component={NotFound} />
     </Switch>
   );
