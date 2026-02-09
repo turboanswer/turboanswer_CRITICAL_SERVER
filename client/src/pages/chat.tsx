@@ -28,6 +28,7 @@ export default function Chat() {
   const [showQR, setShowQR] = useState(false);
   const [showProPopup, setShowProPopup] = useState(false);
   const [showResearchPopup, setShowResearchPopup] = useState(false);
+  const [showEnterprisePopup, setShowEnterprisePopup] = useState(false);
   const [showWelcomePro, setShowWelcomePro] = useState(false);
   const [welcomeTier, setWelcomeTier] = useState<'pro' | 'research' | 'enterprise'>('pro');
   const [enterpriseCode, setEnterpriseCode] = useState<string | null>(null);
@@ -231,7 +232,7 @@ export default function Chat() {
     } else if (value === 'claude-research' && tier !== 'research' && tier !== 'enterprise') {
       setShowResearchPopup(true);
     } else if (value === 'enterprise-research' && tier !== 'enterprise') {
-      setShowResearchPopup(true);
+      setShowEnterprisePopup(true);
     } else {
       setSelectedAIModel(value === 'enterprise-research' ? 'claude-research' : value);
     }
@@ -610,6 +611,63 @@ export default function Chat() {
               {checkoutLoading ? "Loading..." : "Subscribe Now - $15/mo"}
             </Button>
             <p className={`text-center text-xs mt-3 ${isDark ? 'text-zinc-500' : 'text-gray-400'}`}>Cancel anytime. Secure payment via PayPal.</p>
+          </div>
+        </div>
+      )}
+
+      {showEnterprisePopup && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4" onClick={() => setShowEnterprisePopup(false)}>
+          <div className={`${isDark ? 'bg-zinc-900 border-zinc-700' : 'bg-white border-gray-200'} border rounded-2xl max-w-sm w-full p-6 relative`} onClick={(e) => e.stopPropagation()}>
+            <button onClick={() => setShowEnterprisePopup(false)} className={`absolute top-3 right-3 ${isDark ? 'text-zinc-400 hover:text-white' : 'text-gray-400 hover:text-gray-900'}`}>
+              <X className="h-5 w-5" />
+            </button>
+            <div className="text-center mb-5">
+              <div className="w-14 h-14 bg-gradient-to-br from-amber-500 to-orange-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Crown className="text-white h-7 w-7" />
+              </div>
+              <h2 className={`text-xl font-bold mb-1 ${isDark ? 'text-white' : 'text-gray-900'}`}>Upgrade to Enterprise</h2>
+              <p className={isDark ? 'text-zinc-400 text-sm' : 'text-gray-500 text-sm'}>Team access with 33% savings</p>
+            </div>
+            <div className="text-center mb-5">
+              <span className={`text-4xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>$50</span>
+              <span className={isDark ? 'text-zinc-400 text-base' : 'text-gray-500 text-base'}>/month</span>
+            </div>
+            <ul className="space-y-3 mb-6">
+              {["All Research features included", "Shareable 6-digit team code", "Up to 5 team members", "Save 33% vs individual Research plans", "Priority enterprise support"].map((text, i) => (
+                <li key={i} className="flex items-center gap-3">
+                  <CheckCircle className="w-4 h-4 text-green-400 flex-shrink-0" />
+                  <span className={`text-sm ${isDark ? 'text-zinc-200' : 'text-gray-700'}`}>{text}</span>
+                </li>
+              ))}
+            </ul>
+            <Button className="w-full bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white font-semibold py-5 rounded-xl text-base" disabled={checkoutLoading}
+              onClick={async () => {
+                setCheckoutLoading(true);
+                try {
+                  const res = await fetch("/api/checkout", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ plan: "enterprise" }),
+                    credentials: "include",
+                  });
+                  const data = await res.json();
+                  if (data.url) window.location.href = data.url;
+                  else toast({ title: "Error", description: data.error || "Could not start checkout", variant: "destructive" });
+                } catch (err: any) { toast({ title: "Error", description: "Could not start checkout. Please try again.", variant: "destructive" }); }
+                finally { setCheckoutLoading(false); }
+              }}>
+              <Crown className="w-4 h-4 mr-2" />
+              {checkoutLoading ? "Loading..." : "Subscribe Now - $50/mo"}
+            </Button>
+            <p className={`text-center text-xs mt-3 ${isDark ? 'text-zinc-500' : 'text-gray-400'}`}>Cancel anytime. Secure payment via PayPal.</p>
+            <div className={`mt-4 pt-4 border-t ${isDark ? 'border-zinc-700' : 'border-gray-200'} text-center`}>
+              <p className={`text-xs ${isDark ? 'text-zinc-500' : 'text-gray-400'}`}>
+                Need more than 5 members?{' '}
+                <a href="mailto:support@turboanswer.it.com?subject=Custom%20Enterprise%20Plan%20Inquiry" className="text-amber-400 hover:text-amber-300 underline">
+                  Contact us
+                </a>
+              </p>
+            </div>
           </div>
         </div>
       )}
