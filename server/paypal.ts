@@ -76,7 +76,20 @@ export async function ensureSubscriptionPlans(): Promise<{ pro: string; research
     if (plan.status !== "ACTIVE") continue;
     if (plan.name === "Turbo Answer Pro") proPlanId = plan.id;
     if (plan.name === "Turbo Answer Research") researchPlanId = plan.id;
-    if (plan.name === "Turbo Answer Enterprise") enterprisePlanId = plan.id;
+    if (plan.name === "Turbo Answer Enterprise") {
+      try {
+        const details = await paypalRequest("GET", `/v1/billing/plans/${plan.id}`);
+        const price = details?.billing_cycles?.[0]?.pricing_scheme?.fixed_price?.value;
+        if (price === "50.00") {
+          enterprisePlanId = plan.id;
+        } else {
+          console.log(`[PayPal] Found old Enterprise plan ${plan.id} with price $${price}, deactivating...`);
+          await paypalRequest("PATCH", `/v1/billing/plans/${plan.id}`, [{ op: "replace", path: "/", value: { status: "INACTIVE" } }]).catch(() => {});
+        }
+      } catch (e) {
+        enterprisePlanId = plan.id;
+      }
+    }
   }
 
   if (!proPlanId || !researchPlanId || !enterprisePlanId) {
