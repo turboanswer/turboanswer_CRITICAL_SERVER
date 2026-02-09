@@ -66,7 +66,7 @@ const plans: PricingPlan[] = [
   {
     id: 'enterprise',
     name: 'Enterprise',
-    price: '$30',
+    price: '$35',
     period: 'per month',
     description: 'Team access with shareable code for up to 10 members',
     features: [

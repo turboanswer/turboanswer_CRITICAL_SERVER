@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Send, User, FileText, X, Brain, Settings, LogOut, Zap, Menu, QrCode, ImageIcon, Crown, CheckCircle, Star, Sun, Moon, Shield, Heart } from "lucide-react";
+import { Send, User, FileText, X, Brain, Settings, LogOut, Zap, Menu, QrCode, ImageIcon, Crown, CheckCircle, Star, Sun, Moon, Shield, Heart, Users, Copy } from "lucide-react";
 import { QRCodeCanvas } from "qrcode.react";
 import { Link } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
@@ -29,7 +29,8 @@ export default function Chat() {
   const [showProPopup, setShowProPopup] = useState(false);
   const [showResearchPopup, setShowResearchPopup] = useState(false);
   const [showWelcomePro, setShowWelcomePro] = useState(false);
-  const [welcomeTier, setWelcomeTier] = useState<'pro' | 'research'>('pro');
+  const [welcomeTier, setWelcomeTier] = useState<'pro' | 'research' | 'enterprise'>('pro');
+  const [enterpriseCode, setEnterpriseCode] = useState<string | null>(null);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -50,9 +51,9 @@ export default function Chat() {
     const params = new URLSearchParams(window.location.search);
     const subParam = params.get('subscription');
     const paypalSubId = params.get('subscription_id') || params.get('ba_token');
-    if (subParam === 'pro' || subParam === 'research' || subParam === 'success') {
+    if (subParam === 'pro' || subParam === 'research' || subParam === 'enterprise' || subParam === 'success') {
       window.history.replaceState({}, '', '/chat');
-      const expectedTier = (subParam === 'research') ? 'research' : 'pro';
+      const expectedTier = subParam === 'enterprise' ? 'enterprise' : subParam === 'research' ? 'research' : 'pro';
       const syncSubscription = async () => {
         const trySync = async (attempt: number): Promise<boolean> => {
           try {
@@ -63,10 +64,14 @@ export default function Chat() {
               credentials: "include",
             });
             const data = await res.json();
-            if (data.tier === 'pro' || data.tier === 'research') {
+            if (data.tier === 'pro' || data.tier === 'research' || data.tier === 'enterprise') {
               queryClient.invalidateQueries({ queryKey: ["/api/models"] });
               queryClient.invalidateQueries({ queryKey: ["/api/subscription-status"] });
-              setWelcomeTier(data.tier as 'pro' | 'research');
+              queryClient.invalidateQueries({ queryKey: ["/api/enterprise-code"] });
+              setWelcomeTier(data.tier as 'pro' | 'research' | 'enterprise');
+              if (data.enterpriseCode) {
+                setEnterpriseCode(data.enterpriseCode);
+              }
               setShowWelcomePro(true);
               return true;
             }
@@ -78,10 +83,20 @@ export default function Chat() {
         if (await trySync(2)) return;
         await new Promise(r => setTimeout(r, 3000));
         if (await trySync(3)) return;
-        setWelcomeTier(expectedTier as 'pro' | 'research');
+        setWelcomeTier(expectedTier as 'pro' | 'research' | 'enterprise');
         setShowWelcomePro(true);
         queryClient.invalidateQueries({ queryKey: ["/api/models"] });
         queryClient.invalidateQueries({ queryKey: ["/api/subscription-status"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/enterprise-code"] });
+        if (expectedTier === 'enterprise' && !enterpriseCode) {
+          try {
+            const codeRes = await fetch("/api/enterprise-code", { credentials: "include" });
+            const codeData = await codeRes.json();
+            if (codeData.hasCode && codeData.code) {
+              setEnterpriseCode(codeData.code);
+            }
+          } catch (e) {}
+        }
       };
       syncSubscription();
     }
@@ -599,18 +614,56 @@ export default function Chat() {
       {/* Welcome screen after subscription */}
       {showWelcomePro && (
         <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" onClick={() => setShowWelcomePro(false)}>
-          <div className={`${isDark ? 'bg-zinc-900' : 'bg-white'} rounded-2xl p-6 sm:p-8 max-w-md w-full border ${welcomeTier === 'research' ? 'border-blue-500/30 shadow-2xl shadow-blue-500/20' : 'border-purple-500/30 shadow-2xl shadow-purple-500/20'}`} onClick={e => e.stopPropagation()}>
+          <div className={`${isDark ? 'bg-zinc-900' : 'bg-white'} rounded-2xl p-6 sm:p-8 max-w-md w-full border ${welcomeTier === 'enterprise' ? 'border-amber-500/30 shadow-2xl shadow-amber-500/20' : welcomeTier === 'research' ? 'border-blue-500/30 shadow-2xl shadow-blue-500/20' : 'border-purple-500/30 shadow-2xl shadow-purple-500/20'}`} onClick={e => e.stopPropagation()}>
             <div className="text-center mb-6">
-              <div className={`w-16 h-16 mx-auto rounded-full flex items-center justify-center mb-4 shadow-lg ${welcomeTier === 'research' ? 'bg-gradient-to-br from-blue-500 to-cyan-500 shadow-blue-500/40' : 'bg-gradient-to-br from-purple-500 to-pink-500 shadow-purple-500/40'}`}>
-                {welcomeTier === 'research' ? <Brain className="w-8 h-8 text-white" /> : <Crown className="w-8 h-8 text-white" />}
+              <div className={`w-16 h-16 mx-auto rounded-full flex items-center justify-center mb-4 shadow-lg ${welcomeTier === 'enterprise' ? 'bg-gradient-to-br from-amber-500 to-orange-500 shadow-amber-500/40' : welcomeTier === 'research' ? 'bg-gradient-to-br from-blue-500 to-cyan-500 shadow-blue-500/40' : 'bg-gradient-to-br from-purple-500 to-pink-500 shadow-purple-500/40'}`}>
+                {welcomeTier === 'enterprise' ? <Crown className="w-8 h-8 text-white" /> : welcomeTier === 'research' ? <Brain className="w-8 h-8 text-white" /> : <Crown className="w-8 h-8 text-white" />}
               </div>
-              <h2 className={`text-2xl font-bold mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>{welcomeTier === 'research' ? 'Welcome to Research!' : 'Welcome to Pro!'}</h2>
+              <h2 className={`text-2xl font-bold mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                {welcomeTier === 'enterprise' ? 'Welcome to Enterprise!' : welcomeTier === 'research' ? 'Welcome to Research!' : 'Welcome to Pro!'}
+              </h2>
               <p className={isDark ? 'text-zinc-400' : 'text-gray-500'}>Your subscription is now active</p>
             </div>
 
             <div className="space-y-4 mb-6">
-              <h3 className={`text-sm font-semibold uppercase tracking-wide ${welcomeTier === 'research' ? 'text-blue-400' : 'text-purple-400'}`}>What you can do now:</h3>
-              {welcomeTier === 'research' ? (
+              <h3 className={`text-sm font-semibold uppercase tracking-wide ${welcomeTier === 'enterprise' ? 'text-amber-400' : welcomeTier === 'research' ? 'text-blue-400' : 'text-purple-400'}`}>What you can do now:</h3>
+              {welcomeTier === 'enterprise' ? (
+                <>
+                  {enterpriseCode && (
+                    <div className={`${isDark ? 'bg-amber-950/30 border-amber-800/50' : 'bg-amber-50 border-amber-200'} rounded-xl p-4 border text-center`}>
+                      <p className={`text-sm font-medium mb-2 ${isDark ? 'text-amber-300' : 'text-amber-700'}`}>Your Team Code</p>
+                      <div className="flex items-center justify-center gap-3">
+                        <span className={`text-3xl font-mono tracking-[0.3em] font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>{enterpriseCode}</span>
+                        <button
+                          onClick={() => { navigator.clipboard.writeText(enterpriseCode); }}
+                          className="text-amber-400 hover:text-amber-300 p-1"
+                        >
+                          <Copy className="w-5 h-5" />
+                        </button>
+                      </div>
+                      <p className={`text-xs mt-2 ${isDark ? 'text-amber-400/60' : 'text-amber-600'}`}>Share this code with up to 10 team members</p>
+                    </div>
+                  )}
+                  <div className={`${isDark ? 'bg-zinc-800 border-zinc-700' : 'bg-gray-50 border-gray-200'} rounded-xl p-4 border`}>
+                    <div className="flex items-start gap-3">
+                      <div className="w-8 h-8 bg-amber-500/20 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5"><Users className="w-4 h-4 text-amber-400" /></div>
+                      <div>
+                        <p className={`font-medium text-sm ${isDark ? 'text-white' : 'text-gray-900'}`}>Team Access</p>
+                        <p className={`text-xs mt-0.5 ${isDark ? 'text-zinc-400' : 'text-gray-500'}`}>Team members enter your code in AI Settings to get Research-level access</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div className={`${isDark ? 'bg-zinc-800 border-zinc-700' : 'bg-gray-50 border-gray-200'} rounded-xl p-4 border`}>
+                    <div className="flex items-start gap-3">
+                      <div className="w-8 h-8 bg-blue-500/20 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5"><Brain className="w-4 h-4 text-blue-400" /></div>
+                      <div>
+                        <p className={`font-medium text-sm ${isDark ? 'text-white' : 'text-gray-900'}`}>Research + Pro Included</p>
+                        <p className={`text-xs mt-0.5 ${isDark ? 'text-zinc-400' : 'text-gray-500'}`}>You get full Research and Pro access with the most powerful AI models</p>
+                      </div>
+                    </div>
+                  </div>
+                </>
+              ) : welcomeTier === 'research' ? (
                 <>
                   <div className={`${isDark ? 'bg-zinc-800 border-zinc-700' : 'bg-gray-50 border-gray-200'} rounded-xl p-4 border`}>
                     <div className="flex items-start gap-3">
@@ -646,17 +699,21 @@ export default function Chat() {
                 <div className="flex items-start gap-3">
                   <div className="w-8 h-8 bg-green-500/20 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5"><CheckCircle className="w-4 h-4 text-green-400" /></div>
                   <div>
-                    <p className={`font-medium text-sm ${isDark ? 'text-white' : 'text-gray-900'}`}>How to Switch Models</p>
-                    <p className={`text-xs mt-0.5 ${isDark ? 'text-zinc-400' : 'text-gray-500'}`}>Tap the model selector at the top to switch between models anytime</p>
+                    <p className={`font-medium text-sm ${isDark ? 'text-white' : 'text-gray-900'}`}>{welcomeTier === 'enterprise' ? 'Your Code is Saved' : 'How to Switch Models'}</p>
+                    <p className={`text-xs mt-0.5 ${isDark ? 'text-zinc-400' : 'text-gray-500'}`}>
+                      {welcomeTier === 'enterprise'
+                        ? 'Your team code is saved to your account. You can always find it in AI Settings, even after closing the browser.'
+                        : 'Tap the model selector at the top to switch between models anytime'}
+                    </p>
                   </div>
                 </div>
               </div>
             </div>
 
             <Button
-              className={`w-full text-white font-semibold py-5 rounded-xl text-base ${welcomeTier === 'research' ? 'bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700' : 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700'}`}
-              onClick={() => { setShowWelcomePro(false); setSelectedAIModel(welcomeTier === 'research' ? "claude-research" : "gemini-pro"); }}>
-              {welcomeTier === 'research' ? 'Start Using Research' : 'Start Using Pro'}
+              className={`w-full text-white font-semibold py-5 rounded-xl text-base ${welcomeTier === 'enterprise' ? 'bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700' : welcomeTier === 'research' ? 'bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700' : 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700'}`}
+              onClick={() => { setShowWelcomePro(false); setSelectedAIModel(welcomeTier === 'enterprise' ? "claude-research" : welcomeTier === 'research' ? "claude-research" : "gemini-pro"); }}>
+              {welcomeTier === 'enterprise' ? 'Start Using Enterprise' : welcomeTier === 'research' ? 'Start Using Research' : 'Start Using Pro'}
             </Button>
           </div>
         </div>

@@ -164,7 +164,7 @@ export default function AISettings() {
   }, [selectedModel]);
 
   const hasPaidSubscription = subscriptionData?.tier === 'pro' || subscriptionData?.tier === 'research' || subscriptionData?.tier === 'enterprise';
-  const tierLabel = subscriptionData?.tier === 'enterprise' ? 'Enterprise ($30/mo)' : subscriptionData?.tier === 'research' ? 'Research ($15/mo)' : 'Pro ($6.99/mo)';
+  const tierLabel = subscriptionData?.tier === 'enterprise' ? 'Enterprise ($35/mo)' : subscriptionData?.tier === 'research' ? 'Research ($15/mo)' : 'Pro ($6.99/mo)';
 
   return (
     <div className={`min-h-screen ${isDark ? 'bg-black text-white' : 'bg-gray-50 text-gray-900'}`}>
