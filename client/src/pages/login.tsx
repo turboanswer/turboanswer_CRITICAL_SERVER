@@ -37,6 +37,37 @@ export default function Login() {
 
       if (response.ok) {
         await queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
+
+        try {
+          const pending = localStorage.getItem('turbo_pending_subscription');
+          if (pending) {
+            const pendingData = JSON.parse(pending);
+            if (Date.now() - pendingData.timestamp < 30 * 60 * 1000) {
+              const syncRes = await fetch("/api/sync-subscription", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ expectedTier: pendingData.tier, subscriptionId: pendingData.subscriptionId }),
+                credentials: "include",
+              });
+              if (syncRes.ok) {
+                const syncData = await syncRes.json();
+                if (syncData.tier) {
+                  localStorage.removeItem('turbo_pending_subscription');
+                  queryClient.invalidateQueries({ queryKey: ["/api/models"] });
+                  queryClient.invalidateQueries({ queryKey: ["/api/subscription-status"] });
+                  queryClient.invalidateQueries({ queryKey: ["/api/enterprise-code"] });
+                  toast({
+                    title: "Subscription Activated!",
+                    description: `Your ${syncData.tier} plan is now active.`,
+                  });
+                }
+              }
+            } else {
+              localStorage.removeItem('turbo_pending_subscription');
+            }
+          }
+        } catch (e) {}
+
         toast({
           title: "Welcome back!",
           description: "You're now signed in to Turbo Answer.",

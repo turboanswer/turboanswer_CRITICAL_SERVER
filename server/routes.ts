@@ -425,6 +425,8 @@ function downloadAAB(){
       );
 
       console.log('[PayPal Checkout] Subscription created:', result.subscriptionId);
+      await storage.updatePaypalSubscription(userId, result.subscriptionId, tier);
+      console.log('[PayPal Checkout] Stored pending subscription ID for user:', userId);
       res.json({ url: result.approvalUrl });
     } catch (error: any) {
       console.error('[PayPal Checkout] ERROR:', error.message);
@@ -472,17 +474,37 @@ function downloadAAB(){
       const user = await storage.getUser(userId);
       if (user?.paypalSubscriptionId) {
         try {
+          console.log(`[PayPal Sync] Checking stored subscription ${user.paypalSubscriptionId} for user ${userId}`);
           const subDetails = await getSubscriptionDetails(user.paypalSubscriptionId);
-          if (subDetails.status === 'ACTIVE') {
-            let tier = 'pro';
+          console.log(`[PayPal Sync] Subscription status: ${subDetails.status}`);
+          if (subDetails.status === 'ACTIVE' || subDetails.status === 'APPROVED') {
+            let tier = expectedTier || user.subscriptionTier || 'pro';
             try {
               const customData = JSON.parse(subDetails.custom_id || '{}');
               if (customData.tier) tier = customData.tier;
             } catch (e) {}
             await storage.updatePaypalSubscription(userId, user.paypalSubscriptionId, tier);
-            return res.json({ tier, status: 'active' });
+            console.log(`[PayPal Sync] Updated user ${userId} to ${tier} via stored subscription`);
+
+            let enterpriseCode: string | undefined;
+            if (tier === 'enterprise') {
+              const existingCode = await storage.getEnterpriseCodeByOwner(userId);
+              if (!existingCode) {
+                const { randomInt } = await import('crypto');
+                const code = String(randomInt(100000, 999999));
+                await storage.createEnterpriseCode(code, userId, user?.email || null);
+                enterpriseCode = code;
+                console.log(`[Enterprise] Generated code ${code} for user ${userId}`);
+              } else {
+                enterpriseCode = existingCode.code;
+              }
+            }
+
+            return res.json({ tier, status: 'active', enterpriseCode });
           }
-        } catch (e) {}
+        } catch (e: any) {
+          console.error(`[PayPal Sync] Error checking stored subscription:`, e.message);
+        }
       }
 
       res.json({ tier: user?.subscriptionTier || 'free', status: user?.subscriptionStatus || 'none' });

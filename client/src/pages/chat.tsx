@@ -54,55 +54,83 @@ export default function Chat() {
     const params = new URLSearchParams(window.location.search);
     const subParam = params.get('subscription');
     const paypalSubId = params.get('subscription_id') || params.get('ba_token');
+
+    let expectedTier: string | null = null;
+    let subscriptionId: string | undefined = paypalSubId || undefined;
+
     if (subParam === 'pro' || subParam === 'research' || subParam === 'enterprise' || subParam === 'success') {
+      expectedTier = subParam === 'enterprise' ? 'enterprise' : subParam === 'research' ? 'research' : 'pro';
       window.history.replaceState({}, '', '/chat');
-      const expectedTier = subParam === 'enterprise' ? 'enterprise' : subParam === 'research' ? 'research' : 'pro';
-      const syncSubscription = async () => {
-        const trySync = async (attempt: number): Promise<boolean> => {
-          try {
-            const res = await fetch("/api/sync-subscription", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ expectedTier, subscriptionId: paypalSubId }),
-              credentials: "include",
-            });
-            const data = await res.json();
-            if (data.tier === 'pro' || data.tier === 'research' || data.tier === 'enterprise') {
-              queryClient.invalidateQueries({ queryKey: ["/api/models"] });
-              queryClient.invalidateQueries({ queryKey: ["/api/subscription-status"] });
-              queryClient.invalidateQueries({ queryKey: ["/api/enterprise-code"] });
-              setWelcomeTier(data.tier as 'pro' | 'research' | 'enterprise');
-              if (data.enterpriseCode) {
-                setEnterpriseCode(data.enterpriseCode);
-              }
-              setShowWelcomePro(true);
-              return true;
-            }
-          } catch (err) {}
-          return false;
-        };
-        if (await trySync(1)) return;
-        await new Promise(r => setTimeout(r, 2000));
-        if (await trySync(2)) return;
-        await new Promise(r => setTimeout(r, 3000));
-        if (await trySync(3)) return;
-        setWelcomeTier(expectedTier as 'pro' | 'research' | 'enterprise');
-        setShowWelcomePro(true);
-        queryClient.invalidateQueries({ queryKey: ["/api/models"] });
-        queryClient.invalidateQueries({ queryKey: ["/api/subscription-status"] });
-        queryClient.invalidateQueries({ queryKey: ["/api/enterprise-code"] });
-        if (expectedTier === 'enterprise' && !enterpriseCode) {
-          try {
-            const codeRes = await fetch("/api/enterprise-code", { credentials: "include" });
-            const codeData = await codeRes.json();
-            if (codeData.hasCode && codeData.code) {
-              setEnterpriseCode(codeData.code);
-            }
-          } catch (e) {}
-        }
-      };
-      syncSubscription();
     }
+
+    if (!expectedTier) {
+      try {
+        const pending = localStorage.getItem('turbo_pending_subscription');
+        if (pending) {
+          const data = JSON.parse(pending);
+          if (Date.now() - data.timestamp < 30 * 60 * 1000) {
+            expectedTier = data.tier;
+          } else {
+            localStorage.removeItem('turbo_pending_subscription');
+          }
+        }
+      } catch (e) {}
+    }
+
+    if (!expectedTier) return;
+
+    const syncSubscription = async () => {
+      const trySync = async (attempt: number): Promise<boolean> => {
+        try {
+          const res = await fetch("/api/sync-subscription", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ expectedTier, subscriptionId }),
+            credentials: "include",
+          });
+          if (res.status === 401) {
+            console.log('[PayPal Return] Session lost, saving pending subscription for after login');
+            localStorage.setItem('turbo_pending_subscription', JSON.stringify({ tier: expectedTier, subscriptionId, timestamp: Date.now() }));
+            return false;
+          }
+          const data = await res.json();
+          if (data.tier === 'pro' || data.tier === 'research' || data.tier === 'enterprise') {
+            localStorage.removeItem('turbo_pending_subscription');
+            queryClient.invalidateQueries({ queryKey: ["/api/models"] });
+            queryClient.invalidateQueries({ queryKey: ["/api/subscription-status"] });
+            queryClient.invalidateQueries({ queryKey: ["/api/enterprise-code"] });
+            setWelcomeTier(data.tier as 'pro' | 'research' | 'enterprise');
+            if (data.enterpriseCode) {
+              setEnterpriseCode(data.enterpriseCode);
+            }
+            setShowWelcomePro(true);
+            return true;
+          }
+        } catch (err) {}
+        return false;
+      };
+      if (await trySync(1)) return;
+      await new Promise(r => setTimeout(r, 2000));
+      if (await trySync(2)) return;
+      await new Promise(r => setTimeout(r, 3000));
+      if (await trySync(3)) return;
+      localStorage.removeItem('turbo_pending_subscription');
+      setWelcomeTier(expectedTier as 'pro' | 'research' | 'enterprise');
+      setShowWelcomePro(true);
+      queryClient.invalidateQueries({ queryKey: ["/api/models"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/subscription-status"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/enterprise-code"] });
+      if (expectedTier === 'enterprise' && !enterpriseCode) {
+        try {
+          const codeRes = await fetch("/api/enterprise-code", { credentials: "include" });
+          const codeData = await codeRes.json();
+          if (codeData.hasCode && codeData.code) {
+            setEnterpriseCode(codeData.code);
+          }
+        } catch (e) {}
+      }
+    };
+    syncSubscription();
   }, []);
 
   const { data: conversations } = useQuery<Conversation[]>({ queryKey: ["/api/conversations"] });
@@ -554,7 +582,10 @@ export default function Chat() {
                     credentials: "include",
                   });
                   const data = await res.json();
-                  if (data.url) window.location.href = data.url;
+                  if (data.url) {
+                    localStorage.setItem('turbo_pending_subscription', JSON.stringify({ tier: 'pro', timestamp: Date.now() }));
+                    window.location.href = data.url;
+                  }
                   else toast({ title: "Error", description: data.error || "Could not start checkout", variant: "destructive" });
                 } catch (err: any) { toast({ title: "Error", description: "Could not start checkout. Please try again.", variant: "destructive" }); }
                 finally { setCheckoutLoading(false); }
@@ -604,7 +635,10 @@ export default function Chat() {
                     credentials: "include",
                   });
                   const data = await res.json();
-                  if (data.url) window.location.href = data.url;
+                  if (data.url) {
+                    localStorage.setItem('turbo_pending_subscription', JSON.stringify({ tier: 'research', timestamp: Date.now() }));
+                    window.location.href = data.url;
+                  }
                   else toast({ title: "Error", description: data.error || "Could not start checkout", variant: "destructive" });
                 } catch (err: any) { toast({ title: "Error", description: "Could not start checkout. Please try again.", variant: "destructive" }); }
                 finally { setCheckoutLoading(false); }
@@ -699,7 +733,10 @@ export default function Chat() {
                     credentials: "include",
                   });
                   const data = await res.json();
-                  if (data.url) window.location.href = data.url;
+                  if (data.url) {
+                    localStorage.setItem('turbo_pending_subscription', JSON.stringify({ tier: 'enterprise', timestamp: Date.now() }));
+                    window.location.href = data.url;
+                  }
                   else toast({ title: "Error", description: data.error || "Could not start checkout", variant: "destructive" });
                 } catch (err: any) { toast({ title: "Error", description: "Could not start checkout. Please try again.", variant: "destructive" }); }
                 finally { setCheckoutLoading(false); }
