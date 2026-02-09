@@ -501,6 +501,11 @@ function downloadAAB(){
           tier: 'research',
           email: 'tschantret@yahoo.com',
           description: 'VIP lifetime Research access'
+        },
+        'TURBO-SPECIAL-LIFETIME': {
+          tier: 'research',
+          email: 'luanfrank5@gmail.com',
+          description: 'Special lifetime Research access'
         }
       };
 
