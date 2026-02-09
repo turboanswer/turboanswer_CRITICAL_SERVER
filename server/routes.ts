@@ -1142,6 +1142,341 @@ function downloadAAB(){
     }
   });
 
+  // ============ ADVANCED ADMIN PANEL ENDPOINTS ============
+
+  app.post('/api/admin/modify-subscription', isAdmin, async (req: any, res) => {
+    try {
+      const adminUserId = req.user.claims.sub;
+      const { userId, tier, reason } = req.body;
+      if (!userId || !tier) return res.status(400).json({ error: 'User ID and tier required' });
+      const validTiers = ['free', 'pro', 'research', 'enterprise'];
+      if (!validTiers.includes(tier)) return res.status(400).json({ error: 'Invalid tier' });
+
+      const targetUser = await storage.getUser(userId);
+      if (!targetUser) return res.status(404).json({ error: 'User not found' });
+
+      const oldTier = targetUser.subscriptionTier || 'free';
+
+      if (oldTier === 'enterprise' && tier !== 'enterprise') {
+        const revokedUsers = await storage.revokeAllEnterpriseCodeAccess(userId);
+        await storage.deactivateEnterpriseCode(userId);
+        console.log(`[Admin] Revoked enterprise access for ${revokedUsers.length} team members (admin change)`);
+      }
+
+      if (tier === 'enterprise') {
+        const existingCode = await storage.getEnterpriseCodeByOwner(userId);
+        if (!existingCode) {
+          const { randomInt } = await import('crypto');
+          const code = String(randomInt(100000, 999999));
+          await storage.createEnterpriseCode(code, userId, targetUser.email || null);
+          console.log(`[Admin] Generated enterprise code ${code} for user ${userId}`);
+        } else if (!existingCode.isActive) {
+          await storage.reactivateEnterpriseCode(userId);
+        }
+      }
+
+      const status = tier === 'free' ? 'free' : 'active';
+      const user = await storage.adminSetSubscription(userId, tier, status);
+
+      await storage.createAuditLog({
+        employeeId: adminUserId,
+        employeeUsername: 'admin',
+        action: 'modify_subscription',
+        targetUserId: userId,
+        targetUsername: targetUser.email || userId,
+        reason: reason || `Changed from ${oldTier} to ${tier}`,
+        details: JSON.stringify({ oldTier, newTier: tier }),
+      });
+
+      console.log(`[Admin] Modified subscription for ${userId}: ${oldTier} -> ${tier}`);
+      res.json({ success: true, user: { id: user.id, email: user.email, subscriptionTier: user.subscriptionTier, subscriptionStatus: user.subscriptionStatus } });
+    } catch (error: any) {
+      console.error('[Admin] Modify subscription error:', error.message);
+      res.status(500).json({ error: 'Failed to modify subscription' });
+    }
+  });
+
+  app.post('/api/admin/cancel-user-subscription', isAdmin, async (req: any, res) => {
+    try {
+      const adminUserId = req.user.claims.sub;
+      const { userId, reason } = req.body;
+      if (!userId) return res.status(400).json({ error: 'User ID required' });
+
+      const targetUser = await storage.getUser(userId);
+      if (!targetUser) return res.status(404).json({ error: 'User not found' });
+
+      if (targetUser.subscriptionTier === 'enterprise') {
+        const revokedUsers = await storage.revokeAllEnterpriseCodeAccess(userId);
+        await storage.deactivateEnterpriseCode(userId);
+        console.log(`[Admin Cancel] Revoked enterprise access for ${revokedUsers.length} team members`);
+      }
+
+      if (targetUser.paypalSubscriptionId) {
+        try {
+          await cancelSubscription(targetUser.paypalSubscriptionId, 'Admin cancelled subscription');
+        } catch (e: any) {
+          console.error('[Admin Cancel] PayPal cancel error:', e.message);
+        }
+      }
+
+      await storage.cancelUserSubscription(userId);
+
+      await storage.createAuditLog({
+        employeeId: adminUserId,
+        employeeUsername: 'admin',
+        action: 'cancel_subscription',
+        targetUserId: userId,
+        targetUsername: targetUser.email || userId,
+        reason: reason || 'Admin cancelled subscription',
+        details: JSON.stringify({ previousTier: targetUser.subscriptionTier }),
+      });
+
+      console.log(`[Admin] Cancelled subscription for ${userId}`);
+      res.json({ success: true, message: 'Subscription cancelled' });
+    } catch (error: any) {
+      console.error('[Admin] Cancel subscription error:', error.message);
+      res.status(500).json({ error: 'Failed to cancel subscription' });
+    }
+  });
+
+  app.post('/api/admin/grant-complimentary', isAdmin, async (req: any, res) => {
+    try {
+      const adminUserId = req.user.claims.sub;
+      const { userId, tier, reason } = req.body;
+      if (!userId || !tier) return res.status(400).json({ error: 'User ID and tier required' });
+      const validTiers = ['pro', 'research', 'enterprise'];
+      if (!validTiers.includes(tier)) return res.status(400).json({ error: 'Invalid tier. Must be pro, research, or enterprise.' });
+
+      const targetUser = await storage.getUser(userId);
+      if (!targetUser) return res.status(404).json({ error: 'User not found' });
+
+      if (tier === 'enterprise') {
+        const existingCode = await storage.getEnterpriseCodeByOwner(userId);
+        if (!existingCode) {
+          const { randomInt } = await import('crypto');
+          const code = String(randomInt(100000, 999999));
+          await storage.createEnterpriseCode(code, userId, targetUser.email || null);
+        } else if (!existingCode.isActive) {
+          await storage.reactivateEnterpriseCode(userId);
+        }
+      }
+
+      await storage.adminSetSubscription(userId, tier, 'active');
+
+      await storage.createAuditLog({
+        employeeId: adminUserId,
+        employeeUsername: 'admin',
+        action: 'grant_complimentary',
+        targetUserId: userId,
+        targetUsername: targetUser.email || userId,
+        reason: reason || `Complimentary ${tier} access granted`,
+        details: JSON.stringify({ tier, complimentary: true }),
+      });
+
+      console.log(`[Admin] Granted complimentary ${tier} to ${userId}`);
+      res.json({ success: true, message: `Complimentary ${tier} access granted` });
+    } catch (error: any) {
+      console.error('[Admin] Grant complimentary error:', error.message);
+      res.status(500).json({ error: 'Failed to grant complimentary access' });
+    }
+  });
+
+  const systemHealthState = {
+    startTime: Date.now(),
+    lastErrors: [] as Array<{ time: number; message: string; source: string }>,
+    outageDetected: false,
+    lastHealthCheck: Date.now(),
+    lastOutageNotification: 0,
+  };
+
+  app.get('/api/admin/system-health', isAdmin, async (req: any, res) => {
+    try {
+      const uptime = Math.floor((Date.now() - systemHealthState.startTime) / 1000);
+      const userCount = await storage.getUserCount();
+      const subscriptionStats = await storage.getActiveSubscriptionCount();
+
+      let dbStatus = 'healthy';
+      try {
+        await storage.getUserCount();
+      } catch {
+        dbStatus = 'error';
+      }
+
+      let paypalStatus = 'unknown';
+      try {
+        const plans = await ensureSubscriptionPlans();
+        paypalStatus = plans.pro && plans.research && plans.enterprise ? 'healthy' : 'degraded';
+      } catch {
+        paypalStatus = 'error';
+      }
+
+      let aiStatus = 'healthy';
+      try {
+        const { GoogleGenerativeAI } = await import('@google/generative-ai');
+        const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
+        const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+        const result = await model.generateContent('Say "ok"');
+        aiStatus = result?.response?.text() ? 'healthy' : 'degraded';
+      } catch {
+        aiStatus = 'error';
+      }
+
+      const overallStatus = [dbStatus, paypalStatus, aiStatus].includes('error') ? 'critical' :
+        [dbStatus, paypalStatus, aiStatus].includes('degraded') ? 'degraded' : 'healthy';
+
+      const fiveMinutes = 5 * 60 * 1000;
+      if (overallStatus !== 'healthy' && !systemHealthState.outageDetected && (Date.now() - systemHealthState.lastOutageNotification > fiveMinutes)) {
+        systemHealthState.outageDetected = true;
+        systemHealthState.lastOutageNotification = Date.now();
+        const failedServices = [];
+        if (dbStatus !== 'healthy') failedServices.push('Database');
+        if (paypalStatus !== 'healthy') failedServices.push('PayPal');
+        if (aiStatus !== 'healthy') failedServices.push('AI Service');
+
+        await storage.createAdminNotification({
+          type: 'system_outage',
+          userId: 'system',
+          userEmail: 'system@turboanswer.it.com',
+          userFirstName: 'System',
+          userLastName: 'Alert',
+          flaggedContent: `System outage detected: ${failedServices.join(', ')} ${failedServices.length > 1 ? 'are' : 'is'} experiencing issues.`,
+          conversationId: null,
+          actionTaken: `Automatic health check detected service degradation. Status - DB: ${dbStatus}, PayPal: ${paypalStatus}, AI: ${aiStatus}`,
+        });
+      } else if (overallStatus === 'healthy') {
+        systemHealthState.outageDetected = false;
+      }
+
+      systemHealthState.lastHealthCheck = Date.now();
+
+      res.json({
+        status: overallStatus,
+        uptime,
+        uptimeFormatted: `${Math.floor(uptime / 3600)}h ${Math.floor((uptime % 3600) / 60)}m ${uptime % 60}s`,
+        totalUsers: userCount,
+        subscriptions: subscriptionStats,
+        services: {
+          database: dbStatus,
+          paypal: paypalStatus,
+          ai: aiStatus,
+        },
+        recentErrors: systemHealthState.lastErrors.slice(-10),
+        lastHealthCheck: new Date(systemHealthState.lastHealthCheck).toISOString(),
+        memory: {
+          heapUsed: Math.round(process.memoryUsage().heapUsed / 1024 / 1024),
+          heapTotal: Math.round(process.memoryUsage().heapTotal / 1024 / 1024),
+          rss: Math.round(process.memoryUsage().rss / 1024 / 1024),
+        },
+      });
+    } catch (error: any) {
+      console.error('[Admin] System health error:', error.message);
+      res.status(500).json({ error: 'Failed to get system health' });
+    }
+  });
+
+  app.post('/api/admin/run-diagnostics', isAdmin, async (req: any, res) => {
+    try {
+      const results: Array<{ check: string; status: string; details: string; fixed?: boolean }> = [];
+
+      try {
+        const count = await storage.getUserCount();
+        results.push({ check: 'Database Connection', status: 'pass', details: `Connected, ${count} users found` });
+      } catch (e: any) {
+        results.push({ check: 'Database Connection', status: 'fail', details: e.message });
+      }
+
+      try {
+        const plans = await ensureSubscriptionPlans();
+        results.push({ check: 'PayPal Plans', status: 'pass', details: `Pro: ${plans.pro}, Research: ${plans.research}, Enterprise: ${plans.enterprise}` });
+      } catch (e: any) {
+        results.push({ check: 'PayPal Plans', status: 'fail', details: e.message });
+      }
+
+      try {
+        if (!process.env.GEMINI_API_KEY) throw new Error('GEMINI_API_KEY not set');
+        results.push({ check: 'AI API Key', status: 'pass', details: 'GEMINI_API_KEY is configured' });
+      } catch (e: any) {
+        results.push({ check: 'AI API Key', status: 'fail', details: e.message });
+      }
+
+      try {
+        const allUsers = await storage.getAllUsers();
+        const orphanedEnterprise = allUsers.filter(u => u.subscriptionTier === 'enterprise' && u.subscriptionStatus !== 'active');
+        if (orphanedEnterprise.length > 0) {
+          for (const u of orphanedEnterprise) {
+            await storage.adminSetSubscription(u.id, 'free', 'free');
+            console.log(`[Diagnostics] Fixed orphaned enterprise user ${u.id}`);
+          }
+          results.push({ check: 'Orphaned Enterprise Users', status: 'fixed', details: `Fixed ${orphanedEnterprise.length} orphaned enterprise subscriptions`, fixed: true });
+        } else {
+          results.push({ check: 'Orphaned Enterprise Users', status: 'pass', details: 'No orphaned enterprise subscriptions found' });
+        }
+      } catch (e: any) {
+        results.push({ check: 'Orphaned Enterprise Users', status: 'fail', details: e.message });
+      }
+
+      try {
+        const allUsers = await storage.getAllUsers();
+        const stuckUsers = allUsers.filter(u => u.subscriptionStatus === 'active' && u.subscriptionTier === 'free');
+        if (stuckUsers.length > 0) {
+          for (const u of stuckUsers) {
+            await storage.adminSetSubscription(u.id, 'free', 'free');
+          }
+          results.push({ check: 'Stuck Subscriptions', status: 'fixed', details: `Fixed ${stuckUsers.length} users with inconsistent subscription state`, fixed: true });
+        } else {
+          results.push({ check: 'Stuck Subscriptions', status: 'pass', details: 'No inconsistent subscription states found' });
+        }
+      } catch (e: any) {
+        results.push({ check: 'Stuck Subscriptions', status: 'fail', details: e.message });
+      }
+
+      try {
+        const memUsage = process.memoryUsage();
+        const heapPercent = Math.round((memUsage.heapUsed / memUsage.heapTotal) * 100);
+        results.push({ check: 'Memory Usage', status: heapPercent > 90 ? 'warn' : 'pass', details: `Heap: ${heapPercent}% used (${Math.round(memUsage.heapUsed / 1024 / 1024)}MB / ${Math.round(memUsage.heapTotal / 1024 / 1024)}MB)` });
+      } catch (e: any) {
+        results.push({ check: 'Memory Usage', status: 'fail', details: e.message });
+      }
+
+      const adminUserId = req.user.claims.sub;
+      await storage.createAuditLog({
+        employeeId: adminUserId,
+        employeeUsername: 'admin',
+        action: 'run_diagnostics',
+        targetUserId: 'system',
+        targetUsername: 'system',
+        reason: 'Manual diagnostics run',
+        details: JSON.stringify({ results: results.map(r => `${r.check}: ${r.status}`) }),
+      });
+
+      res.json({ results, timestamp: new Date().toISOString() });
+    } catch (error: any) {
+      console.error('[Admin] Diagnostics error:', error.message);
+      res.status(500).json({ error: 'Failed to run diagnostics' });
+    }
+  });
+
+  app.get('/api/admin/stats', isAdmin, async (req: any, res) => {
+    try {
+      const userCount = await storage.getUserCount();
+      const subscriptionStats = await storage.getActiveSubscriptionCount();
+      const allUsers = await storage.getAllUsers();
+      const bannedCount = allUsers.filter(u => u.isBanned).length;
+      const suspendedCount = allUsers.filter(u => u.isSuspended).length;
+      const flaggedCount = allUsers.filter(u => u.isFlagged).length;
+      const revenue = (subscriptionStats.pro * 6.99) + (subscriptionStats.research * 15) + (subscriptionStats.enterprise * 50);
+
+      res.json({
+        totalUsers: userCount,
+        subscriptions: subscriptionStats,
+        moderation: { banned: bannedCount, suspended: suspendedCount, flagged: flaggedCount },
+        estimatedMonthlyRevenue: revenue.toFixed(2),
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: 'Failed to get stats' });
+    }
+  });
+
   // File upload and document analysis
   app.post("/api/analyze-document", isAuthenticated, upload.single('document'), async (req: any, res) => {
     try {

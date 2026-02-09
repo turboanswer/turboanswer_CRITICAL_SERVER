@@ -53,8 +53,11 @@ export interface IStorage {
   deactivateEnterpriseCode(ownerUserId: string): Promise<void>;
   reactivateEnterpriseCode(ownerUserId: string): Promise<void>;
   getRedemptionByUserId(userId: string): Promise<EnterpriseCodeRedemption | undefined>;
+  adminSetSubscription(userId: string, tier: string, status: string): Promise<User>;
   deleteUserAccount(userId: string): Promise<void>;
   getUserByEmail(email: string): Promise<User | undefined>;
+  getUserCount(): Promise<number>;
+  getActiveSubscriptionCount(): Promise<{ pro: number; research: number; enterprise: number }>;
 
   createCrisisConversation(userId: string): Promise<CrisisConversation>;
   getCrisisConversationsByUser(userId: string): Promise<CrisisConversation[]>;
@@ -461,6 +464,44 @@ export class DatabaseStorage implements IStorage {
     await db.update(enterpriseCodes)
       .set({ isActive: true })
       .where(eq(enterpriseCodes.ownerUserId, ownerUserId));
+  }
+
+  async adminSetSubscription(userId: string, tier: string, status: string): Promise<User> {
+    const existingUser = await this.getUser(userId);
+    if (!existingUser) throw new Error("User not found");
+
+    const updateData: any = {
+      subscriptionTier: tier,
+      subscriptionStatus: status === 'free' ? 'cancelled' : status,
+    };
+    if (tier === 'free') {
+      updateData.paypalSubscriptionId = null;
+      updateData.subscriptionStartDate = null;
+      updateData.subscriptionStatus = 'cancelled';
+    } else if (status === 'active' && !existingUser.subscriptionStartDate) {
+      updateData.subscriptionStartDate = new Date();
+    }
+
+    const [user] = await db
+      .update(users)
+      .set(updateData)
+      .where(eq(users.id, userId))
+      .returning();
+    return user;
+  }
+
+  async getUserCount(): Promise<number> {
+    const result = await db.select({ count: sql<number>`count(*)` }).from(users);
+    return Number(result[0]?.count || 0);
+  }
+
+  async getActiveSubscriptionCount(): Promise<{ pro: number; research: number; enterprise: number }> {
+    const allUsers = await db.select().from(users);
+    return {
+      pro: allUsers.filter(u => u.subscriptionTier === 'pro' && u.subscriptionStatus === 'active').length,
+      research: allUsers.filter(u => u.subscriptionTier === 'research' && u.subscriptionStatus === 'active').length,
+      enterprise: allUsers.filter(u => u.subscriptionTier === 'enterprise' && u.subscriptionStatus === 'active').length,
+    };
   }
 
   async getRedemptionByUserId(userId: string): Promise<EnterpriseCodeRedemption | undefined> {
