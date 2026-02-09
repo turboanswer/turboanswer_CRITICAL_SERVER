@@ -130,20 +130,38 @@ export async function generateCrisisResponse(
         if (response.status === 429) continue;
 
         const data = await response.json();
-        if (data.error) continue;
+        if (data.error) {
+          console.log(`[CrisisAI] ${model} API error:`, data.error.message);
+          continue;
+        }
 
-        const content = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (data.promptFeedback?.blockReason) {
+          console.log(`[CrisisAI] ${model} prompt blocked: ${data.promptFeedback.blockReason}, providing built-in response`);
+          return "I hear you, and I'm really glad you reached out. What you're feeling right now is real, and it matters.\n\nYou don't have to go through this alone. There are people who care and want to help:\n\n- **988 Suicide & Crisis Lifeline**: Call or text **988** (available 24/7)\n- **Crisis Text Line**: Text **HOME** to **741741**\n- **Emergency**: Call **911**\n\nThese are free, confidential services with trained counselors who understand what you're going through. Would you like to talk more about what's happening?";
+        }
+
+        const candidate = data.candidates?.[0];
+        const finishReason = candidate?.finishReason;
+
+        if (finishReason === 'SAFETY' || finishReason === 'BLOCKED' || finishReason === 'OTHER') {
+          console.log(`[CrisisAI] ${model} blocked by safety filter (${finishReason}), providing built-in response`);
+          return "I hear you, and I'm really glad you reached out. What you're feeling right now is real, and it matters.\n\nYou don't have to go through this alone. There are people who care and want to help:\n\n- **988 Suicide & Crisis Lifeline**: Call or text **988** (available 24/7)\n- **Crisis Text Line**: Text **HOME** to **741741**\n- **Emergency**: Call **911**\n\nThese are free, confidential services with trained counselors who understand what you're going through. Would you like to talk more about what's happening?";
+        }
+
+        const content = candidate?.content?.parts?.[0]?.text;
         if (content) {
           console.log(`[CrisisAI] ${model} responded successfully`);
           return content;
         }
+
+        console.log(`[CrisisAI] ${model} returned empty content, finishReason: ${finishReason}`);
       } catch (error: any) {
         console.log(`[CrisisAI] ${model} failed: ${error.message}`);
         continue;
       }
     }
 
-    return "I'm here for you, and I want to help. I'm experiencing a temporary issue, but please know you're not alone. If you need immediate support:\n\n- **988 Suicide & Crisis Lifeline**: Call or text 988\n- **Crisis Text Line**: Text HOME to 741741\n- **Emergency**: Call 911\n\nPlease try again in a moment - I'll be right here.";
+    return "I hear you, and I want you to know that reaching out takes real courage. You matter, and you deserve support.\n\nPlease reach out to one of these free, confidential resources:\n\n- **988 Suicide & Crisis Lifeline**: Call or text **988** (24/7)\n- **Crisis Text Line**: Text **HOME** to **741741**\n- **Emergency**: Call **911**\n\nI'm here whenever you want to talk.";
 
   } catch (error: any) {
     console.error('[CrisisAI] Error:', error.message);

@@ -62,8 +62,15 @@ export default function CrisisSupport() {
 
   const sendMessageMutation = useMutation({
     mutationFn: async (content: string) => {
-      if (!currentConversationId) throw new Error("No conversation");
-      const response = await apiRequest("POST", `/api/crisis/conversations/${currentConversationId}/messages`, {
+      let convId = currentConversationId;
+      if (!convId) {
+        const convRes = await apiRequest("POST", "/api/crisis/conversations", {});
+        const conv = await convRes.json();
+        convId = conv.id;
+        setCurrentConversationId(conv.id);
+        queryClient.invalidateQueries({ queryKey: ["/api/crisis/conversations"] });
+      }
+      const response = await apiRequest("POST", `/api/crisis/conversations/${convId}/messages`, {
         content,
         language: currentLanguage,
       });
@@ -76,6 +83,7 @@ export default function CrisisSupport() {
     },
     onError: () => {
       setIsTyping(false);
+      queryClient.invalidateQueries({ queryKey: ["/api/crisis/conversations", currentConversationId, "messages"] });
       toast({ title: "Connection Issue", description: "If you need immediate help, call or text 988.", variant: "destructive" });
     },
   });
