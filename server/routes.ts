@@ -267,10 +267,12 @@ function downloadAAB(){
           const offender = await storage.getUser(userId);
           const actions: string[] = [];
 
-          if (modResult.autoBan && modResult.type === "sexual") {
+          if (modResult.autoBan && (modResult.type === "sexual" || modResult.type === "terrorism" || modResult.type === "threat")) {
+            const banMonths = modResult.type === "terrorism" ? undefined : 1;
+            const banLabel = modResult.type === "terrorism" ? "permanently (terrorism/harmful content)" : `for 1 month (${modResult.type} content)`;
             try {
-              await storage.banUser(userId, `Auto-banned: Sexual content detected - "${modResult.matchedWords.join(', ')}"`, 1);
-              actions.push("Account banned for 1 month (sexual content)");
+              await storage.banUser(userId, `Auto-banned: ${modResult.type} content detected - "${modResult.matchedWords.join(', ')}"`, banMonths);
+              actions.push(`Account banned ${banLabel}`);
             } catch (e: any) {
               console.error("Auto-ban failed:", e.message);
               actions.push("Ban attempted but failed");
@@ -305,7 +307,11 @@ function downloadAAB(){
           });
         }
 
-        const banMessage = modResult.type === "sexual" 
+        const banMessage = modResult.type === "terrorism" 
+          ? "Your message contains content related to terrorism or threats to public safety. Your account has been permanently banned and reported. Please contact support if you believe this is an error."
+          : modResult.type === "threat"
+          ? "Your message contains threatening content which is strictly prohibited. Your account has been banned for 1 month. Please contact support if you believe this is an error."
+          : modResult.type === "sexual" 
           ? "Your message contains sexual content which is strictly prohibited. Your account has been banned for 1 month. Please contact support if you believe this is an error."
           : "Your message contains inappropriate content. Your account has been temporarily suspended. Please contact support if you believe this is an error.";
 
@@ -892,6 +898,7 @@ function downloadAAB(){
         firstName: user.firstName,
         lastName: user.lastName,
         email: user.email,
+        homeAddress: user.homeAddress,
         subscriptionTier: user.subscriptionTier,
         subscriptionStatus: user.subscriptionStatus,
         isBanned: user.isBanned,

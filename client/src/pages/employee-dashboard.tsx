@@ -18,6 +18,7 @@ interface UserData {
   firstName: string;
   lastName: string;
   email: string;
+  homeAddress?: string;
   subscriptionTier: string;
   subscriptionStatus: string;
   isBanned: boolean;
@@ -331,6 +332,7 @@ export default function EmployeeDashboard() {
                 <div>
                   {selectedUser?.firstName} {selectedUser?.lastName}
                   <div className="text-sm text-gray-400 font-normal">{selectedUser?.email}</div>
+                  {selectedUser?.homeAddress && <div className="text-xs text-gray-500 font-normal">Address: {selectedUser.homeAddress}</div>}
                 </div>
               </CardTitle>
             </CardHeader>

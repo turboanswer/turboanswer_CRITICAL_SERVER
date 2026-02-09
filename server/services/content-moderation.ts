@@ -25,6 +25,21 @@ const THREAT_PATTERNS = [
   /\b(how to|make|build)\s+(a\s+)?(bomb|weapon|explosive|poison)\b/i,
 ];
 
+const TERRORISM_PATTERNS = [
+  /\b(terroris[tm]|jihad(ist|i)?|isis|isil|al[\s-]?qaeda|al[\s-]?qaida|boko\s*haram|taliban|hezbollah|hamas)\b/i,
+  /\b(how\s+to|plan(ning)?|commit|carry\s*out|execute|organize)\s+(a\s+)?(terror(ist)?\s*attack|mass\s*shoot(ing)?|bomb(ing)?|school\s*shoot(ing)?|massacre|mass\s*murder)\b/i,
+  /\b(recruit(ing|ment)?|join(ing)?|support(ing)?|fund(ing)?|financ(e|ing))\s+(terroris[tm]|jihad|isis|isil|al[\s-]?qaeda|extremis[tm])\b/i,
+  /\b(radicali[sz](e|ation|ing)|extremis[tm]|lone\s*wolf\s*attack)\b/i,
+  /\b(detonate|explode|blow\s*up|car\s*bomb|suicide\s*bomb|vest\s*bomb|ied|improvised\s*explosive)\b/i,
+  /\b(anthrax|ricin|sarin|chemical\s*weapon|biological\s*weapon|dirty\s*bomb|nuclear\s*weapon)\s*(attack|how|make|build|create|use)?\b/i,
+  /\b(overthrow|insurrection|sedition|armed\s*rebellion|coup\s+d'[eé]tat|violent\s*revolution)\s*(against\s+)?(the\s+)?(government|state|u\.?s\.?|america|united\s*states)?\b/i,
+  /\b(mass\s*casualt(y|ies)|kill\s*(as\s*many|maximum|lots\s*of)\s*(people|civilians|americans))\b/i,
+  /\b(target(ing)?|attack(ing)?|bomb(ing)?|shoot(ing)?)\s+(a\s+)?(school|church|mosque|synagogue|mall|airport|stadium|concert|government\s*building|white\s*house|capitol|congress)\b/i,
+  /\b(swat(ting)?|doxx?(ing)?|threaten)\s+(a\s+)?(school|church|mosque|synagogue|government|politician|official)\b/i,
+  /\b(how\s+to|where\s+to|buy|get|obtain|acquire)\s+(a\s+)?(assault\s*rifle|ar[\s-]?15|ak[\s-]?47|automatic\s*weapon|machine\s*gun|grenade|c4|tnt|dynamite|detonator)\b/i,
+  /\b(manifesto|pledge\s*allegiance)\s+(to\s+)?(isis|isil|al[\s-]?qaeda|terroris[tm])\b/i,
+];
+
 const SEXUAL_CONTENT_PATTERNS = [
   /\b(sex(ual|ually)?|porn(ography|ographic)?|xxx|nsfw|hentai|erotic(a)?|nude(s)?|naked)\b/i,
   /\b(orgasm|masturbat(e|ion|ing)|fetish|kink(y)?|bdsm|bondage)\b/i,
@@ -46,7 +61,7 @@ const SEXUAL_REQUEST_PATTERNS = [
 
 export interface ModerationResult {
   isFlagged: boolean;
-  type: "clean" | "profanity" | "inappropriate" | "threat" | "sexual";
+  type: "clean" | "profanity" | "inappropriate" | "threat" | "sexual" | "terrorism";
   matchedWords: string[];
   severity: "none" | "low" | "medium" | "high";
   autoBan?: boolean;
@@ -54,6 +69,23 @@ export interface ModerationResult {
 
 export function moderateContent(content: string): ModerationResult {
   const lowerContent = content.toLowerCase().trim();
+
+  const terrorismMatches: string[] = [];
+  for (const pattern of TERRORISM_PATTERNS) {
+    const match = lowerContent.match(pattern);
+    if (match) {
+      terrorismMatches.push(match[0]);
+    }
+  }
+  if (terrorismMatches.length > 0) {
+    return {
+      isFlagged: true,
+      type: "terrorism",
+      matchedWords: Array.from(new Set(terrorismMatches)),
+      severity: "high",
+      autoBan: true,
+    };
+  }
 
   const threatMatches: string[] = [];
   for (const pattern of THREAT_PATTERNS) {
@@ -68,6 +100,7 @@ export function moderateContent(content: string): ModerationResult {
       type: "threat",
       matchedWords: threatMatches,
       severity: "high",
+      autoBan: true,
     };
   }
 
