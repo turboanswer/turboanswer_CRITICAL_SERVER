@@ -373,15 +373,21 @@ function downloadAAB(){
       if (!user) return res.status(401).json({ error: 'User not found' });
 
       const { coupon } = req.body || {};
-      const couponData = VALID_COUPONS[coupon?.toUpperCase()];
+      console.log(`[Coupon] Validating coupon "${coupon}" for user ${userId} (${user.email})`);
+      const couponKey = coupon?.trim()?.toUpperCase();
+      const couponData = VALID_COUPONS[couponKey];
       if (!couponData) {
+        console.log(`[Coupon] Code "${couponKey}" not found in valid coupons. Available: ${Object.keys(VALID_COUPONS).join(', ')}`);
         return res.status(400).json({ error: 'Invalid coupon code.' });
       }
       if (user.email?.toLowerCase() !== couponData.allowedEmail.toLowerCase()) {
+        console.log(`[Coupon] Email mismatch: user=${user.email}, required=${couponData.allowedEmail}`);
         return res.status(403).json({ error: 'This coupon is not valid for your account.' });
       }
+      console.log(`[Coupon] Valid! Applying discount for ${user.email}`);
       res.json({ valid: true, discountedPrice: couponData.discountedPrice, label: couponData.label });
     } catch (error: any) {
+      console.error('[Coupon] Error:', error.message);
       res.status(500).json({ error: 'Failed to validate coupon.' });
     }
   });
