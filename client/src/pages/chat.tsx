@@ -29,6 +29,8 @@ export default function Chat() {
   const [showProPopup, setShowProPopup] = useState(false);
   const [showResearchPopup, setShowResearchPopup] = useState(false);
   const [showEnterprisePopup, setShowEnterprisePopup] = useState(false);
+  const [entCoupon, setEntCoupon] = useState('');
+  const [entCouponApplied, setEntCouponApplied] = useState(false);
   const [showWelcomePro, setShowWelcomePro] = useState(false);
   const [welcomeTier, setWelcomeTier] = useState<'pro' | 'research' | 'enterprise'>('pro');
   const [enterpriseCode, setEnterpriseCode] = useState<string | null>(null);
@@ -629,8 +631,52 @@ export default function Chat() {
               <p className={isDark ? 'text-zinc-400 text-sm' : 'text-gray-500 text-sm'}>Team access with 33% savings</p>
             </div>
             <div className="text-center mb-5">
-              <span className={`text-4xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>$50</span>
-              <span className={isDark ? 'text-zinc-400 text-base' : 'text-gray-500 text-base'}>/month</span>
+              {entCouponApplied ? (
+                <>
+                  <span className={`text-lg line-through ${isDark ? 'text-zinc-500' : 'text-gray-400'}`}>$50</span>
+                  <span className={`text-4xl font-bold ml-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>$0.99</span>
+                  <span className={isDark ? 'text-zinc-400 text-base' : 'text-gray-500 text-base'}>/month</span>
+                </>
+              ) : (
+                <>
+                  <span className={`text-4xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>$50</span>
+                  <span className={isDark ? 'text-zinc-400 text-base' : 'text-gray-500 text-base'}>/month</span>
+                </>
+              )}
+            </div>
+            <div className="mb-5">
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  placeholder="Promo code"
+                  value={entCoupon}
+                  onChange={(e) => { setEntCoupon(e.target.value); if (entCouponApplied) { setEntCouponApplied(false); } }}
+                  className={`flex-1 px-3 py-2 rounded-lg text-sm outline-none ${isDark ? 'bg-zinc-800 border-zinc-600 text-white' : 'bg-gray-100 border-gray-300 text-gray-900'} border`}
+                />
+                <button
+                  onClick={async () => {
+                    if (!entCoupon.trim()) return;
+                    try {
+                      const res = await fetch("/api/validate-coupon", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ coupon: entCoupon.trim().toUpperCase() }),
+                        credentials: "include",
+                      });
+                      if (!res.ok) { const err = await res.json(); throw new Error(err.error); }
+                      setEntCouponApplied(true);
+                      toast({ title: "Promo Applied!", description: "Enterprise discounted to $0.99/mo" });
+                    } catch (err: any) {
+                      toast({ title: "Invalid Code", description: err.message || "This promo code is not valid.", variant: "destructive" });
+                      setEntCouponApplied(false);
+                    }
+                  }}
+                  disabled={!entCoupon.trim() || entCouponApplied}
+                  className={`px-4 py-2 rounded-lg text-sm font-semibold ${entCouponApplied ? 'bg-green-500 text-white' : 'bg-amber-500 hover:bg-amber-600 text-white'} ${!entCoupon.trim() ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                >
+                  {entCouponApplied ? '✓' : 'Apply'}
+                </button>
+              </div>
             </div>
             <ul className="space-y-3 mb-6">
               {["All Research features included", "Shareable 6-digit team code", "Up to 5 team members", "Save 33% vs individual Research plans", "Priority enterprise support"].map((text, i) => (
@@ -644,10 +690,12 @@ export default function Chat() {
               onClick={async () => {
                 setCheckoutLoading(true);
                 try {
+                  const body: any = { plan: "enterprise" };
+                  if (entCouponApplied && entCoupon.trim()) body.coupon = entCoupon.trim().toUpperCase();
                   const res = await fetch("/api/checkout", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ plan: "enterprise" }),
+                    body: JSON.stringify(body),
                     credentials: "include",
                   });
                   const data = await res.json();
@@ -657,7 +705,7 @@ export default function Chat() {
                 finally { setCheckoutLoading(false); }
               }}>
               <Crown className="w-4 h-4 mr-2" />
-              {checkoutLoading ? "Loading..." : "Subscribe Now - $50/mo"}
+              {checkoutLoading ? "Loading..." : entCouponApplied ? "Subscribe Now - $0.99/mo" : "Subscribe Now - $50/mo"}
             </Button>
             <p className={`text-center text-xs mt-3 ${isDark ? 'text-zinc-500' : 'text-gray-400'}`}>Cancel anytime. Secure payment via PayPal.</p>
             <div className={`mt-4 pt-4 border-t ${isDark ? 'border-zinc-700' : 'border-gray-200'} text-center`}>
