@@ -106,6 +106,35 @@ export type InsertEnterpriseCode = z.infer<typeof insertEnterpriseCodeSchema>;
 export type EnterpriseCode = typeof enterpriseCodes.$inferSelect;
 export type EnterpriseCodeRedemption = typeof enterpriseCodeRedemptions.$inferSelect;
 
+export const crisisConversations = pgTable("crisis_conversations", {
+  id: serial("id").primaryKey(),
+  userId: text("user_id").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const crisisMessages = pgTable("crisis_messages", {
+  id: serial("id").primaryKey(),
+  conversationId: integer("conversation_id").references(() => crisisConversations.id).notNull(),
+  encryptedContent: text("encrypted_content").notNull(),
+  role: text("role").notNull(),
+  timestamp: timestamp("timestamp").defaultNow().notNull(),
+});
+
+export const insertCrisisConversationSchema = createInsertSchema(crisisConversations).pick({
+  userId: true,
+});
+
+export const insertCrisisMessageSchema = createInsertSchema(crisisMessages).pick({
+  conversationId: true,
+  encryptedContent: true,
+  role: true,
+});
+
+export type InsertCrisisConversation = z.infer<typeof insertCrisisConversationSchema>;
+export type CrisisConversation = typeof crisisConversations.$inferSelect;
+export type InsertCrisisMessage = z.infer<typeof insertCrisisMessageSchema>;
+export type CrisisMessage = typeof crisisMessages.$inferSelect;
+
 export const insertAuditLogSchema = createInsertSchema(auditLogs).pick({
   employeeId: true,
   employeeUsername: true,

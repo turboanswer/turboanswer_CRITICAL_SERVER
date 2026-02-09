@@ -1,4 +1,4 @@
-import { users, conversations, messages, auditLogs, adminNotifications, enterpriseCodes, enterpriseCodeRedemptions, type User, type Conversation, type InsertConversation, type Message, type InsertMessage, type AuditLog, type InsertAuditLog, type AdminNotification, type InsertAdminNotification, type EnterpriseCode, type EnterpriseCodeRedemption } from "@shared/schema";
+import { users, conversations, messages, auditLogs, adminNotifications, enterpriseCodes, enterpriseCodeRedemptions, crisisConversations, crisisMessages, type User, type Conversation, type InsertConversation, type Message, type InsertMessage, type AuditLog, type InsertAuditLog, type AdminNotification, type InsertAdminNotification, type EnterpriseCode, type EnterpriseCodeRedemption, type CrisisConversation, type InsertCrisisConversation, type CrisisMessage, type InsertCrisisMessage } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, and, sql } from "drizzle-orm";
 
@@ -49,6 +49,14 @@ export interface IStorage {
   incrementEnterpriseCodeUses(codeId: number): Promise<void>;
   deleteUserAccount(userId: string): Promise<void>;
   getUserByEmail(email: string): Promise<User | undefined>;
+
+  createCrisisConversation(userId: string): Promise<CrisisConversation>;
+  getCrisisConversationsByUser(userId: string): Promise<CrisisConversation[]>;
+  getCrisisConversation(id: number, userId: string): Promise<CrisisConversation | undefined>;
+  createCrisisMessage(message: InsertCrisisMessage): Promise<CrisisMessage>;
+  getCrisisMessagesByConversation(conversationId: number): Promise<CrisisMessage[]>;
+  deleteCrisisConversation(id: number, userId: string): Promise<void>;
+  deleteAllCrisisData(userId: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -411,6 +419,7 @@ export class DatabaseStorage implements IStorage {
       await db.delete(messages).where(eq(messages.conversationId, conv.id));
     }
     await db.delete(conversations).where(eq(conversations.userId, userId));
+    await this.deleteAllCrisisData(userId);
     await db.delete(enterpriseCodeRedemptions).where(eq(enterpriseCodeRedemptions.userId, userId));
     await db.delete(users).where(eq(users.id, userId));
   }
@@ -418,6 +427,49 @@ export class DatabaseStorage implements IStorage {
   async getUserByEmail(email: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.email, email));
     return user || undefined;
+  }
+
+  async createCrisisConversation(userId: string): Promise<CrisisConversation> {
+    const [conv] = await db.insert(crisisConversations).values({ userId }).returning();
+    return conv;
+  }
+
+  async getCrisisConversationsByUser(userId: string): Promise<CrisisConversation[]> {
+    return await db.select().from(crisisConversations)
+      .where(eq(crisisConversations.userId, userId))
+      .orderBy(desc(crisisConversations.createdAt));
+  }
+
+  async getCrisisConversation(id: number, userId: string): Promise<CrisisConversation | undefined> {
+    const [conv] = await db.select().from(crisisConversations)
+      .where(and(eq(crisisConversations.id, id), eq(crisisConversations.userId, userId)));
+    return conv || undefined;
+  }
+
+  async createCrisisMessage(message: InsertCrisisMessage): Promise<CrisisMessage> {
+    const [msg] = await db.insert(crisisMessages).values(message).returning();
+    return msg;
+  }
+
+  async getCrisisMessagesByConversation(conversationId: number): Promise<CrisisMessage[]> {
+    return await db.select().from(crisisMessages)
+      .where(eq(crisisMessages.conversationId, conversationId))
+      .orderBy(crisisMessages.timestamp);
+  }
+
+  async deleteCrisisConversation(id: number, userId: string): Promise<void> {
+    const conv = await this.getCrisisConversation(id, userId);
+    if (!conv) return;
+    await db.delete(crisisMessages).where(eq(crisisMessages.conversationId, id));
+    await db.delete(crisisConversations).where(and(eq(crisisConversations.id, id), eq(crisisConversations.userId, userId)));
+  }
+
+  async deleteAllCrisisData(userId: string): Promise<void> {
+    const convs = await db.select().from(crisisConversations).where(eq(crisisConversations.userId, userId));
+    for (const conv of convs) {
+      await db.delete(crisisMessages).where(eq(crisisMessages.conversationId, conv.id));
+    }
+    await db.delete(crisisConversations).where(eq(crisisConversations.userId, userId));
   }
 }
 
