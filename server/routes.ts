@@ -372,12 +372,12 @@ function downloadAAB(){
       }
 
       const { plan } = req.body || {};
-      const tier = plan === 'research' ? 'research' : 'pro';
+      const tier = plan === 'enterprise' ? 'enterprise' : plan === 'research' ? 'research' : 'pro';
       console.log('[PayPal Checkout] Starting for user:', userId, 'plan:', tier);
 
       const baseUrl = `https://${process.env.REPLIT_DOMAINS?.split(',')[0] || req.get('host')}`;
       const result = await createSubscription(
-        tier as 'pro' | 'research',
+        tier as 'pro' | 'research' | 'enterprise',
         user.email,
         userId,
         `${baseUrl}/chat?subscription=${tier}`,
@@ -409,7 +409,23 @@ function downloadAAB(){
 
           await storage.updatePaypalSubscription(userId, subscriptionId, tier);
           console.log(`[PayPal Sync] Updated user ${userId} to ${tier}`);
-          return res.json({ tier, status: 'active' });
+
+          let enterpriseCode: string | undefined;
+          if (tier === 'enterprise') {
+            const existingCode = await storage.getEnterpriseCodeByOwner(userId);
+            if (!existingCode) {
+              const { randomInt } = await import('crypto');
+              const code = String(randomInt(100000, 999999));
+              const user = await storage.getUser(userId);
+              await storage.createEnterpriseCode(code, userId, user?.email || null);
+              enterpriseCode = code;
+              console.log(`[Enterprise] Generated code ${code} for user ${userId}`);
+            } else {
+              enterpriseCode = existingCode.code;
+            }
+          }
+
+          return res.json({ tier, status: 'active', enterpriseCode });
         }
       }
 
@@ -445,7 +461,7 @@ function downloadAAB(){
         return res.json({ tier: 'free', status: 'none' });
       }
 
-      if ((user.subscriptionTier === 'pro' || user.subscriptionTier === 'research') && user.subscriptionStatus === 'active') {
+      if ((user.subscriptionTier === 'pro' || user.subscriptionTier === 'research' || user.subscriptionTier === 'enterprise') && user.subscriptionStatus === 'active') {
         return res.json({ tier: user.subscriptionTier, status: 'active' });
       }
 
@@ -466,7 +482,7 @@ function downloadAAB(){
           }
         } catch (e: any) {
           console.log('[PayPal] Could not verify subscription:', e.message?.substring(0, 100));
-          if (user.subscriptionTier === 'pro' || user.subscriptionTier === 'research') {
+          if (user.subscriptionTier === 'pro' || user.subscriptionTier === 'research' || user.subscriptionTier === 'enterprise') {
             return res.json({ tier: user.subscriptionTier, status: user.subscriptionStatus || 'active' });
           }
         }
@@ -507,6 +523,11 @@ function downloadAAB(){
           tier: 'research',
           email: 'luanfrank5@gmail.com',
           description: 'Special lifetime Research access'
+        },
+        'TURBO-ENTERPRISE-TEST': {
+          tier: 'enterprise',
+          email: 'support@turboanswer.it.com',
+          description: 'Enterprise test access (1 cent trial)'
         }
       };
 
@@ -522,14 +543,133 @@ function downloadAAB(){
       await storage.updateUserSubscription(userId, 'active', promo.tier);
       console.log(`[Promo] Applied code ${promoCode} for user ${userId} (${user.email}) - ${promo.description}`);
 
+      let enterpriseCode: string | undefined;
+      if (promo.tier === 'enterprise') {
+        const { randomInt } = await import('crypto');
+        const code = String(randomInt(100000, 999999));
+        await storage.createEnterpriseCode(code, userId, user.email);
+        enterpriseCode = code;
+        console.log(`[Enterprise] Generated code ${code} for user ${userId}`);
+      }
+
       res.json({
         success: true,
         message: `${promo.description} activated! You now have lifetime ${promo.tier} access.`,
-        tier: promo.tier
+        tier: promo.tier,
+        enterpriseCode,
       });
     } catch (error: any) {
       console.error('[Promo] Error:', error.message);
       res.status(500).json({ error: 'Failed to apply promo code' });
+    }
+  });
+
+  const enterpriseRedeemAttempts = new Map<string, { count: number; resetAt: number }>();
+
+  app.post('/api/redeem-enterprise-code', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+
+      const now = Date.now();
+      const attempts = enterpriseRedeemAttempts.get(userId);
+      if (attempts && now < attempts.resetAt) {
+        if (attempts.count >= 5) {
+          return res.status(429).json({ error: 'Too many attempts. Please try again in 15 minutes.' });
+        }
+        attempts.count++;
+      } else {
+        enterpriseRedeemAttempts.set(userId, { count: 1, resetAt: now + 15 * 60 * 1000 });
+      }
+
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(401).json({ error: 'User not found' });
+      }
+
+      const { code } = req.body;
+      if (!code || typeof code !== 'string' || !/^\d{6}$/.test(code)) {
+        return res.status(400).json({ error: 'Please enter a valid 6-digit enterprise code' });
+      }
+
+      const enterpriseCode = await storage.getEnterpriseCodeByCode(code);
+      if (!enterpriseCode) {
+        return res.status(400).json({ error: 'Invalid enterprise code' });
+      }
+
+      if (enterpriseCode.ownerUserId === userId) {
+        return res.status(400).json({ error: 'You cannot redeem your own enterprise code' });
+      }
+
+      if ((enterpriseCode.currentUses || 0) >= (enterpriseCode.maxUses || 10)) {
+        return res.status(400).json({ error: 'This enterprise code has reached its maximum number of uses (10)' });
+      }
+
+      const existingRedemptions = await storage.getEnterpriseCodeRedemptions(enterpriseCode.id);
+      const alreadyRedeemed = existingRedemptions.some(r => r.userId === userId);
+      if (alreadyRedeemed) {
+        return res.status(400).json({ error: 'You have already redeemed this enterprise code' });
+      }
+
+      await storage.redeemEnterpriseCode(enterpriseCode.id, userId, user.email);
+      await storage.incrementEnterpriseCodeUses(enterpriseCode.id);
+      await storage.updateUserSubscription(userId, 'active', 'research');
+
+      console.log(`[Enterprise] Code ${code} redeemed by user ${userId} (${user.email})`);
+      res.json({
+        success: true,
+        message: 'Enterprise code redeemed! You now have Research-level access.',
+        tier: 'research'
+      });
+    } catch (error: any) {
+      console.error('[Enterprise] Redeem error:', error.message);
+      res.status(500).json({ error: 'Failed to redeem enterprise code' });
+    }
+  });
+
+  app.get('/api/enterprise-code', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const code = await storage.getEnterpriseCodeByOwner(userId);
+      if (!code) {
+        return res.json({ hasCode: false });
+      }
+      const redemptions = await storage.getEnterpriseCodeRedemptions(code.id);
+      res.json({
+        hasCode: true,
+        code: code.code,
+        maxUses: code.maxUses,
+        currentUses: code.currentUses,
+        redemptions: redemptions.map(r => ({ email: r.userEmail, date: r.redeemedAt }))
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: 'Failed to get enterprise code' });
+    }
+  });
+
+  app.post('/api/delete-account', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(401).json({ error: 'User not found' });
+      }
+
+      if (user.paypalSubscriptionId && user.subscriptionTier !== 'free') {
+        try {
+          await cancelSubscription(user.paypalSubscriptionId, 'Account deleted by user');
+          console.log(`[Delete Account] Cancelled PayPal subscription for user ${userId}`);
+        } catch (e: any) {
+          console.log(`[Delete Account] PayPal cancel error (may already be cancelled):`, e.message?.substring(0, 100));
+        }
+      }
+
+      await storage.deleteUserAccount(userId);
+      console.log(`[Delete Account] User ${userId} (${user.email}) account deleted`);
+
+      res.json({ success: true, message: 'Your account has been deleted successfully.' });
+    } catch (error: any) {
+      console.error('[Delete Account] Error:', error.message);
+      res.status(500).json({ error: 'Failed to delete account' });
     }
   });
 

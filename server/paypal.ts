@@ -59,9 +59,9 @@ async function paypalRequest(method: string, path: string, body?: any): Promise<
   return res.json();
 }
 
-let planIds: { pro: string; research: string } | null = null;
+let planIds: { pro: string; research: string; enterprise: string } | null = null;
 
-export async function ensureSubscriptionPlans(): Promise<{ pro: string; research: string }> {
+export async function ensureSubscriptionPlans(): Promise<{ pro: string; research: string; enterprise: string }> {
   if (planIds) return planIds;
 
   const token = await getAccessToken();
@@ -70,14 +70,16 @@ export async function ensureSubscriptionPlans(): Promise<{ pro: string; research
   
   let proPlanId: string | null = null;
   let researchPlanId: string | null = null;
+  let enterprisePlanId: string | null = null;
 
   for (const plan of plans.plans || []) {
     if (plan.status !== "ACTIVE") continue;
     if (plan.name === "Turbo Answer Pro") proPlanId = plan.id;
     if (plan.name === "Turbo Answer Research") researchPlanId = plan.id;
+    if (plan.name === "Turbo Answer Enterprise") enterprisePlanId = plan.id;
   }
 
-  if (!proPlanId || !researchPlanId) {
+  if (!proPlanId || !researchPlanId || !enterprisePlanId) {
     let productId: string | null = null;
     const products = await paypalRequest("GET", "/v1/catalogs/products?page_size=20&page=1&total_required=true");
     for (const product of products.products || []) {
@@ -141,22 +143,44 @@ export async function ensureSubscriptionPlans(): Promise<{ pro: string; research
       researchPlanId = plan.id;
       console.log("[PayPal] Created Research plan:", researchPlanId);
     }
+
+    if (!enterprisePlanId) {
+      const plan = await paypalRequest("POST", "/v1/billing/plans", {
+        product_id: productId,
+        name: "Turbo Answer Enterprise",
+        description: "Enterprise tier - Research access for teams with shareable codes",
+        status: "ACTIVE",
+        billing_cycles: [{
+          frequency: { interval_unit: "MONTH", interval_count: 1 },
+          tenure_type: "REGULAR",
+          sequence: 1,
+          total_cycles: 0,
+          pricing_scheme: { fixed_price: { value: "30.00", currency_code: "USD" } },
+        }],
+        payment_preferences: {
+          auto_bill_outstanding: true,
+          payment_failure_threshold: 3,
+        },
+      });
+      enterprisePlanId = plan.id;
+      console.log("[PayPal] Created Enterprise plan:", enterprisePlanId);
+    }
   }
 
-  planIds = { pro: proPlanId!, research: researchPlanId! };
+  planIds = { pro: proPlanId!, research: researchPlanId!, enterprise: enterprisePlanId! };
   console.log("[PayPal] Subscription plans ready:", planIds);
   return planIds;
 }
 
 export async function createSubscription(
-  planTier: "pro" | "research",
+  planTier: "pro" | "research" | "enterprise",
   userEmail: string | null,
   userId: string,
   returnUrl: string,
   cancelUrl: string,
 ): Promise<{ subscriptionId: string; approvalUrl: string }> {
   const plans = await ensureSubscriptionPlans();
-  const planId = planTier === "research" ? plans.research : plans.pro;
+  const planId = planTier === "enterprise" ? plans.enterprise : planTier === "research" ? plans.research : plans.pro;
 
   const body: any = {
     plan_id: planId,

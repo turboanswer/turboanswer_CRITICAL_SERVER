@@ -12,7 +12,7 @@ interface PricingPlan {
   description: string;
   features: string[];
   popular?: boolean;
-  apiPlan?: 'pro' | 'research';
+  apiPlan?: 'pro' | 'research' | 'enterprise';
 }
 
 const plans: PricingPlan[] = [
@@ -62,6 +62,22 @@ const plans: PricingPlan[] = [
       'Priority support'
     ],
     apiPlan: 'research'
+  },
+  {
+    id: 'enterprise',
+    name: 'Enterprise',
+    price: '$30',
+    period: 'per month',
+    description: 'Team access with shareable code for up to 10 members',
+    features: [
+      'All Research features included',
+      'Shareable 6-digit team code',
+      'Up to 10 team members',
+      'Research-level access for all members',
+      'Team management dashboard',
+      'Priority enterprise support'
+    ],
+    apiPlan: 'enterprise'
   }
 ];
 

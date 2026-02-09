@@ -77,6 +77,35 @@ export const insertAdminNotificationSchema = createInsertSchema(adminNotificatio
 export type InsertAdminNotification = z.infer<typeof insertAdminNotificationSchema>;
 export type AdminNotification = typeof adminNotifications.$inferSelect;
 
+export const enterpriseCodes = pgTable("enterprise_codes", {
+  id: serial("id").primaryKey(),
+  code: text("code").notNull().unique(),
+  ownerUserId: text("owner_user_id").notNull(),
+  ownerEmail: text("owner_email"),
+  maxUses: integer("max_uses").default(10),
+  currentUses: integer("current_uses").default(0),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const enterpriseCodeRedemptions = pgTable("enterprise_code_redemptions", {
+  id: serial("id").primaryKey(),
+  codeId: integer("code_id").references(() => enterpriseCodes.id).notNull(),
+  userId: text("user_id").notNull(),
+  userEmail: text("user_email"),
+  redeemedAt: timestamp("redeemed_at").defaultNow().notNull(),
+});
+
+export const insertEnterpriseCodeSchema = createInsertSchema(enterpriseCodes).pick({
+  code: true,
+  ownerUserId: true,
+  ownerEmail: true,
+  maxUses: true,
+});
+
+export type InsertEnterpriseCode = z.infer<typeof insertEnterpriseCodeSchema>;
+export type EnterpriseCode = typeof enterpriseCodes.$inferSelect;
+export type EnterpriseCodeRedemption = typeof enterpriseCodeRedemptions.$inferSelect;
+
 export const insertAuditLogSchema = createInsertSchema(auditLogs).pick({
   employeeId: true,
   employeeUsername: true,

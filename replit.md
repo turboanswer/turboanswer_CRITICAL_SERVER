@@ -44,10 +44,12 @@ Subscription preference: Lifetime free premium access through promo code system 
 - **Authentication Storage**: User sessions and account data
 
 ### Key Features
-- **Multi-Model AI System**: 3 tiers - Free (Gemini 2.5 Flash), Pro ($6.99/mo - Gemini Pro), Research ($15/mo - Gemini 2.5 Pro). All Gemini-powered with automatic fallback on rate limits. Research tier includes Pro access.
+- **Multi-Model AI System**: 4 tiers - Free (Gemini 2.5 Flash), Pro ($6.99/mo - Gemini Pro), Research ($15/mo - Gemini 2.5 Pro), Enterprise ($30/mo - Research access + shareable 6-digit code for up to 10 team members). All Gemini-powered with automatic fallback on rate limits. Research tier includes Pro access. Enterprise includes Research access.
 - **Voice Command Features**: Speech recognition (Web Speech API), "Turbo" assistant name, optional "Hey Turbo" wake word, auto-send, text-to-speech, and visual feedback.
 - **Comprehensive Knowledge Coverage**: Expert-level knowledge in technical, scientific, creative, business, and general domains, including real-time weather and world time zone intelligence.
-- **Subscription Management**: PayPal Subscriptions API integration for Pro ($6.99/month) and Research ($15/month) plans. Payment popups trigger from model selector. Uses PayPal REST API with auto-created billing plans.
+- **Subscription Management**: PayPal Subscriptions API integration for Pro ($6.99/month), Research ($15/month), and Enterprise ($30/month) plans. Payment popups trigger from model selector. Uses PayPal REST API with auto-created billing plans. Enterprise subscribers get a secure 6-digit numeric code to share with up to 10 team members for Research access.
+- **Account Management**: Delete account functionality in AI settings with PayPal auto-cancellation and complete data removal.
+- **Customer Support**: Email (support@turboanswer.it.com), Phone (518-250-5405), Hours: Mon-Fri 10am-4pm EST.
 - **Employee Management API**: Endpoints for user management (ban, flag, suspend) and audit logging.
 - **Content Moderation System**: Automatic profanity/threat detection on user messages. Flagged users are auto-suspended with admin notifications sent to the admin panel showing full user details, flagged content, and action taken.
 - **AI Image & Video Generation**: Integration with OpenAI DALL-E 3 and a framework for video generation with multi-provider architecture.

@@ -199,11 +199,11 @@ export function getAvailableModels(subscriptionTier: string): Record<string, any
     Object.assign(models, AI_MODELS.free);
   }
 
-  if (subscriptionTier === 'pro' || subscriptionTier === 'research') {
+  if (subscriptionTier === 'pro' || subscriptionTier === 'research' || subscriptionTier === 'enterprise') {
     if (hasGemini) Object.assign(models, AI_MODELS.pro);
   }
 
-  if (subscriptionTier === 'research') {
+  if (subscriptionTier === 'research' || subscriptionTier === 'enterprise') {
     if (hasGemini) Object.assign(models, AI_MODELS.research);
   }
 

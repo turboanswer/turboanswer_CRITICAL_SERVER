@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
-import { ArrowLeft, Brain, Zap, CheckCircle, Star, FlaskConical, XCircle, AlertTriangle, Gift } from "lucide-react";
+import { ArrowLeft, Brain, Zap, CheckCircle, Star, FlaskConical, XCircle, AlertTriangle, Gift, Building2, Trash2, Copy, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -49,6 +49,8 @@ export default function AISettings() {
     return localStorage.getItem('selectedAIModel') || 'gemini-flash';
   });
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [, setLocation] = useLocation();
 
   const { theme } = useTheme();
   const isDark = theme === "dark";
@@ -59,8 +61,13 @@ export default function AISettings() {
     queryKey: ["/api/subscription-status"],
   });
 
+  const { data: enterpriseData } = useQuery<{ hasCode: boolean; code?: string; maxUses?: number; currentUses?: number; redemptions?: Array<{ email: string; date: string }> }>({
+    queryKey: ["/api/enterprise-code"],
+  });
+
   const [promoCode, setPromoCode] = useState('');
   const [showPromoInput, setShowPromoInput] = useState(false);
+  const [enterpriseCodeInput, setEnterpriseCodeInput] = useState('');
 
   const promoMutation = useMutation({
     mutationFn: async ({ promoCode }: { promoCode: string }) => {
@@ -71,17 +78,40 @@ export default function AISettings() {
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/subscription-status"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/enterprise-code"] });
       setPromoCode('');
       setShowPromoInput(false);
-      toast({
-        title: "Promo Code Applied!",
-        description: data.message,
-      });
+      let msg = data.message;
+      if (data.enterpriseCode) {
+        msg += ` Your enterprise code is: ${data.enterpriseCode}`;
+      }
+      toast({ title: "Promo Code Applied!", description: msg });
     },
     onError: (error: any) => {
       toast({
         title: "Invalid Code",
         description: error.message || "This promo code is not valid",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const enterpriseRedeemMutation = useMutation({
+    mutationFn: async ({ code }: { code: string }) => {
+      const res = await apiRequest('POST', '/api/redeem-enterprise-code', {
+        code: code.toUpperCase()
+      });
+      return res.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/subscription-status"] });
+      setEnterpriseCodeInput('');
+      toast({ title: "Enterprise Code Redeemed!", description: data.message });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Invalid Code",
+        description: error.message || "This enterprise code is not valid",
         variant: "destructive",
       });
     },
@@ -111,12 +141,30 @@ export default function AISettings() {
     },
   });
 
+  const deleteMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", "/api/delete-account");
+      return res.json();
+    },
+    onSuccess: () => {
+      toast({ title: "Account Deleted", description: "Your account and all data have been permanently deleted." });
+      setTimeout(() => { setLocation('/'); window.location.reload(); }, 1500);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete account",
+        variant: "destructive",
+      });
+    },
+  });
+
   useEffect(() => {
     localStorage.setItem('selectedAIModel', selectedModel);
   }, [selectedModel]);
 
-  const hasPaidSubscription = subscriptionData?.tier === 'pro' || subscriptionData?.tier === 'research';
-  const tierLabel = subscriptionData?.tier === 'research' ? 'Research ($15/mo)' : 'Pro ($6.99/mo)';
+  const hasPaidSubscription = subscriptionData?.tier === 'pro' || subscriptionData?.tier === 'research' || subscriptionData?.tier === 'enterprise';
+  const tierLabel = subscriptionData?.tier === 'enterprise' ? 'Enterprise ($30/mo)' : subscriptionData?.tier === 'research' ? 'Research ($15/mo)' : 'Pro ($6.99/mo)';
 
   return (
     <div className={`min-h-screen ${isDark ? 'bg-black text-white' : 'bg-gray-50 text-gray-900'}`}>
@@ -176,6 +224,77 @@ export default function AISettings() {
           })}
         </RadioGroup>
 
+        {/* Enterprise Code Entry Box */}
+        <div className="mt-10">
+          <div className={`border-t ${isDark ? 'border-gray-800' : 'border-gray-200'} pt-8`}>
+            <h3 className="text-lg font-semibold mb-2 flex items-center gap-2">
+              <Building2 className="h-5 w-5 text-amber-400" />
+              Enterprise Code
+            </h3>
+            <p className={`text-sm mb-4 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+              Have a 6-digit enterprise code from your organization? Enter it below to unlock Research-level access.
+            </p>
+            <div className="flex gap-2 max-w-md">
+              <input
+                type="text"
+                placeholder="Enter 6-digit code"
+                value={enterpriseCodeInput}
+                onChange={(e) => setEnterpriseCodeInput(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                onKeyDown={(e) => { if (e.key === 'Enter' && enterpriseCodeInput.length === 6) enterpriseRedeemMutation.mutate({ code: enterpriseCodeInput }); }}
+                maxLength={6}
+                className={`flex-1 px-4 py-3 rounded-lg border text-lg font-mono tracking-widest text-center ${isDark ? 'bg-gray-900 border-amber-800/50 text-white placeholder-gray-500' : 'bg-white border-amber-300 text-gray-900 placeholder-gray-400'}`}
+              />
+              <Button
+                onClick={() => enterpriseRedeemMutation.mutate({ code: enterpriseCodeInput })}
+                disabled={enterpriseCodeInput.length !== 6 || enterpriseRedeemMutation.isPending}
+                className="bg-amber-600 hover:bg-amber-700 text-white px-6"
+              >
+                {enterpriseRedeemMutation.isPending ? "Redeeming..." : "Redeem"}
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        {/* Show enterprise code for enterprise subscribers */}
+        {enterpriseData?.hasCode && (
+          <div className="mt-8">
+            <Card className={`${isDark ? 'bg-amber-950/30 border-amber-800' : 'bg-amber-50 border-amber-200'}`}>
+              <CardContent className="p-5">
+                <div className="flex items-center gap-2 mb-3">
+                  <Building2 className="h-5 w-5 text-amber-400" />
+                  <h4 className="font-semibold text-amber-400">Your Enterprise Code</h4>
+                </div>
+                <div className="flex items-center gap-3 mb-3">
+                  <span className={`text-3xl font-mono tracking-[0.3em] font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                    {enterpriseData.code}
+                  </span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      navigator.clipboard.writeText(enterpriseData.code || '');
+                      toast({ title: "Copied!", description: "Enterprise code copied to clipboard." });
+                    }}
+                    className="text-amber-400 hover:text-amber-300"
+                  >
+                    <Copy className="h-4 w-4" />
+                  </Button>
+                </div>
+                <div className="flex items-center gap-2 mb-2">
+                  <Users className="h-4 w-4 text-amber-400" />
+                  <span className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
+                    {enterpriseData.currentUses || 0} / {enterpriseData.maxUses || 10} codes used
+                  </span>
+                </div>
+                <p className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+                  Share this code with up to 10 team members to give them Research-level access.
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {/* Promo Code Section */}
         <div className="mt-10">
           <div className={`border-t ${isDark ? 'border-gray-800' : 'border-gray-200'} pt-8`}>
             <h3 className="text-lg font-semibold mb-2 flex items-center gap-2">
@@ -223,6 +342,7 @@ export default function AISettings() {
           </div>
         </div>
 
+        {/* Subscription Management */}
         {hasPaidSubscription && (
           <div className="mt-10">
             <div className={`border-t ${isDark ? 'border-gray-800' : 'border-gray-200'} pt-8`}>
@@ -277,6 +397,60 @@ export default function AISettings() {
             </div>
           </div>
         )}
+
+        {/* Delete Account */}
+        <div className="mt-10">
+          <div className={`border-t ${isDark ? 'border-gray-800' : 'border-gray-200'} pt-8`}>
+            <h3 className="text-lg font-semibold mb-2 flex items-center gap-2 text-red-400">
+              <Trash2 className="h-5 w-5" />
+              Delete Account
+            </h3>
+            <p className={`text-sm mb-4 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+              Permanently delete your account and all associated data. This action cannot be undone.
+            </p>
+
+            {!showDeleteConfirm ? (
+              <Button
+                variant="outline"
+                onClick={() => setShowDeleteConfirm(true)}
+                className={`${isDark ? 'border-red-800 text-red-400 hover:bg-red-950 hover:text-red-300' : 'border-red-300 text-red-600 hover:bg-red-50'}`}
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Delete My Account
+              </Button>
+            ) : (
+              <Card className={`${isDark ? 'bg-red-950/30 border-red-800' : 'bg-red-50 border-red-200'}`}>
+                <CardContent className="p-5">
+                  <div className="flex items-start gap-3 mb-4">
+                    <AlertTriangle className="h-5 w-5 text-red-400 mt-0.5 flex-shrink-0" />
+                    <div>
+                      <h4 className="font-semibold text-red-400 mb-1">Are you sure you want to delete your account?</h4>
+                      <p className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
+                        This will permanently delete all your conversations, messages, and account data. If you have an active subscription, it will be cancelled automatically through PayPal.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex gap-3">
+                    <Button
+                      variant="destructive"
+                      onClick={() => deleteMutation.mutate()}
+                      disabled={deleteMutation.isPending}
+                    >
+                      {deleteMutation.isPending ? "Deleting..." : "Yes, Delete Everything"}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => setShowDeleteConfirm(false)}
+                      className={isDark ? 'border-gray-700 text-gray-300 hover:bg-gray-800' : ''}
+                    >
+                      Keep My Account
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        </div>
       </main>
     </div>
   );

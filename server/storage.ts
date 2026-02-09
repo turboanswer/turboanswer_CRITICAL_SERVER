@@ -1,6 +1,6 @@
-import { users, conversations, messages, auditLogs, adminNotifications, type User, type Conversation, type InsertConversation, type Message, type InsertMessage, type AuditLog, type InsertAuditLog, type AdminNotification, type InsertAdminNotification } from "@shared/schema";
+import { users, conversations, messages, auditLogs, adminNotifications, enterpriseCodes, enterpriseCodeRedemptions, type User, type Conversation, type InsertConversation, type Message, type InsertMessage, type AuditLog, type InsertAuditLog, type AdminNotification, type InsertAdminNotification, type EnterpriseCode, type EnterpriseCodeRedemption } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, and, sql } from "drizzle-orm";
 
 export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
@@ -40,6 +40,15 @@ export interface IStorage {
   getUnreadNotificationCount(): Promise<number>;
   markNotificationRead(id: number): Promise<AdminNotification | undefined>;
   markAllNotificationsRead(): Promise<void>;
+
+  createEnterpriseCode(code: string, ownerUserId: string, ownerEmail: string | null): Promise<EnterpriseCode>;
+  getEnterpriseCodeByCode(code: string): Promise<EnterpriseCode | undefined>;
+  getEnterpriseCodeByOwner(ownerUserId: string): Promise<EnterpriseCode | undefined>;
+  redeemEnterpriseCode(codeId: number, userId: string, userEmail: string | null): Promise<EnterpriseCodeRedemption>;
+  getEnterpriseCodeRedemptions(codeId: number): Promise<EnterpriseCodeRedemption[]>;
+  incrementEnterpriseCodeUses(codeId: number): Promise<void>;
+  deleteUserAccount(userId: string): Promise<void>;
+  getUserByEmail(email: string): Promise<User | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -357,6 +366,58 @@ export class DatabaseStorage implements IStorage {
       .update(adminNotifications)
       .set({ isRead: "true" })
       .where(eq(adminNotifications.isRead, "false"));
+  }
+
+  async createEnterpriseCode(code: string, ownerUserId: string, ownerEmail: string | null): Promise<EnterpriseCode> {
+    const [result] = await db
+      .insert(enterpriseCodes)
+      .values({ code, ownerUserId, ownerEmail, maxUses: 10, currentUses: 0 })
+      .returning();
+    return result;
+  }
+
+  async getEnterpriseCodeByCode(code: string): Promise<EnterpriseCode | undefined> {
+    const [result] = await db.select().from(enterpriseCodes).where(eq(enterpriseCodes.code, code));
+    return result || undefined;
+  }
+
+  async getEnterpriseCodeByOwner(ownerUserId: string): Promise<EnterpriseCode | undefined> {
+    const [result] = await db.select().from(enterpriseCodes).where(eq(enterpriseCodes.ownerUserId, ownerUserId));
+    return result || undefined;
+  }
+
+  async redeemEnterpriseCode(codeId: number, userId: string, userEmail: string | null): Promise<EnterpriseCodeRedemption> {
+    const [result] = await db
+      .insert(enterpriseCodeRedemptions)
+      .values({ codeId, userId, userEmail })
+      .returning();
+    return result;
+  }
+
+  async getEnterpriseCodeRedemptions(codeId: number): Promise<EnterpriseCodeRedemption[]> {
+    return await db.select().from(enterpriseCodeRedemptions).where(eq(enterpriseCodeRedemptions.codeId, codeId));
+  }
+
+  async incrementEnterpriseCodeUses(codeId: number): Promise<void> {
+    await db
+      .update(enterpriseCodes)
+      .set({ currentUses: sql`${enterpriseCodes.currentUses} + 1` })
+      .where(eq(enterpriseCodes.id, codeId));
+  }
+
+  async deleteUserAccount(userId: string): Promise<void> {
+    const userConversations = await db.select().from(conversations).where(eq(conversations.userId, userId));
+    for (const conv of userConversations) {
+      await db.delete(messages).where(eq(messages.conversationId, conv.id));
+    }
+    await db.delete(conversations).where(eq(conversations.userId, userId));
+    await db.delete(enterpriseCodeRedemptions).where(eq(enterpriseCodeRedemptions.userId, userId));
+    await db.delete(users).where(eq(users.id, userId));
+  }
+
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.email, email));
+    return user || undefined;
   }
 }
 

@@ -1,4 +1,4 @@
-import { Mail, Phone, MessageCircle, Clock, HelpCircle } from "lucide-react";
+import { Mail, Phone, Clock, HelpCircle } from "lucide-react";
 import { Link } from "wouter";
 
 export default function Support() {
@@ -14,7 +14,6 @@ export default function Support() {
         margin: '0 auto',
         paddingTop: '40px'
       }}>
-        {/* Header */}
         <div style={{
           textAlign: 'center',
           marginBottom: '48px'
@@ -27,7 +26,7 @@ export default function Support() {
             WebkitTextFillColor: 'transparent',
             marginBottom: '16px'
           }}>
-            Support
+            Customer Support
           </h1>
           <p style={{
             fontSize: '20px',
@@ -38,14 +37,12 @@ export default function Support() {
           </p>
         </div>
 
-        {/* Contact Information */}
         <div style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))',
           gap: '24px',
           marginBottom: '48px'
         }}>
-          {/* Email Support */}
           <div style={{
             backgroundColor: '#111111',
             border: '1px solid #333333',
@@ -78,10 +75,10 @@ export default function Support() {
               marginBottom: '16px',
               fontSize: '16px'
             }}>
-              Send us an email and we'll get back to you within 24 hours
+              Send us an email and we'll get back to you as soon as possible
             </p>
             <a
-              href="mailto:turboaswer@hotmail.com"
+              href="mailto:support@turboanswer.it.com"
               style={{
                 display: 'inline-block',
                 padding: '12px 24px',
@@ -96,11 +93,10 @@ export default function Support() {
               onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#1d4ed8'}
               onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#2563eb'}
             >
-              turboaswer@hotmail.com
+              support@turboanswer.it.com
             </a>
           </div>
 
-          {/* Phone Support */}
           <div style={{
             backgroundColor: '#111111',
             border: '1px solid #333333',
@@ -136,7 +132,7 @@ export default function Support() {
               Call us directly for immediate assistance
             </p>
             <a
-              href="tel:+12016918466"
+              href="tel:+15182505405"
               style={{
                 display: 'inline-block',
                 padding: '12px 24px',
@@ -151,12 +147,11 @@ export default function Support() {
               onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#059669'}
               onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#10b981'}
             >
-              (201) 691-8466
+              (518) 250-5405
             </a>
           </div>
         </div>
 
-        {/* Support Hours */}
         <div style={{
           backgroundColor: '#0f172a',
           border: '1px solid #1e293b',
@@ -185,16 +180,14 @@ export default function Support() {
             fontSize: '16px',
             lineHeight: '1.6'
           }}>
-            <p><strong style={{ color: 'white' }}>Monday - Friday:</strong> 9:00 AM - 6:00 PM EST</p>
-            <p><strong style={{ color: 'white' }}>Saturday:</strong> 10:00 AM - 4:00 PM EST</p>
-            <p><strong style={{ color: 'white' }}>Sunday:</strong> Closed</p>
+            <p><strong style={{ color: 'white' }}>Monday - Friday:</strong> 10:00 AM - 4:00 PM EST</p>
+            <p><strong style={{ color: 'white' }}>Saturday - Sunday:</strong> Closed</p>
             <p style={{ marginTop: '16px', fontSize: '14px' }}>
-              Email support is available 24/7 - we'll respond within 24 hours
+              Email support is available 24/7 - we'll respond as soon as possible
             </p>
           </div>
         </div>
 
-        {/* FAQ Section */}
         <div style={{
           backgroundColor: '#111111',
           border: '1px solid #333333',
@@ -238,10 +231,10 @@ export default function Support() {
               borderRadius: '8px'
             }}>
               <h4 style={{ color: 'white', marginBottom: '8px', fontSize: '16px', fontWeight: '600' }}>
-                What AI models are available?
+                What is the Enterprise plan?
               </h4>
               <p style={{ color: '#9ca3af', fontSize: '14px' }}>
-                Premium users get access to Gemini 2.0 Flash Experimental, Claude 4.0 Sonnet, GPT-4o, and all advanced models.
+                The Enterprise plan ($30/month) gives you a special 6-digit code that up to 10 team members can use to get Research-level access.
               </p>
             </div>
             <div style={{
@@ -253,11 +246,22 @@ export default function Support() {
                 Can I cancel my subscription?
               </h4>
               <p style={{ color: '#9ca3af', fontSize: '14px' }}>
-                Yes, you can cancel anytime. Contact our support team for assistance with subscription management.
+                Yes, you can cancel anytime from your AI Settings page. If you cancel within 3 days, you'll get a full automatic refund.
+              </p>
+            </div>
+            <div style={{
+              padding: '16px',
+              backgroundColor: '#1a1a1a',
+              borderRadius: '8px'
+            }}>
+              <h4 style={{ color: 'white', marginBottom: '8px', fontSize: '16px', fontWeight: '600' }}>
+                How do I delete my account?
+              </h4>
+              <p style={{ color: '#9ca3af', fontSize: '14px' }}>
+                Go to AI Settings and scroll to the bottom. Click "Delete My Account" and confirm. Your subscription will be automatically cancelled and all data permanently removed.
               </p>
             </div>
             
-            {/* Privacy Policy Link */}
             <div style={{
               padding: '16px',
               backgroundColor: '#1a1a1a',
@@ -290,7 +294,7 @@ export default function Support() {
                 onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#2563eb'}
                 onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#3b82f6'}
               >
-                📋 Privacy Policy (GitHub Pages)
+                Privacy Policy (GitHub Pages)
               </a>
               <Link
                 to="/privacy-policy"
