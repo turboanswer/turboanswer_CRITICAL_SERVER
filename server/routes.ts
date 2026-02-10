@@ -28,6 +28,28 @@ const upload = multer({
   }
 });
 
+const responseCache = new Map<string, { data: any; expires: number }>();
+const CACHE_TTL = 15000;
+
+function getCached(key: string): any | null {
+  const entry = responseCache.get(key);
+  if (entry && Date.now() < entry.expires) return entry.data;
+  if (entry) responseCache.delete(key);
+  return null;
+}
+
+function setCache(key: string, data: any, ttl = CACHE_TTL): void {
+  responseCache.set(key, { data, expires: Date.now() + ttl });
+  if (responseCache.size > 100) {
+    const now = Date.now();
+    const keys = Array.from(responseCache.keys());
+    for (const k of keys) {
+      const e = responseCache.get(k);
+      if (e && now >= e.expires) responseCache.delete(k);
+    }
+  }
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
   await setupAuth(app);
   registerAuthRoutes(app);
@@ -1403,6 +1425,9 @@ function downloadAAB(){
 
   app.get('/api/admin/system-health', isAdmin, async (req: any, res) => {
     try {
+      const cached = getCached('system-health');
+      if (cached) return res.json(cached);
+
       const uptime = Math.floor((Date.now() - systemHealthState.startTime) / 1000);
       const userCount = await storage.getUserCount();
       const subscriptionStats = await storage.getActiveSubscriptionCount();
@@ -1463,7 +1488,7 @@ function downloadAAB(){
 
       systemHealthState.lastHealthCheck = Date.now();
 
-      res.json({
+      const healthResponse = {
         status: overallStatus,
         uptime,
         uptimeFormatted: `${Math.floor(uptime / 3600)}h ${Math.floor((uptime % 3600) / 60)}m ${uptime % 60}s`,
@@ -1481,7 +1506,9 @@ function downloadAAB(){
           heapTotal: Math.round(process.memoryUsage().heapTotal / 1024 / 1024),
           rss: Math.round(process.memoryUsage().rss / 1024 / 1024),
         },
-      });
+      };
+      setCache('system-health', healthResponse);
+      res.json(healthResponse);
     } catch (error: any) {
       console.error('[Admin] System health error:', error.message);
       res.status(500).json({ error: 'Failed to get system health' });
@@ -1591,6 +1618,9 @@ function downloadAAB(){
 
   app.get('/api/admin/stats', isAdmin, async (req: any, res) => {
     try {
+      const cached = getCached('admin-stats');
+      if (cached) return res.json(cached);
+
       const userCount = await storage.getUserCount();
       const subscriptionStats = await storage.getActiveSubscriptionCount();
       const allUsers = await storage.getAllUsers();
@@ -1599,12 +1629,14 @@ function downloadAAB(){
       const flaggedCount = allUsers.filter(u => u.isFlagged).length;
       const revenue = (subscriptionStats.pro * 6.99) + (subscriptionStats.research * 15) + (subscriptionStats.enterprise * 50);
 
-      res.json({
+      const statsResponse = {
         totalUsers: userCount,
         subscriptions: subscriptionStats,
         moderation: { banned: bannedCount, suspended: suspendedCount, flagged: flaggedCount },
         estimatedMonthlyRevenue: revenue.toFixed(2),
-      });
+      };
+      setCache('admin-stats', statsResponse);
+      res.json(statsResponse);
     } catch (error: any) {
       res.status(500).json({ error: 'Failed to get stats' });
     }

@@ -87,86 +87,60 @@ function checkMemory(): DiagnosticResult {
   return { check: 'Memory Usage', status: 'pass', details: `${heapPercent}% heap used (${heapMB}MB), RSS: ${rssMB}MB`, timestamp: ts };
 }
 
-async function checkExpiredBans(): Promise<DiagnosticResult> {
+async function checkUserIssues(allUsers: any[]): Promise<DiagnosticResult[]> {
   const ts = new Date().toISOString();
-  try {
-    const allUsers = await storage.getAllUsers();
-    const now = new Date();
-    const expiredBans = allUsers.filter(u =>
-      u.isBanned && u.banExpiresAt && new Date(u.banExpiresAt) <= now
-    );
-    if (expiredBans.length > 0) {
-      for (const u of expiredBans) {
-        await storage.unbanUser(u.id);
-        console.log(`[ProactiveDiag] Auto-unbanned user ${u.id} (ban expired)`);
-      }
-      return { check: 'Expired Bans', status: 'fixed', details: `Auto-unbanned ${expiredBans.length} user(s) with expired bans`, timestamp: ts };
-    }
-    return { check: 'Expired Bans', status: 'pass', details: 'No expired bans found', timestamp: ts };
-  } catch (e: any) {
-    return { check: 'Expired Bans', status: 'fail', details: e.message, timestamp: ts };
-  }
-}
+  const results: DiagnosticResult[] = [];
+  const now = new Date();
 
-async function checkOrphanedSubscriptions(): Promise<DiagnosticResult> {
-  const ts = new Date().toISOString();
-  try {
-    const allUsers = await storage.getAllUsers();
-    const orphaned = allUsers.filter(u =>
-      (u.subscriptionTier === 'enterprise' || u.subscriptionTier === 'pro' || u.subscriptionTier === 'research') &&
-      u.subscriptionStatus !== 'active'
-    );
-    if (orphaned.length > 0) {
-      for (const u of orphaned) {
-        await storage.adminSetSubscription(u.id, 'free', 'free');
-        console.log(`[ProactiveDiag] Fixed orphaned ${u.subscriptionTier} subscription for user ${u.id}`);
-      }
-      return { check: 'Orphaned Subscriptions', status: 'fixed', details: `Fixed ${orphaned.length} orphaned subscription(s)`, timestamp: ts };
+  const expiredBans = allUsers.filter(u =>
+    u.isBanned && u.banExpiresAt && new Date(u.banExpiresAt) <= now
+  );
+  if (expiredBans.length > 0) {
+    for (const u of expiredBans) {
+      await storage.unbanUser(u.id);
     }
-    return { check: 'Orphaned Subscriptions', status: 'pass', details: 'No orphaned subscriptions', timestamp: ts };
-  } catch (e: any) {
-    return { check: 'Orphaned Subscriptions', status: 'fail', details: e.message, timestamp: ts };
+    results.push({ check: 'Expired Bans', status: 'fixed', details: `Auto-unbanned ${expiredBans.length} user(s)`, timestamp: ts });
+  } else {
+    results.push({ check: 'Expired Bans', status: 'pass', details: 'No expired bans found', timestamp: ts });
   }
-}
 
-async function checkStuckSubscriptions(): Promise<DiagnosticResult> {
-  const ts = new Date().toISOString();
-  try {
-    const allUsers = await storage.getAllUsers();
-    const stuck = allUsers.filter(u => u.subscriptionStatus === 'active' && u.subscriptionTier === 'free');
-    if (stuck.length > 0) {
-      for (const u of stuck) {
-        await storage.adminSetSubscription(u.id, 'free', 'free');
-        console.log(`[ProactiveDiag] Fixed stuck subscription state for user ${u.id}`);
-      }
-      return { check: 'Stuck Subscriptions', status: 'fixed', details: `Fixed ${stuck.length} inconsistent subscription state(s)`, timestamp: ts };
+  const orphaned = allUsers.filter(u =>
+    (u.subscriptionTier === 'enterprise' || u.subscriptionTier === 'pro' || u.subscriptionTier === 'research') &&
+    u.subscriptionStatus !== 'active'
+  );
+  if (orphaned.length > 0) {
+    for (const u of orphaned) {
+      await storage.adminSetSubscription(u.id, 'free', 'free');
     }
-    return { check: 'Stuck Subscriptions', status: 'pass', details: 'No inconsistent states', timestamp: ts };
-  } catch (e: any) {
-    return { check: 'Stuck Subscriptions', status: 'fail', details: e.message, timestamp: ts };
+    results.push({ check: 'Orphaned Subscriptions', status: 'fixed', details: `Fixed ${orphaned.length} orphaned subscription(s)`, timestamp: ts });
+  } else {
+    results.push({ check: 'Orphaned Subscriptions', status: 'pass', details: 'No orphaned subscriptions', timestamp: ts });
   }
-}
 
-async function checkExpiredComplimentary(): Promise<DiagnosticResult> {
-  const ts = new Date().toISOString();
-  try {
-    const allUsers = await storage.getAllUsers();
-    const now = new Date();
-    const expired = allUsers.filter(u =>
-      u.complimentaryExpiresAt && new Date(u.complimentaryExpiresAt) <= now &&
-      u.subscriptionStatus === 'active' && (u.subscriptionTier === 'pro' || u.subscriptionTier === 'research' || u.subscriptionTier === 'enterprise')
-    );
-    if (expired.length > 0) {
-      for (const u of expired) {
-        await storage.adminSetSubscription(u.id, 'free', 'free');
-        console.log(`[ProactiveDiag] Expired complimentary access for user ${u.id}`);
-      }
-      return { check: 'Expired Complimentary Access', status: 'fixed', details: `Revoked ${expired.length} expired complimentary subscription(s)`, timestamp: ts };
+  const stuck = allUsers.filter(u => u.subscriptionStatus === 'active' && u.subscriptionTier === 'free');
+  if (stuck.length > 0) {
+    for (const u of stuck) {
+      await storage.adminSetSubscription(u.id, 'free', 'free');
     }
-    return { check: 'Expired Complimentary Access', status: 'pass', details: 'No expired complimentary access', timestamp: ts };
-  } catch (e: any) {
-    return { check: 'Expired Complimentary Access', status: 'fail', details: e.message, timestamp: ts };
+    results.push({ check: 'Stuck Subscriptions', status: 'fixed', details: `Fixed ${stuck.length} inconsistent state(s)`, timestamp: ts });
+  } else {
+    results.push({ check: 'Stuck Subscriptions', status: 'pass', details: 'No inconsistent states', timestamp: ts });
   }
+
+  const expired = allUsers.filter(u =>
+    u.complimentaryExpiresAt && new Date(u.complimentaryExpiresAt) <= now &&
+    u.subscriptionStatus === 'active' && (u.subscriptionTier === 'pro' || u.subscriptionTier === 'research' || u.subscriptionTier === 'enterprise')
+  );
+  if (expired.length > 0) {
+    for (const u of expired) {
+      await storage.adminSetSubscription(u.id, 'free', 'free');
+    }
+    results.push({ check: 'Expired Complimentary Access', status: 'fixed', details: `Revoked ${expired.length} expired complimentary subscription(s)`, timestamp: ts });
+  } else {
+    results.push({ check: 'Expired Complimentary Access', status: 'pass', details: 'No expired complimentary access', timestamp: ts });
+  }
+
+  return results;
 }
 
 export async function runProactiveDiagnostics(): Promise<DiagnosticReport> {
@@ -174,21 +148,21 @@ export async function runProactiveDiagnostics(): Promise<DiagnosticReport> {
 
   const results: DiagnosticResult[] = [];
 
-  const [db, ai, paypal, memory] = await Promise.all([
+  const [db, ai, paypal] = await Promise.all([
     checkDatabase(),
     checkAIService(),
     checkPayPal(),
-    Promise.resolve(checkMemory()),
   ]);
-  results.push(db, ai, paypal, memory);
+  results.push(db, ai, paypal, checkMemory());
 
-  const [bans, orphaned, stuck, complimentary] = await Promise.all([
-    checkExpiredBans(),
-    checkOrphanedSubscriptions(),
-    checkStuckSubscriptions(),
-    checkExpiredComplimentary(),
-  ]);
-  results.push(bans, orphaned, stuck, complimentary);
+  try {
+    const allUsers = await storage.getAllUsers();
+    const userResults = await checkUserIssues(allUsers);
+    results.push(...userResults);
+  } catch (e: any) {
+    const ts = new Date().toISOString();
+    results.push({ check: 'User Checks', status: 'fail', details: e.message, timestamp: ts });
+  }
 
   const issuesFound = results.filter(r => r.status !== 'pass').length;
   const issuesFixed = results.filter(r => r.status === 'fixed').length;

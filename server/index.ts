@@ -1,7 +1,11 @@
 import express, { type Request, Response, NextFunction } from "express";
+import compression from "compression";
+import rateLimit from "express-rate-limit";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { ensureSubscriptionPlans } from "./paypal";
+import { pool } from "./db";
+import { stopProactiveDiagnostics } from "./services/proactive-diagnostics";
 
 const app = express();
 
@@ -21,7 +25,35 @@ async function initPayPal() {
 
 await initPayPal();
 
-app.use(express.json());
+app.use(compression());
+
+const apiLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 200,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many requests. Please slow down.' },
+  skip: (req) => !req.path.startsWith('/api'),
+});
+
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 30,
+  message: { error: 'Too many login attempts. Please try again later.' },
+});
+
+const aiLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 30,
+  message: { error: 'AI rate limit reached. Please wait a moment.' },
+});
+
+app.use(apiLimiter);
+app.use('/api/auth/login', authLimiter);
+app.use('/api/auth/register', authLimiter);
+app.use('/api/conversations', aiLimiter);
+
+app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: false }));
 
 app.use((req, res, next) => {
@@ -60,9 +92,8 @@ app.use((req, res, next) => {
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
     const message = err.message || "Internal Server Error";
-
+    console.error(`[Error] ${status}: ${message}`);
     res.status(status).json({ message });
-    throw err;
   });
 
   if (app.get("env") === "development") {
@@ -78,5 +109,33 @@ app.use((req, res, next) => {
     reusePort: true,
   }, () => {
     log(`serving on port ${port}`);
+  });
+
+  const gracefulShutdown = (signal: string) => {
+    console.log(`[Server] ${signal} received, shutting down gracefully...`);
+    stopProactiveDiagnostics();
+    server.close(() => {
+      console.log('[Server] HTTP server closed');
+      pool.end().then(() => {
+        console.log('[Server] Database pool closed');
+        process.exit(0);
+      }).catch(() => process.exit(1));
+    });
+    setTimeout(() => {
+      console.error('[Server] Forced shutdown after timeout');
+      process.exit(1);
+    }, 10000);
+  };
+
+  process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+  process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+
+  process.on('uncaughtException', (err) => {
+    console.error('[Server] Uncaught exception:', err.message);
+    gracefulShutdown('uncaughtException');
+  });
+
+  process.on('unhandledRejection', (reason: any) => {
+    console.error('[Server] Unhandled rejection:', reason?.message || reason);
   });
 })();
