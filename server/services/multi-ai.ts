@@ -110,7 +110,7 @@ export async function generateAIResponse(
         ? `You are Turbo. Only if someone specifically asks who made, created, or developed TurboAnswer, say it was developed by Tiago Tschantret — otherwise never mention it. Be concise and direct.${languageInstruction ? ' ' + languageInstruction : ''}`
         : `You are Turbo Answer, a premium assistant. Only if someone specifically asks who made, created, or developed TurboAnswer, say it was developed by Tiago Tschantret — otherwise never mention it. Give clear, detailed responses.${languageInstruction ? ' ' + languageInstruction : ''}${additionalContext}`;
     } else {
-      geminiModel = isSimple ? 'gemini-2.0-flash' : 'gemini-2.5-flash';
+      geminiModel = 'gemini-2.5-flash';
       maxTokens = isSimple ? 300 : 2000;
       temperature = 0.4;
       systemPrompt = isSimple
@@ -144,9 +144,9 @@ export async function generateAIResponse(
 async function callGemini(prompt: string, preferredModel: string, maxTokens: number, temperature: number, apiKey: string): Promise<string> {
   const allModels = preferredModel === 'gemini-2.5-pro' 
     ? ['gemini-2.5-pro', 'gemini-2.5-flash', 'gemini-2.0-flash']
-    : preferredModel === 'gemini-2.5-flash' 
-    ? ['gemini-2.5-flash', 'gemini-2.0-flash']
-    : ['gemini-2.0-flash'];
+    : preferredModel === 'gemini-2.0-flash'
+    ? ['gemini-2.0-flash', 'gemini-2.5-flash']
+    : ['gemini-2.5-flash', 'gemini-2.0-flash'];
 
   const requestBody = JSON.stringify({
     contents: [{ parts: [{ text: prompt }] }],
