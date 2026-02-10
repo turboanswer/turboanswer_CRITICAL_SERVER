@@ -2050,6 +2050,9 @@ function downloadAAB(){
           user: 'support@turboanswer.it.com',
           pass: smtpPassword,
         },
+        tls: {
+          rejectUnauthorized: false,
+        },
       });
 
       const currentDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
@@ -2058,7 +2061,7 @@ function downloadAAB(){
       const logoUrl = `${appUrl}/turbo-logo.png`;
 
       const htmlBody = `<!DOCTYPE html>
-<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+<html><head><meta charset="utf-8"><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
 <body style="margin:0;padding:0;background-color:#f4f4f7;font-family:Arial,Helvetica,sans-serif;">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f4f4f7;padding:40px 20px;">
 <tr><td align="center">
@@ -2109,6 +2112,7 @@ function downloadAAB(){
         from: '"TurboAnswer" <support@turboanswer.it.com>',
         to: recipientEmail,
         subject: 'Blacklist Removal Notice - TurboAnswer',
+        text: `Dear ${recipientName},\n\nYour account has been removed from the blacklist on TurboAnswer as of ${currentDate}.\n\nYour access to all TurboAnswer services has been fully restored. You may now log in and use TurboAnswer normally.\n\nWe kindly ask that you continue to adhere to our community guidelines and terms of service.\n\nBest regards,\nThe TurboAnswer Team\n\nsupport@turboanswer.it.com\n518-250-5405\nMon - Fri, 10:00 AM - 4:00 PM EST`,
         html: htmlBody,
       });
 
