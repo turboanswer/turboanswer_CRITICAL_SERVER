@@ -7,7 +7,7 @@ import {
   Search, Ban, Flag, Shield, Users, AlertTriangle, CheckCircle, Pause, Play, Eye,
   ArrowLeft, MessageSquare, X, Bell, ShieldAlert, Clock, Mail, User as UserIcon,
   FileText, CreditCard, Gift, Settings, Activity, Wrench, Crown, Zap, Server,
-  Database, Brain, DollarSign, TrendingUp, RefreshCw, ChevronDown, BarChart3
+  Database, Brain, DollarSign, TrendingUp, RefreshCw, ChevronDown, BarChart3, Trash2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -91,6 +91,9 @@ export default function EmployeeDashboard() {
   const [subModalReason, setSubModalReason] = useState('');
   const [subModalAction, setSubModalAction] = useState<'modify' | 'cancel' | 'grant'>('modify');
   const [subModalDuration, setSubModalDuration] = useState<number>(0);
+  const [deleteModal, setDeleteModal] = useState<{ userId: string; userName: string } | null>(null);
+  const [deleteVerificationCode, setDeleteVerificationCode] = useState('');
+  const [deleteError, setDeleteError] = useState('');
   const queryClient = useQueryClient();
   const { user: currentUser } = useAuth();
 
@@ -199,6 +202,27 @@ export default function EmployeeDashboard() {
         employeeUsername: currentUser?.email || 'admin',
       }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['/api/employee/users'] }),
+  });
+
+  const deleteUserMutation = useMutation({
+    mutationFn: async ({ userId, verificationCode }: { userId: string; verificationCode: string }) => {
+      const res = await apiRequest('POST', '/api/admin/delete-user', { userId, verificationCode });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.message || 'Failed to delete user');
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/employee/users'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/stats'] });
+      setDeleteModal(null);
+      setDeleteVerificationCode('');
+      setDeleteError('');
+    },
+    onError: (error: any) => {
+      setDeleteError(error.message || 'Failed to delete user');
+    },
   });
 
   const modifySubMutation = useMutation({
@@ -670,6 +694,9 @@ export default function EmployeeDashboard() {
                                     <Play className="w-3 h-3 mr-1" /> Unsuspend
                                   </Button>
                                 )}
+                                <Button size="sm" variant="ghost" className="h-7 px-2 text-red-500 hover:text-red-400 hover:bg-red-900/30" onClick={() => { setDeleteModal({ userId: user.id, userName: `${user.firstName} ${user.lastName}` }); setDeleteVerificationCode(''); setDeleteError(''); }}>
+                                  <Trash2 className="w-3 h-3 mr-1" /> Delete
+                                </Button>
                               </div>
                             </td>
                           </tr>
@@ -742,6 +769,56 @@ export default function EmployeeDashboard() {
                   } text-white`}
                 >
                   Confirm {actionModal.type}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {deleteModal && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+          <Card className="bg-gray-900 border-gray-700 w-full max-w-md">
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle className="text-red-400 flex items-center gap-2">
+                <Trash2 className="w-5 h-5" /> Delete User Account
+              </CardTitle>
+              <Button variant="ghost" size="sm" onClick={() => { setDeleteModal(null); setDeleteVerificationCode(''); setDeleteError(''); }}>
+                <X className="w-4 h-4" />
+              </Button>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="bg-red-950/30 border border-red-800/50 rounded-lg p-3">
+                <p className="text-red-300 text-sm font-medium flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4" /> This action is permanent and cannot be undone
+                </p>
+              </div>
+              <p className="text-gray-300 text-sm">
+                You are about to permanently delete the account for <strong className="text-white">{deleteModal.userName}</strong>. This will remove all their data, cancel any active subscriptions, and revoke team access.
+              </p>
+              <div>
+                <label className="text-sm text-gray-400 mb-1 block">Enter verification code to confirm</label>
+                <Input
+                  type="password"
+                  value={deleteVerificationCode}
+                  onChange={(e) => { setDeleteVerificationCode(e.target.value); setDeleteError(''); }}
+                  placeholder="Enter admin verification code..."
+                  className="bg-gray-800 border-gray-700 text-white"
+                />
+                {deleteError && (
+                  <p className="text-red-400 text-xs mt-1">{deleteError}</p>
+                )}
+              </div>
+              <div className="flex gap-2 justify-end">
+                <Button variant="ghost" onClick={() => { setDeleteModal(null); setDeleteVerificationCode(''); setDeleteError(''); }} className="text-gray-400">
+                  Cancel
+                </Button>
+                <Button
+                  onClick={() => deleteUserMutation.mutate({ userId: deleteModal.userId, verificationCode: deleteVerificationCode })}
+                  disabled={!deleteVerificationCode.trim() || deleteUserMutation.isPending}
+                  className="bg-red-600 hover:bg-red-700 text-white"
+                >
+                  {deleteUserMutation.isPending ? 'Deleting...' : 'Delete Account'}
                 </Button>
               </div>
             </CardContent>

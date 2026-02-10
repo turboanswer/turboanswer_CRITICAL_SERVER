@@ -1118,6 +1118,61 @@ function downloadAAB(){
     }
   });
 
+  app.post('/api/admin/delete-user', isAdmin, async (req: any, res) => {
+    try {
+      const { userId, verificationCode } = req.body;
+
+      if (!userId) {
+        return res.status(400).json({ message: 'User ID is required' });
+      }
+
+      if (verificationCode !== 'Pass22580!') {
+        return res.status(403).json({ message: 'Invalid verification code' });
+      }
+
+      const targetUser = await storage.getUser(userId);
+      if (!targetUser) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+
+      if (targetUser.paypalSubscriptionId && targetUser.subscriptionTier !== 'free') {
+        try {
+          await cancelSubscription(targetUser.paypalSubscriptionId, 'Account deleted by admin');
+          console.log(`[Admin Delete] Cancelled PayPal subscription for user ${userId}`);
+        } catch (e: any) {
+          console.log(`[Admin Delete] PayPal cancel error (may already be cancelled):`, e.message?.substring(0, 100));
+        }
+      }
+
+      if (targetUser.subscriptionTier === 'enterprise') {
+        try {
+          await storage.revokeAllEnterpriseCodeAccess(userId);
+          console.log(`[Admin Delete] Revoked enterprise access for user ${userId}`);
+        } catch (e: any) {
+          console.log(`[Admin Delete] Enterprise revoke error:`, e.message?.substring(0, 100));
+        }
+      }
+
+      await storage.deleteUserAccount(userId);
+
+      const adminId = req.user?.claims?.sub || 'system';
+      await storage.createAuditLog({
+        employeeId: adminId,
+        employeeUsername: 'admin',
+        action: 'delete_account',
+        targetUserId: userId,
+        targetUsername: targetUser.email || `${targetUser.firstName} ${targetUser.lastName}`,
+        details: `Admin permanently deleted account for ${targetUser.email || targetUser.firstName}`,
+      });
+
+      console.log(`[Admin Delete] Account deleted for user ${userId} by admin ${adminId}`);
+      res.json({ message: 'User account deleted successfully' });
+    } catch (error: any) {
+      console.error('[Admin Delete] Error:', error.message);
+      res.status(500).json({ message: error.message || 'Failed to delete user account' });
+    }
+  });
+
   // Get audit logs (Employee only)
   app.get('/api/employee/audit-logs', isAdmin, async (req, res) => {
     try {
