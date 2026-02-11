@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
-import turboLogo from "@assets/file_000000007ff071f8a754520ac27c6ba4_1770423239509.png";
 
 const APP_URL = 'https://turbo-answer.replit.app';
 
@@ -16,10 +15,6 @@ const TEMPLATES = [
     icon: Ban,
     color: '#ef4444',
     description: 'Notify a user that their account has been banned for violating guidelines.',
-    bannerBg: '#fef2f2',
-    bannerColor: '#991b1b',
-    bannerIcon: '\u2717',
-    bannerText: 'Account Banned',
   },
   {
     id: 'account-unbanned',
@@ -27,10 +22,6 @@ const TEMPLATES = [
     icon: ShieldCheck,
     color: '#22c55e',
     description: 'Notify a user that their account ban has been lifted and access restored.',
-    bannerBg: '#ecfdf5',
-    bannerColor: '#065f46',
-    bannerIcon: '\u2713',
-    bannerText: 'Account Unbanned',
   },
   {
     id: 'account-suspended',
@@ -38,10 +29,6 @@ const TEMPLATES = [
     icon: Search,
     color: '#f59e0b',
     description: 'Notify a user their account is temporarily suspended and under review.',
-    bannerBg: '#fffbeb',
-    bannerColor: '#92400e',
-    bannerIcon: '\u26A0',
-    bannerText: 'Account Suspended for Review',
   },
   {
     id: 'account-recovered',
@@ -49,10 +36,6 @@ const TEMPLATES = [
     icon: KeyRound,
     color: '#3b82f6',
     description: 'Notify a user that their account has been successfully recovered.',
-    bannerBg: '#eff6ff',
-    bannerColor: '#1e40af',
-    bannerIcon: '\uD83D\uDD12',
-    bannerText: 'Account Recovered',
   },
   {
     id: 'account-deleted',
@@ -60,10 +43,6 @@ const TEMPLATES = [
     icon: Trash2,
     color: '#dc2626',
     description: 'Confirm to a user that their account and all data have been permanently deleted.',
-    bannerBg: '#fef2f2',
-    bannerColor: '#7f1d1d',
-    bannerIcon: '\uD83D\uDDD1',
-    bannerText: 'Account Permanently Deleted',
   },
   {
     id: 'blacklist-added',
@@ -71,10 +50,6 @@ const TEMPLATES = [
     icon: ShieldOff,
     color: '#7f1d1d',
     description: 'Notify a user they have been added to the TurboAnswer blacklist.',
-    bannerBg: '#fef2f2',
-    bannerColor: '#7f1d1d',
-    bannerIcon: '\uD83D\uDEAB',
-    bannerText: 'Added to Blacklist',
   },
   {
     id: 'blacklist-removed',
@@ -82,134 +57,113 @@ const TEMPLATES = [
     icon: ShieldPlus,
     color: '#059669',
     description: 'Notify a user they have been removed from the TurboAnswer blacklist.',
-    bannerBg: '#ecfdf5',
-    bannerColor: '#065f46',
-    bannerIcon: '\u2705',
-    bannerText: 'Removed from Blacklist',
   },
 ];
 
-const templateBodies: Record<string, (name: string, date: string) => { paragraphs: string[]; bullets: string[]; afterBullets: string[]; showLogin: boolean }> = {
-  'account-banned': (name, date) => ({
-    paragraphs: [
-      `Dear ${name},`,
-      `We regret to inform you that your TurboAnswer account has been banned effective ${date}.`,
-      'This action was taken due to a violation of our community guidelines or terms of service. As a result:',
-    ],
-    bullets: [
-      'Your account access has been revoked',
-      'You will not be able to log in or use TurboAnswer services',
-      'Any active subscriptions have been paused',
-    ],
-    afterBullets: [
-      'If you believe this was done in error, you may appeal by contacting our support team. Please include your account email and a detailed explanation in your appeal.',
-    ],
-    showLogin: false,
-  }),
-  'account-unbanned': (name, date) => ({
-    paragraphs: [
-      `Dear ${name},`,
-      `Great news! Your TurboAnswer account has been unbanned and fully restored as of ${date}.`,
-      'Your access to all TurboAnswer services has been fully restored. You may now:',
-    ],
-    bullets: [
-      'Log in and use TurboAnswer normally',
-      'Access all AI features available to your subscription tier',
-      'Engage with the community and all platform features',
-    ],
-    afterBullets: [
-      'We kindly ask that you continue to adhere to our community guidelines and terms of service to ensure a positive experience for all users.',
-    ],
-    showLogin: true,
-  }),
-  'account-suspended': (name, date) => ({
-    paragraphs: [
-      `Dear ${name},`,
-      `Your TurboAnswer account has been temporarily suspended and is currently under review as of ${date}.`,
-      'During this review period:',
-    ],
-    bullets: [
-      'Your account access is temporarily restricted',
-      'Your data and conversations remain safe and intact',
-      'Any active subscriptions are paused until the review is complete',
-    ],
-    afterBullets: [
-      'Our team is reviewing your account activity. You will receive a follow-up email once the review is complete. This process typically takes 1-3 business days.',
-      'If you have additional information that may assist in the review, please contact our support team.',
-    ],
-    showLogin: false,
-  }),
-  'account-recovered': (name, date) => ({
-    paragraphs: [
-      `Dear ${name},`,
-      `Your TurboAnswer account has been successfully recovered as of ${date}.`,
-      'Your account is now fully accessible. Here\'s what you should know:',
-    ],
-    bullets: [
-      'All your data, conversations, and settings have been restored',
-      'Your subscription status remains unchanged',
-      'We recommend updating your password for security',
-    ],
-    afterBullets: [
-      'For your security, if you did not request this recovery, please contact our support team immediately.',
-    ],
-    showLogin: true,
-  }),
-  'account-deleted': (name, date) => ({
-    paragraphs: [
-      `Dear ${name},`,
-      `This email confirms that your TurboAnswer account has been permanently deleted as of ${date}.`,
-      'The following actions have been completed:',
-    ],
-    bullets: [
-      'All account data has been permanently removed from our systems',
-      'All conversation history has been deleted',
-      'Any active subscriptions have been cancelled',
-      'This action is irreversible and cannot be undone',
-    ],
-    afterBullets: [
-      'If you wish to use TurboAnswer again in the future, you are welcome to create a new account at any time.',
-      'We\'re sorry to see you go. Thank you for being a part of the TurboAnswer community.',
-    ],
-    showLogin: false,
-  }),
-  'blacklist-added': (name, date) => ({
-    paragraphs: [
-      `Dear ${name},`,
-      `We are writing to inform you that your account has been added to the TurboAnswer blacklist effective ${date}.`,
-      'This means the following restrictions are now in effect:',
-    ],
-    bullets: [
-      'Your account has been permanently blocked from accessing TurboAnswer',
-      'You will not be able to create new accounts using the same credentials',
-      'Any active subscriptions have been cancelled and refunded where applicable',
-      'All associated data will be retained for security purposes',
-    ],
-    afterBullets: [
-      'This action was taken due to severe or repeated violations of our terms of service, community guidelines, or applicable laws.',
-      'If you believe this decision was made in error, you may submit an appeal by contacting our support team. Please include your account email and a detailed explanation of the circumstances.',
-    ],
-    showLogin: false,
-  }),
-  'blacklist-removed': (name, date) => ({
-    paragraphs: [
-      `Dear ${name},`,
-      `We are pleased to inform you that your account has been removed from the TurboAnswer blacklist as of ${date}.`,
-      'Your access has been fully restored. Here\'s what this means for you:',
-    ],
-    bullets: [
-      'Your account is now fully active and accessible',
-      'You may log in and use all TurboAnswer services',
-      'You are welcome to subscribe to any of our plans',
-      'All platform features are available to you',
-    ],
-    afterBullets: [
-      'We kindly ask that you review and continue to adhere to our community guidelines and terms of service to ensure a positive experience for everyone.',
-      'Welcome back to TurboAnswer! We\'re glad to have you with us again.',
-    ],
-    showLogin: true,
-  }),
-};
+function getEmailBody(templateId: string, name: string, date: string): string {
+  const appUrl = APP_URL;
+  const bodies: Record<string, string> = {
+    'account-banned': `Dear ${name},
+
+We regret to inform you that your TurboAnswer account has been banned effective ${date}.
+
+This action was taken due to a violation of our community guidelines or terms of service. As a result:
+
+- Your account access has been revoked
+- You will not be able to log in or use TurboAnswer services
+- Any active subscriptions have been paused
+
+If you believe this was done in error, you may appeal by contacting our support team at support@turboanswer.it.com. Please include your account email and a detailed explanation in your appeal.`,
+
+    'account-unbanned': `Dear ${name},
+
+Your TurboAnswer account has been unbanned and fully restored as of ${date}.
+
+Your access to all TurboAnswer services has been fully restored. You may now:
+
+- Log in and use TurboAnswer normally
+- Access all AI features available to your subscription tier
+- Engage with the community and all platform features
+
+We kindly ask that you continue to adhere to our community guidelines and terms of service.
+
+You can log in at: ${appUrl}/login`,
+
+    'account-suspended': `Dear ${name},
+
+Your TurboAnswer account has been temporarily suspended and is currently under review as of ${date}.
+
+During this review period:
+
+- Your account access is temporarily restricted
+- Your data and conversations remain safe and intact
+- Any active subscriptions are paused until the review is complete
+
+Our team is reviewing your account activity. You will receive a follow-up email once the review is complete. This process typically takes 1-3 business days.
+
+If you have additional information that may assist in the review, please contact our support team at support@turboanswer.it.com.`,
+
+    'account-recovered': `Dear ${name},
+
+Your TurboAnswer account has been successfully recovered as of ${date}.
+
+Your account is now fully accessible:
+
+- All your data, conversations, and settings have been restored
+- Your subscription status remains unchanged
+- We recommend updating your password for security
+
+For your security, if you did not request this recovery, please contact our support team immediately at support@turboanswer.it.com.
+
+You can log in at: ${appUrl}/login`,
+
+    'account-deleted': `Dear ${name},
+
+This email confirms that your TurboAnswer account has been permanently deleted as of ${date}.
+
+The following actions have been completed:
+
+- All account data has been permanently removed from our systems
+- All conversation history has been deleted
+- Any active subscriptions have been cancelled
+- This action is irreversible and cannot be undone
+
+If you wish to use TurboAnswer again in the future, you are welcome to create a new account at any time.
+
+Thank you for being a part of the TurboAnswer community.`,
+
+    'blacklist-added': `Dear ${name},
+
+We are writing to inform you that your account has been added to the TurboAnswer blacklist effective ${date}.
+
+The following restrictions are now in effect:
+
+- Your account has been permanently blocked from accessing TurboAnswer
+- You will not be able to create new accounts using the same credentials
+- Any active subscriptions have been cancelled and refunded where applicable
+- All associated data will be retained for security purposes
+
+This action was taken due to severe or repeated violations of our terms of service.
+
+If you believe this decision was made in error, you may submit an appeal by contacting support@turboanswer.it.com. Please include your account email and a detailed explanation.`,
+
+    'blacklist-removed': `Dear ${name},
+
+We are pleased to inform you that your account has been removed from the TurboAnswer blacklist as of ${date}.
+
+Your access has been fully restored:
+
+- Your account is now fully active and accessible
+- You may log in and use all TurboAnswer services
+- You are welcome to subscribe to any of our plans
+- All platform features are available to you
+
+We kindly ask that you continue to adhere to our community guidelines and terms of service.
+
+You can log in at: ${appUrl}/login`,
+  };
+  return bodies[templateId] || '';
+}
 
 export default function EmailTemplates() {
   const { toast } = useToast();
@@ -218,6 +172,7 @@ export default function EmailTemplates() {
   const [selectedTemplate, setSelectedTemplate] = useState('account-banned');
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
+  const [useHtml, setUseHtml] = useState(true);
 
   const currentDate = new Date().toLocaleDateString('en-US', {
     year: 'numeric',
@@ -227,7 +182,17 @@ export default function EmailTemplates() {
 
   const name = recipientName.trim() || '[Recipient Name]';
   const template = TEMPLATES.find(t => t.id === selectedTemplate)!;
-  const body = templateBodies[selectedTemplate](name, currentDate);
+  const emailBody = getEmailBody(selectedTemplate, name, currentDate);
+
+  const fullPreview = `${emailBody}
+
+--
+TurboAnswer Support
+Email: support@turboanswer.it.com
+Phone: (518) 250-5405
+Hours: Mon-Fri, 10:00 AM - 4:00 PM EST
+
+To stop receiving these emails, reply with "Unsubscribe" in the subject line.`;
 
   const handleSendEmail = async () => {
     if (!recipientName.trim() || !recipientEmail.trim()) {
@@ -241,6 +206,7 @@ export default function EmailTemplates() {
         recipientEmail: recipientEmail.trim(),
         recipientName: recipientName.trim(),
         templateType: selectedTemplate,
+        useHtml,
       });
       const data = await res.json();
       if (data.success) {
@@ -339,6 +305,22 @@ export default function EmailTemplates() {
                 className="flex-1 min-w-[200px] bg-black/50 border-gray-700 text-white"
               />
             </div>
+
+            <div style={{ display: 'flex', gap: '16px', alignItems: 'center', flexWrap: 'wrap' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '14px', color: '#9ca3af' }}>
+                <input
+                  type="checkbox"
+                  checked={useHtml}
+                  onChange={(e) => setUseHtml(e.target.checked)}
+                  style={{ accentColor: '#7c3aed' }}
+                />
+                Include HTML formatting
+              </label>
+              <span style={{ fontSize: '12px', color: useHtml ? '#f59e0b' : '#22c55e', padding: '2px 8px', borderRadius: '4px', backgroundColor: useHtml ? '#f59e0b15' : '#22c55e15' }}>
+                {useHtml ? 'HTML + Plain Text (standard)' : 'Plain Text Only (best deliverability)'}
+              </span>
+            </div>
+
             <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
               <Button
                 onClick={handleSendEmail}
@@ -370,85 +352,40 @@ export default function EmailTemplates() {
           marginBottom: '40px'
         }}>
           <p style={{ color: '#9ca3af', fontSize: '13px', padding: '8px 16px', marginBottom: '8px' }}>
-            Email Preview (this is what the recipient will see):
+            Email Preview (exactly what the recipient will see):
           </p>
-          <div style={{ backgroundColor: '#f9fafb', borderRadius: '8px', overflow: 'hidden' }}>
-            <div style={{ maxWidth: '600px', margin: '32px auto', backgroundColor: '#ffffff', border: '1px solid #e5e7eb', borderRadius: '8px', overflow: 'hidden' }}>
-
-              <div style={{
-                padding: '32px 32px 24px',
-                borderBottom: '1px solid #e5e7eb'
-              }}>
-                <span style={{ fontSize: '22px', fontWeight: 'bold', color: '#111827', letterSpacing: '-0.3px' }}>TurboAnswer</span>
-              </div>
-
-              <div style={{ padding: '32px' }}>
-                <div style={{
-                  backgroundColor: template.bannerBg,
-                  borderLeft: `4px solid ${template.bannerColor}`,
-                  padding: '14px 18px',
-                  marginBottom: '24px',
-                  borderRadius: '4px'
-                }}>
-                  <span style={{ color: template.bannerColor, fontWeight: 600, fontSize: '15px' }}>
-                    {template.bannerText}
-                  </span>
-                </div>
-
-                {body.paragraphs.map((p, i) => (
-                  <p key={i} style={{ color: '#374151', fontSize: '16px', lineHeight: 1.6, margin: '0 0 16px' }}>{p}</p>
-                ))}
-                <ul style={{ color: '#374151', fontSize: '16px', lineHeight: 1.8, margin: '0 0 16px', paddingLeft: '20px' }}>
-                  {body.bullets.map((b, i) => (
-                    <li key={i}>{b}</li>
-                  ))}
-                </ul>
-
-                {body.afterBullets.map((p, i) => (
-                  <p key={`after-${i}`} style={{ color: '#374151', fontSize: '16px', lineHeight: 1.6, margin: '0 0 16px' }}>{p}</p>
-                ))}
-
-                {body.showLogin && (
-                  <div style={{ margin: '28px 0' }}>
-                    <a href={`${APP_URL}/login`} style={{
-                      display: 'inline-block',
-                      backgroundColor: '#4f46e5',
-                      color: '#ffffff',
-                      textDecoration: 'none',
-                      padding: '12px 28px',
-                      borderRadius: '6px',
-                      fontWeight: 600,
-                      fontSize: '15px'
-                    }}>Log In to Your Account</a>
-                  </div>
-                )}
-
-                <p style={{ color: '#374151', fontSize: '15px', lineHeight: 1.6, margin: '20px 0 0' }}>
-                  If you have any questions, please do not hesitate to contact us.
-                </p>
-                <p style={{ color: '#374151', fontSize: '15px', lineHeight: 1.6, margin: '20px 0 4px' }}>Sincerely,</p>
-                <p style={{ color: '#111827', fontSize: '15px', lineHeight: 1.6, margin: 0, fontWeight: 600 }}>The TurboAnswer Team</p>
-              </div>
-
-              <div style={{ padding: '24px 32px', borderTop: '1px solid #e5e7eb', backgroundColor: '#f9fafb' }}>
-                <p style={{ color: '#6b7280', fontSize: '13px', margin: '0 0 8px', fontWeight: 600 }}>Contact Support</p>
-                <p style={{ color: '#374151', fontSize: '13px', margin: '0 0 4px' }}>
-                  Email: <a href="mailto:support@turboanswer.it.com" style={{ color: '#4f46e5', textDecoration: 'none' }}>support@turboanswer.it.com</a>
-                </p>
-                <p style={{ color: '#374151', fontSize: '13px', margin: '0 0 4px' }}>
-                  Phone: <a href="tel:+15182505405" style={{ color: '#4f46e5', textDecoration: 'none' }}>(518) 250-5405</a>
-                </p>
-                <p style={{ color: '#6b7280', fontSize: '12px', margin: '8px 0 0' }}>Monday - Friday, 10:00 AM - 4:00 PM EST</p>
-              </div>
-
-              <div style={{ padding: '16px 32px', borderTop: '1px solid #e5e7eb', textAlign: 'center' as const }}>
-                <p style={{ color: '#9ca3af', fontSize: '11px', margin: 0 }}>
-                  &copy; {new Date().getFullYear()} TurboAnswer. All rights reserved.
-                </p>
-              </div>
-
-            </div>
+          <div style={{ backgroundColor: '#ffffff', borderRadius: '8px', overflow: 'hidden', padding: '32px', maxWidth: '600px', margin: '0 auto' }}>
+            <pre style={{
+              fontFamily: 'Arial, Helvetica, sans-serif',
+              fontSize: '15px',
+              lineHeight: 1.6,
+              color: '#333333',
+              whiteSpace: 'pre-wrap',
+              wordWrap: 'break-word',
+              margin: 0,
+            }}>
+              {fullPreview}
+            </pre>
           </div>
+        </div>
+
+        <div style={{
+          backgroundColor: '#0a0a0a',
+          border: '1px solid #222',
+          borderRadius: '12px',
+          padding: '20px',
+          marginBottom: '40px'
+        }}>
+          <h3 style={{ fontSize: '14px', fontWeight: 'bold', color: '#f59e0b', marginBottom: '12px' }}>
+            Deliverability Tips
+          </h3>
+          <ul style={{ color: '#9ca3af', fontSize: '13px', lineHeight: 1.8, margin: 0, paddingLeft: '20px' }}>
+            <li>Uncheck "Include HTML formatting" to send plain-text only emails (best chance of avoiding spam)</li>
+            <li>Ask recipients to check their spam/junk folder and mark as "Not Spam"</li>
+            <li>Ask recipients to add support@turboanswer.it.com to their contacts</li>
+            <li>Set up DKIM signing through your Spacemail DNS settings for better authentication</li>
+            <li>Add a DMARC DNS record: <code style={{ color: '#a78bfa', backgroundColor: '#1a1a2e', padding: '2px 6px', borderRadius: '4px' }}>_dmarc.turboanswer.it.com TXT "v=DMARC1; p=none; rua=mailto:support@turboanswer.it.com"</code></li>
+          </ul>
         </div>
       </div>
     </div>
