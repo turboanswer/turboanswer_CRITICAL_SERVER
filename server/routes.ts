@@ -2061,6 +2061,10 @@ function downloadAAB(){
       const appUrl = 'https://turbo-answer.replit.app';
       const messageId = `<${Date.now()}.${Math.random().toString(36).substring(2)}@turboanswer.it.com>`;
 
+      const fs = await import('fs');
+      const logoBase64 = fs.readFileSync(path.resolve(process.cwd(), 'server', 'email-logo.png')).toString('base64');
+      const logoDataUri = `data:image/png;base64,${logoBase64}`;
+
       const templates: Record<string, { subject: string; bannerColor: string; bannerBg: string; statusIcon: string; statusText: string; bodyHtml: string; bodyText: string }> = {
         'account-banned': {
           subject: 'Account Banned - TurboAnswer',
@@ -2213,7 +2217,7 @@ function downloadAAB(){
 <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;background-color:#ffffff;border-radius:12px;overflow:hidden;">
 
 <tr><td style="background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);padding:32px;text-align:center;">
-<img src="cid:turbologo" alt="TurboAnswer Logo" width="64" height="64" style="border-radius:16px;margin-bottom:12px;display:block;margin-left:auto;margin-right:auto;outline:none;border:none;" />
+<img src="${logoDataUri}" alt="TurboAnswer Logo" width="64" height="64" style="border-radius:16px;margin-bottom:12px;display:block;margin-left:auto;margin-right:auto;outline:none;border:none;" />
 <h1 style="color:#ffffff;margin:0;font-size:24px;font-weight:bold;letter-spacing:-0.5px;">TurboAnswer</h1>
 <p style="color:rgba(255,255,255,0.85);margin:8px 0 0;font-size:14px;">Advanced AI Assistant</p>
 </td></tr>
@@ -2278,31 +2282,19 @@ ${showLoginButton ? `<table role="presentation" cellpadding="0" cellspacing="0" 
 </td></tr></table>
 </body></html>`;
 
-      const logoPath = path.resolve(process.cwd(), 'server', 'email-logo.png');
       const plainText = `${template.bodyText}\n\nNeed help? Contact us:\nEmail: support@turboanswer.it.com\nPhone: (518) 250-5405\nHours: Mon - Fri, 10:00 AM - 4:00 PM EST${showLoginButton ? `\n\nLog in here: ${appUrl}/login` : ''}\n\nBest regards,\nThe TurboAnswer Team\n\n---\n© ${year} TurboAnswer. All rights reserved.\nTo unsubscribe, reply to this email with "Unsubscribe" in the subject line.`;
 
       await transporter.sendMail({
-        from: '"TurboAnswer Support" <support@turboanswer.it.com>',
+        from: '"TurboAnswer" <support@turboanswer.it.com>',
         to: recipientEmail,
         replyTo: 'support@turboanswer.it.com',
         subject: template.subject,
         messageId: messageId,
         headers: {
           'List-Unsubscribe': '<mailto:support@turboanswer.it.com?subject=Unsubscribe>',
-          'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
-          'Precedence': 'bulk',
-          'X-Mailer': 'TurboAnswer Notification System',
-          'Organization': 'TurboAnswer',
         },
         text: plainText,
         html: htmlBody,
-        attachments: [{
-          filename: 'turbo-logo.png',
-          path: logoPath,
-          cid: 'turbologo',
-          contentDisposition: 'inline',
-          contentType: 'image/png',
-        }],
       });
 
       res.json({ success: true, message: `${template.statusText} email sent to ${recipientEmail}` });
