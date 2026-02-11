@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'wouter';
-import { ArrowLeft, Send, Mail, Loader2, CheckCircle, Ban, ShieldCheck, Search, KeyRound, Trash2 } from 'lucide-react';
+import { ArrowLeft, Send, Mail, Loader2, CheckCircle, Ban, ShieldCheck, Search, KeyRound, Trash2, ShieldOff, ShieldPlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
@@ -64,6 +64,28 @@ const TEMPLATES = [
     bannerColor: '#7f1d1d',
     bannerIcon: '\uD83D\uDDD1',
     bannerText: 'Account Permanently Deleted',
+  },
+  {
+    id: 'blacklist-added',
+    label: 'Added to Blacklist',
+    icon: ShieldOff,
+    color: '#7f1d1d',
+    description: 'Notify a user they have been added to the TurboAnswer blacklist.',
+    bannerBg: '#fef2f2',
+    bannerColor: '#7f1d1d',
+    bannerIcon: '\uD83D\uDEAB',
+    bannerText: 'Added to Blacklist',
+  },
+  {
+    id: 'blacklist-removed',
+    label: 'Removed from Blacklist',
+    icon: ShieldPlus,
+    color: '#059669',
+    description: 'Notify a user they have been removed from the TurboAnswer blacklist.',
+    bannerBg: '#ecfdf5',
+    bannerColor: '#065f46',
+    bannerIcon: '\u2705',
+    bannerText: 'Removed from Blacklist',
   },
 ];
 
@@ -150,6 +172,42 @@ const templateBodies: Record<string, (name: string, date: string) => { paragraph
       'We\'re sorry to see you go. Thank you for being a part of the TurboAnswer community.',
     ],
     showLogin: false,
+  }),
+  'blacklist-added': (name, date) => ({
+    paragraphs: [
+      `Dear ${name},`,
+      `We are writing to inform you that your account has been added to the TurboAnswer blacklist effective ${date}.`,
+      'This means the following restrictions are now in effect:',
+    ],
+    bullets: [
+      'Your account has been permanently blocked from accessing TurboAnswer',
+      'You will not be able to create new accounts using the same credentials',
+      'Any active subscriptions have been cancelled and refunded where applicable',
+      'All associated data will be retained for security purposes',
+    ],
+    afterBullets: [
+      'This action was taken due to severe or repeated violations of our terms of service, community guidelines, or applicable laws.',
+      'If you believe this decision was made in error, you may submit an appeal by contacting our support team. Please include your account email and a detailed explanation of the circumstances.',
+    ],
+    showLogin: false,
+  }),
+  'blacklist-removed': (name, date) => ({
+    paragraphs: [
+      `Dear ${name},`,
+      `We are pleased to inform you that your account has been removed from the TurboAnswer blacklist as of ${date}.`,
+      'Your access has been fully restored. Here\'s what this means for you:',
+    ],
+    bullets: [
+      'Your account is now fully active and accessible',
+      'You may log in and use all TurboAnswer services',
+      'You are welcome to subscribe to any of our plans',
+      'All platform features are available to you',
+    ],
+    afterBullets: [
+      'We kindly ask that you review and continue to adhere to our community guidelines and terms of service to ensure a positive experience for everyone.',
+      'Welcome back to TurboAnswer! We\'re glad to have you with us again.',
+    ],
+    showLogin: true,
   }),
 };
 

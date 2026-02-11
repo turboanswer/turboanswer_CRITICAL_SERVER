@@ -2147,6 +2147,44 @@ function downloadAAB(){
 <p style="color:#374151;font-size:16px;line-height:1.6;margin:0 0 16px;">We're sorry to see you go. Thank you for being a part of the TurboAnswer community.</p>`,
           bodyText: `Dear ${recipientName},\n\nThis email confirms that your TurboAnswer account has been permanently deleted as of ${currentDate}.\n\nThe following actions have been completed:\n\n- All account data has been permanently removed from our systems\n- All conversation history has been deleted\n- Any active subscriptions have been cancelled\n- This action is irreversible and cannot be undone\n\nIf you wish to use TurboAnswer again in the future, you are welcome to create a new account at any time.\n\nWe're sorry to see you go. Thank you for being a part of the TurboAnswer community.`,
         },
+        'blacklist-added': {
+          subject: 'You Have Been Added to Our Blacklist - TurboAnswer',
+          bannerColor: '#7f1d1d',
+          bannerBg: '#fef2f2',
+          statusIcon: '&#128683;',
+          statusText: 'Added to Blacklist',
+          bodyHtml: `<p style="color:#374151;font-size:16px;line-height:1.6;margin:0 0 16px;">Dear ${recipientName},</p>
+<p style="color:#374151;font-size:16px;line-height:1.6;margin:0 0 16px;">We are writing to inform you that your account has been <strong>added to the TurboAnswer blacklist</strong> effective <strong>${currentDate}</strong>.</p>
+<p style="color:#374151;font-size:16px;line-height:1.6;margin:0 0 16px;">This means the following restrictions are now in effect:</p>
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 16px 0;">
+<tr><td style="color:#374151;font-size:16px;line-height:2;padding-left:8px;">&#8226; Your account has been permanently blocked from accessing TurboAnswer</td></tr>
+<tr><td style="color:#374151;font-size:16px;line-height:2;padding-left:8px;">&#8226; You will not be able to create new accounts using the same credentials</td></tr>
+<tr><td style="color:#374151;font-size:16px;line-height:2;padding-left:8px;">&#8226; Any active subscriptions have been cancelled and refunded where applicable</td></tr>
+<tr><td style="color:#374151;font-size:16px;line-height:2;padding-left:8px;">&#8226; All associated data will be retained for security purposes</td></tr>
+</table>
+<p style="color:#374151;font-size:16px;line-height:1.6;margin:0 0 16px;">This action was taken due to severe or repeated violations of our terms of service, community guidelines, or applicable laws.</p>
+<p style="color:#374151;font-size:16px;line-height:1.6;margin:0 0 16px;">If you believe this decision was made in error, you may submit an appeal by contacting our support team. Please include your account email and a detailed explanation of the circumstances.</p>`,
+          bodyText: `Dear ${recipientName},\n\nWe are writing to inform you that your account has been added to the TurboAnswer blacklist effective ${currentDate}.\n\nThis means the following restrictions are now in effect:\n\n- Your account has been permanently blocked from accessing TurboAnswer\n- You will not be able to create new accounts using the same credentials\n- Any active subscriptions have been cancelled and refunded where applicable\n- All associated data will be retained for security purposes\n\nThis action was taken due to severe or repeated violations of our terms of service, community guidelines, or applicable laws.\n\nIf you believe this decision was made in error, you may submit an appeal by contacting our support team. Please include your account email and a detailed explanation of the circumstances.`,
+        },
+        'blacklist-removed': {
+          subject: 'You Have Been Removed from Our Blacklist - TurboAnswer',
+          bannerColor: '#065f46',
+          bannerBg: '#ecfdf5',
+          statusIcon: '&#9989;',
+          statusText: 'Removed from Blacklist',
+          bodyHtml: `<p style="color:#374151;font-size:16px;line-height:1.6;margin:0 0 16px;">Dear ${recipientName},</p>
+<p style="color:#374151;font-size:16px;line-height:1.6;margin:0 0 16px;">We are pleased to inform you that your account has been <strong>removed from the TurboAnswer blacklist</strong> as of <strong>${currentDate}</strong>.</p>
+<p style="color:#374151;font-size:16px;line-height:1.6;margin:0 0 16px;">Your access has been fully restored. Here's what this means for you:</p>
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 16px 0;">
+<tr><td style="color:#374151;font-size:16px;line-height:2;padding-left:8px;">&#8226; Your account is now fully active and accessible</td></tr>
+<tr><td style="color:#374151;font-size:16px;line-height:2;padding-left:8px;">&#8226; You may log in and use all TurboAnswer services</td></tr>
+<tr><td style="color:#374151;font-size:16px;line-height:2;padding-left:8px;">&#8226; You are welcome to subscribe to any of our plans</td></tr>
+<tr><td style="color:#374151;font-size:16px;line-height:2;padding-left:8px;">&#8226; All platform features are available to you</td></tr>
+</table>
+<p style="color:#374151;font-size:16px;line-height:1.6;margin:0 0 16px;">We kindly ask that you review and continue to adhere to our community guidelines and terms of service to ensure a positive experience for everyone.</p>
+<p style="color:#374151;font-size:16px;line-height:1.6;margin:0 0 16px;">Welcome back to TurboAnswer! We're glad to have you with us again.</p>`,
+          bodyText: `Dear ${recipientName},\n\nWe are pleased to inform you that your account has been removed from the TurboAnswer blacklist as of ${currentDate}.\n\nYour access has been fully restored. Here's what this means for you:\n\n- Your account is now fully active and accessible\n- You may log in and use all TurboAnswer services\n- You are welcome to subscribe to any of our plans\n- All platform features are available to you\n\nWe kindly ask that you review and continue to adhere to our community guidelines and terms of service to ensure a positive experience for everyone.\n\nWelcome back to TurboAnswer! We're glad to have you with us again.`,
+        },
       };
 
       const template = templates[templateType];
@@ -2154,7 +2192,7 @@ function downloadAAB(){
         return res.status(400).json({ error: `Unknown template type: ${templateType}. Valid types: ${Object.keys(templates).join(', ')}` });
       }
 
-      const showLoginButton = ['account-unbanned', 'account-recovered'].includes(templateType);
+      const showLoginButton = ['account-unbanned', 'account-recovered', 'blacklist-removed'].includes(templateType);
 
       const htmlBody = `<!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en">
