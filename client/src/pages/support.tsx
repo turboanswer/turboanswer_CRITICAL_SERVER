@@ -132,7 +132,7 @@ export default function Support() {
               Call us directly for immediate assistance
             </p>
             <a
-              href="tel:+15182505405"
+              href="tel:+18444692156"
               style={{
                 display: 'inline-block',
                 padding: '12px 24px',
@@ -147,7 +147,7 @@ export default function Support() {
               onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#059669'}
               onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#10b981'}
             >
-              (518) 250-5405
+              (844) 469-2156
             </a>
           </div>
         </div>
@@ -180,7 +180,7 @@ export default function Support() {
             fontSize: '16px',
             lineHeight: '1.6'
           }}>
-            <p><strong style={{ color: 'white' }}>Monday - Friday:</strong> 10:00 AM - 4:00 PM EST</p>
+            <p><strong style={{ color: 'white' }}>Monday - Friday:</strong> 10:00 AM - 6:00 PM EST</p>
             <p><strong style={{ color: 'white' }}>Saturday - Sunday:</strong> Closed</p>
             <p style={{ marginTop: '16px', fontSize: '14px' }}>
               Email support is available 24/7 - we'll respond as soon as possible
