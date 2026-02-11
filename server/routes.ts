@@ -2039,27 +2039,16 @@ function downloadAAB(){
         return res.status(400).json({ error: 'Recipient email, name, and template type are required' });
       }
 
-      const nodemailer = await import('nodemailer');
-      const smtpPassword = process.env.SPACEMAIL_PASSWORD;
-      if (!smtpPassword) {
-        return res.status(500).json({ error: 'Spacemail password not configured' });
+      const { Resend } = await import('resend');
+      const resendApiKey = process.env.RESEND_API_KEY;
+      if (!resendApiKey) {
+        return res.status(500).json({ error: 'Resend API key not configured' });
       }
 
-      const transporter = nodemailer.default.createTransport({
-        host: 'mail.spacemail.com',
-        port: 465,
-        secure: true,
-        auth: {
-          user: 'support@turboanswer.it.com',
-          pass: smtpPassword,
-        },
-        tls: { rejectUnauthorized: false },
-      });
+      const resend = new Resend(resendApiKey);
 
       const currentDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
-      const year = new Date().getFullYear();
       const appUrl = 'https://turbo-answer.replit.app';
-      const messageId = `<${Date.now()}.${Math.random().toString(36).substring(2)}@turboanswer.it.com>`;
 
       const templates: Record<string, { subject: string; statusText: string; bodyText: string }> = {
         'account-banned': {
@@ -2218,30 +2207,30 @@ ${template.bodyText.split('\n').map(line => {
 </body>
 </html>`;
 
-      const mailOptions: any = {
-        from: 'support@turboanswer.it.com',
-        to: recipientEmail,
+      const emailPayload: any = {
+        from: 'TurboAnswer <support@turboanswer.it.com>',
+        to: [recipientEmail],
         subject: template.subject,
         text: fullPlainText,
-        messageId: messageId,
         headers: {
           'X-Mailer': 'TurboAnswer Notifications',
-          'X-Priority': '3',
-          'Precedence': 'bulk',
           'List-Unsubscribe': '<mailto:support@turboanswer.it.com?subject=Unsubscribe>',
           'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
-          'Auto-Submitted': 'auto-generated',
-          'X-Auto-Response-Suppress': 'OOF, AutoReply',
         },
       };
 
       if (useHtml) {
-        mailOptions.html = minimalHtml;
+        emailPayload.html = minimalHtml;
       }
 
-      await transporter.sendMail(mailOptions);
+      const { data, error } = await resend.emails.send(emailPayload);
 
-      res.json({ success: true, message: `${template.statusText} email sent to ${recipientEmail}` });
+      if (error) {
+        console.error('Resend email error:', error);
+        return res.status(500).json({ error: error.message || 'Failed to send email via Resend' });
+      }
+
+      res.json({ success: true, message: `${template.statusText} email sent to ${recipientEmail}`, emailId: data?.id });
     } catch (error: any) {
       console.error('Email send error:', error);
       res.status(500).json({ error: error.message || 'Failed to send email' });
