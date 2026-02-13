@@ -327,23 +327,27 @@ export default function LandingPage() {
         </div>
 
         <div className="max-w-5xl mx-auto text-center relative z-10">
-          <div className="relative inline-block mb-8">
-            <div className="relative" style={{ animation: 'float 6s ease-in-out infinite' }}>
-              <TurboLogo size={100} animated={true} />
+          <div className="flex justify-center mb-8">
+            <div className="relative inline-block">
+              <div className="relative flex justify-center" style={{ animation: 'float 6s ease-in-out infinite' }}>
+                <TurboLogo size={100} animated={true} />
+              </div>
+              {isDark && (
+                <>
+                  <OrbitalRing size={160} duration={8} delay={0} color="rgba(99,102,241,0.4)" />
+                  <OrbitalRing size={200} duration={12} delay={2} color="rgba(168,85,247,0.3)" />
+                  <OrbitalRing size={240} duration={16} delay={4} color="rgba(236,72,153,0.2)" />
+                </>
+              )}
             </div>
-            {isDark && (
-              <>
-                <OrbitalRing size={160} duration={8} delay={0} color="rgba(99,102,241,0.4)" />
-                <OrbitalRing size={200} duration={12} delay={2} color="rgba(168,85,247,0.3)" />
-                <OrbitalRing size={240} duration={16} delay={4} color="rgba(236,72,153,0.2)" />
-              </>
-            )}
           </div>
 
-          <div className={`inline-flex items-center gap-2 px-5 py-2 rounded-full text-sm mb-8 ${isDark ? 'bg-indigo-500/10 border border-indigo-500/30 text-indigo-300' : 'bg-indigo-50 border border-indigo-200 text-indigo-600'}`} style={isDark ? { animation: 'border-glow 3s ease-in-out infinite' } : {}}>
-            <Rocket className="h-4 w-4" />
-            <span className="font-medium">Next-Gen AI Intelligence</span>
-            <Sparkles className="h-4 w-4" />
+          <div className="flex justify-center mb-8">
+            <div className={`inline-flex items-center gap-2 px-5 py-2 rounded-full text-sm ${isDark ? 'bg-indigo-500/10 border border-indigo-500/30 text-indigo-300' : 'bg-indigo-50 border border-indigo-200 text-indigo-600'}`} style={isDark ? { animation: 'border-glow 3s ease-in-out infinite' } : {}}>
+              <Rocket className="h-4 w-4" />
+              <span className="font-medium">Next-Gen AI Intelligence</span>
+              <Sparkles className="h-4 w-4" />
+            </div>
           </div>
 
           <h1 className="text-4xl sm:text-6xl lg:text-7xl font-black leading-[1.1] tracking-tight mb-6">

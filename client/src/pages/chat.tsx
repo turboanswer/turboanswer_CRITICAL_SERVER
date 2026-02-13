@@ -494,27 +494,58 @@ export default function Chat() {
         </div>
       )}
 
-      {/* Chat messages area with floating bubbles */}
-      <div className={`flex-1 overflow-y-auto relative z-10 ${isDark ? 'bg-zinc-950' : 'bg-gray-50'}`}>
-        {/* Floating bubbles background */}
+      {/* Chat messages area with space background */}
+      <div className={`flex-1 overflow-y-auto relative z-10 ${isDark ? 'bg-[#030014]' : 'bg-gray-50'}`}>
+        {/* Space background effects */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="bubble" />
-          <div className="bubble" />
-          <div className="bubble" />
-          <div className="bubble" />
-          <div className="bubble" />
+          {isDark ? (
+            <>
+              <div className="absolute top-20 left-1/4 w-72 h-72 bg-indigo-600/[0.04] rounded-full blur-[100px]" />
+              <div className="absolute top-1/3 right-1/5 w-56 h-56 bg-purple-600/[0.04] rounded-full blur-[80px]" />
+              <div className="absolute bottom-1/4 left-1/3 w-64 h-64 bg-pink-600/[0.03] rounded-full blur-[90px]" />
+            </>
+          ) : (
+            <>
+              <div className="bubble" />
+              <div className="bubble" />
+              <div className="bubble" />
+              <div className="bubble" />
+              <div className="bubble" />
+            </>
+          )}
         </div>
 
         <div className="px-3 sm:px-6 py-4 sm:py-6 max-w-3xl mx-auto relative z-10">
-          {/* Welcome screen */}
+          {/* Welcome screen - Space themed */}
           {messages.length === 0 && !isTyping && (
-            <div className="flex flex-col items-center justify-center py-12 sm:py-20">
-              <img src={turboLogo} alt="TurboAnswer" className="w-20 h-20 sm:w-28 sm:h-28 rounded-2xl object-cover mb-5 shadow-lg" />
-              <h2 className={`text-xl sm:text-2xl font-bold mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>Welcome to TurboAnswer</h2>
-              <p className={`text-sm sm:text-base mb-6 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Think Faster. Build Smarter.</p>
-              <div className={`flex items-center gap-2 text-xs px-3 py-1.5 rounded-full ${isDark ? 'bg-zinc-800 text-zinc-400' : 'bg-gray-200 text-gray-500'}`}>
-                <Brain className="h-3 w-3" />
-                <span>Model: {selectedAIModel === 'gemini-flash' ? 'Free' : selectedAIModel === 'gemini-pro' ? 'Pro' : selectedAIModel === 'enterprise-research' ? 'Enterprise' : 'Research'}</span>
+            <div className="flex flex-col items-center justify-center py-12 sm:py-20 relative">
+              {isDark && (
+                <div className="absolute inset-0 pointer-events-none">
+                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-indigo-600/10 rounded-full blur-[80px]" />
+                  <div className="absolute top-1/3 left-1/3 w-32 h-32 bg-purple-600/10 rounded-full blur-[60px]" />
+                  <div className="absolute bottom-1/3 right-1/3 w-40 h-40 bg-pink-600/8 rounded-full blur-[60px]" />
+                </div>
+              )}
+              <div className="relative z-10 flex flex-col items-center">
+                <div className={`relative mb-6 ${isDark ? '' : ''}`}>
+                  <img src={turboLogo} alt="TurboAnswer" className={`w-20 h-20 sm:w-28 sm:h-28 rounded-2xl object-cover ${isDark ? 'shadow-2xl shadow-indigo-500/20' : 'shadow-lg'}`} />
+                  {isDark && <div className="absolute -inset-2 rounded-3xl border border-indigo-500/20 animate-pulse" />}
+                </div>
+                <h2 className={`text-xl sm:text-2xl font-bold mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>Welcome to TurboAnswer</h2>
+                <p className={`text-sm sm:text-base mb-6 ${isDark ? 'bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 bg-clip-text text-transparent font-medium' : 'text-gray-500'}`}>Think Faster. Build Smarter.</p>
+                <div className={`flex items-center gap-2 text-xs px-4 py-2 rounded-full ${isDark ? 'bg-indigo-500/10 border border-indigo-500/20 text-indigo-300' : 'bg-gray-200 text-gray-500'}`}>
+                  <Brain className="h-3 w-3" />
+                  <span>Model: {selectedAIModel === 'gemini-flash' ? 'Free' : selectedAIModel === 'gemini-pro' ? 'Pro' : selectedAIModel === 'enterprise-research' ? 'Enterprise' : 'Research'}</span>
+                </div>
+                {isDark && (
+                  <div className="flex gap-3 mt-6">
+                    {['Ask questions', 'Upload docs', 'Generate images'].map((hint, i) => (
+                      <span key={i} className="text-[10px] sm:text-xs px-3 py-1.5 rounded-full bg-white/[0.03] border border-white/5 text-indigo-300/50">
+                        {hint}
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -570,9 +601,15 @@ export default function Chat() {
         </div>
       </div>
 
-      {/* Input area */}
-      <div className={`${isDark ? 'bg-black border-gray-800' : 'bg-white border-gray-200'} border-t p-3 sm:p-4 shrink-0`}>
-        <div className="max-w-3xl mx-auto">
+      {/* Input area - Space themed */}
+      <div className={`${isDark ? 'bg-[#030014]/90 backdrop-blur-xl border-indigo-500/10' : 'bg-white border-gray-200'} border-t p-3 sm:p-4 shrink-0 relative overflow-hidden`}>
+        {isDark && (
+          <div className="absolute inset-0 pointer-events-none">
+            <div className="absolute top-0 left-1/4 w-64 h-16 bg-indigo-600/5 rounded-full blur-[40px]" />
+            <div className="absolute top-0 right-1/3 w-48 h-16 bg-purple-600/5 rounded-full blur-[40px]" />
+          </div>
+        )}
+        <div className="max-w-3xl mx-auto relative z-10">
           <div className="flex items-end gap-2 sm:gap-3">
             <div className="flex-1 relative">
               <Textarea
@@ -580,28 +617,32 @@ export default function Chat() {
                 value={messageContent}
                 onChange={(e) => setMessageContent(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder="Ask me anything..."
-                className={`w-full px-4 py-3 pr-12 rounded-2xl text-sm sm:text-base resize-none min-h-[44px] max-h-28 focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                placeholder="Ask me anything across the universe..."
+                className={`w-full px-4 py-3 pr-12 rounded-2xl text-sm sm:text-base resize-none min-h-[44px] max-h-28 transition-all duration-300 ${
                   isDark
-                    ? 'bg-zinc-900 border-zinc-700 text-white placeholder-gray-500'
-                    : 'bg-gray-100 border-gray-300 text-gray-900 placeholder-gray-400'
+                    ? 'bg-white/[0.04] border-indigo-500/20 text-white placeholder-indigo-300/30 focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500/30 focus:bg-white/[0.06]'
+                    : 'bg-gray-100 border-gray-300 text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent'
                 }`}
                 rows={1}
               />
               <Button
                 onClick={handleSendWithPromo}
                 disabled={!messageContent.trim() || sendMessageMutation.isPending}
-                className="absolute right-2 bottom-2 h-8 w-8 p-0 bg-blue-500 text-white rounded-xl hover:bg-blue-600 disabled:opacity-40"
+                className={`absolute right-2 bottom-2 h-8 w-8 p-0 rounded-xl disabled:opacity-40 transition-all duration-300 ${
+                  isDark
+                    ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white hover:from-indigo-500 hover:to-purple-500 shadow-lg shadow-indigo-500/20'
+                    : 'bg-blue-500 text-white hover:bg-blue-600'
+                }`}
                 title="Send message"
               >
                 <Send className="h-4 w-4" />
               </Button>
             </div>
           </div>
-          <div className={`flex items-center justify-between mt-1.5 text-[10px] sm:text-xs ${isDark ? 'text-gray-600' : 'text-gray-400'}`}>
+          <div className={`flex items-center justify-between mt-1.5 text-[10px] sm:text-xs ${isDark ? 'text-indigo-300/30' : 'text-gray-400'}`}>
             <div className="flex items-center gap-2 sm:gap-3">
               <span className="flex items-center gap-1">
-                <div className="w-1.5 h-1.5 bg-green-400 rounded-full" />
+                <div className={`w-1.5 h-1.5 rounded-full ${isDark ? 'bg-emerald-400 shadow-sm shadow-emerald-400/50' : 'bg-green-400'}`} />
                 <span>Ready</span>
               </span>
               <span className="hidden sm:inline">Press Enter to send</span>
