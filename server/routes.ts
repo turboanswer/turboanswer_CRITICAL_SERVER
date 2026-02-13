@@ -124,8 +124,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!fs.existsSync(aabPath)) {
       return res.status(404).json({ error: "AAB file not found" });
     }
+    const stat = fs.statSync(aabPath);
     res.setHeader("Content-Type", "application/octet-stream");
+    res.setHeader("Content-Length", stat.size);
     res.setHeader("Content-Disposition", "attachment; filename=turbo-answer-release.aab");
+    res.setHeader("Cache-Control", "no-cache, no-store");
     const fileStream = fs.createReadStream(aabPath);
     fileStream.pipe(res);
   });
