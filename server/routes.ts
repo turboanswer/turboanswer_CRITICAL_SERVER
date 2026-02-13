@@ -118,6 +118,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.use(widgetRoutes);
 
+  app.get("/download/turbo-answer.aab", async (req, res) => {
+    const fs = await import("fs");
+    const aabPath = path.resolve(__dirname, "..", "turbo-answer-release.aab");
+    if (!fs.existsSync(aabPath)) {
+      return res.status(404).json({ error: "AAB file not found" });
+    }
+    res.setHeader("Content-Type", "application/octet-stream");
+    res.setHeader("Content-Disposition", "attachment; filename=turbo-answer-release.aab");
+    const fileStream = fs.createReadStream(aabPath);
+    fileStream.pipe(res);
+  });
+
   app.get("/robots.txt", (req, res) => {
     const baseUrl = `${req.protocol}://${req.get("host")}`;
     const robotsTxt = `User-agent: *
