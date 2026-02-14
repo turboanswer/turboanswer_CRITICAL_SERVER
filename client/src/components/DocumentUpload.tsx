@@ -74,23 +74,28 @@ export function DocumentUpload({ conversationId, onAnalysisComplete }: DocumentU
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      // Validate file size (10MB limit)
-      if (file.size > 10 * 1024 * 1024) {
+      if (file.size > 20 * 1024 * 1024) {
         toast({
           title: "File Too Large",
-          description: "Please select a file smaller than 10MB",
+          description: "Please select a file smaller than 20MB",
           variant: "destructive",
         });
         return;
       }
 
-      // Validate file type
-      const supportedMimeTypes = supportedTypes?.mimeTypes || [];
-      if (!supportedMimeTypes.includes(file.type)) {
-        const supportedExtensions = supportedTypes?.extensions?.join(', ') || 'txt, pdf, doc, docx, csv, json, md';
+      const allowedTypes = [
+        'text/plain', 'application/pdf', 'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+        'text/csv', 'application/json', 'text/markdown', 'text/html',
+        'text/xml', 'application/xml', 'application/rtf',
+        'image/png', 'image/jpeg', 'image/webp', 'image/gif',
+      ];
+      if (!allowedTypes.includes(file.type)) {
         toast({
           title: "Unsupported File Type",
-          description: `Supported types: ${supportedExtensions}`,
+          description: "Supported: PDF, DOCX, XLSX, PPTX, TXT, CSV, JSON, MD, HTML, XML, RTF, PNG, JPG, GIF, WEBP",
           variant: "destructive",
         });
         return;
@@ -152,7 +157,7 @@ export function DocumentUpload({ conversationId, onAnalysisComplete }: DocumentU
               Upload a document to analyze
             </p>
             <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-              Supported: TXT, PDF, DOC, DOCX, CSV, JSON, MD (Max 10MB)
+              Supported: PDF, DOCX, XLSX, PPTX, TXT, CSV, JSON, MD, HTML, XML, RTF, Images (Max 20MB)
             </p>
             <Button variant="outline">
               Choose File
@@ -184,7 +189,7 @@ export function DocumentUpload({ conversationId, onAnalysisComplete }: DocumentU
           ref={fileInputRef}
           type="file"
           onChange={handleFileSelect}
-          accept={supportedTypes?.mimeTypes?.join(',') || '.txt,.pdf,.doc,.docx,.csv,.json,.md'}
+          accept=".txt,.pdf,.doc,.docx,.xlsx,.pptx,.csv,.json,.md,.html,.xml,.rtf,.png,.jpg,.jpeg,.webp,.gif"
           className="hidden"
         />
       </div>

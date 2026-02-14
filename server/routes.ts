@@ -84,7 +84,7 @@ ${bodyText.split('\n').map(line => {
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: {
-    fileSize: 10 * 1024 * 1024,
+    fileSize: 20 * 1024 * 1024,
     files: 1
   }
 });
@@ -1873,8 +1873,14 @@ function downloadAAB(){
         fileContent, 
         originalname, 
         analysisType,
-        conversationHistory
+        conversationHistory,
+        buffer,
+        mimetype
       );
+
+      const preview = fileContent === '__BINARY_FILE__'
+        ? `[Binary file: ${originalname}]`
+        : fileContent.substring(0, 200) + (fileContent.length > 200 ? '...' : '');
 
       res.json({
         filename: originalname,
@@ -1882,7 +1888,7 @@ function downloadAAB(){
         fileSize: size,
         analysisType,
         analysis: analysisResult,
-        contentPreview: fileContent.substring(0, 200) + (fileContent.length > 200 ? '...' : '')
+        contentPreview: preview
       });
 
     } catch (error: any) {

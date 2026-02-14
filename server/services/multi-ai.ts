@@ -103,15 +103,15 @@ export async function generateAIResponse(
       temperature = 0.1;
       systemPrompt = `You are Turbo Answer, a research assistant. Only if someone specifically asks who made, created, or developed TurboAnswer, say it was developed by Tiago Tschantret — otherwise never mention it. Give thorough, well-structured analysis with clear headings and evidence-based reasoning.${languageInstruction ? ' ' + languageInstruction : ''}${additionalContext}`;
     } else if (selectedModel === 'gemini-pro') {
-      geminiModel = 'gemini-2.5-flash';
+      geminiModel = 'gemini-2.0-flash';
       maxTokens = isSimple ? 500 : 4000;
       temperature = 0.3;
       systemPrompt = isSimple
         ? `You are Turbo. Only if someone specifically asks who made, created, or developed TurboAnswer, say it was developed by Tiago Tschantret — otherwise never mention it. Be concise and direct.${languageInstruction ? ' ' + languageInstruction : ''}`
         : `You are Turbo Answer, a premium assistant. Only if someone specifically asks who made, created, or developed TurboAnswer, say it was developed by Tiago Tschantret — otherwise never mention it. Give clear, detailed responses.${languageInstruction ? ' ' + languageInstruction : ''}${additionalContext}`;
     } else {
-      geminiModel = 'gemini-2.5-flash';
-      maxTokens = isSimple ? 300 : 2000;
+      geminiModel = 'gemini-2.0-flash';
+      maxTokens = isSimple ? 200 : 1500;
       temperature = 0.4;
       systemPrompt = isSimple
         ? `You are Turbo. Only if someone specifically asks who made, created, or developed TurboAnswer, say it was developed by Tiago Tschantret — otherwise never mention it. Answer in 1-2 sentences max.${languageInstruction ? ' ' + languageInstruction : ''}`
@@ -143,10 +143,8 @@ export async function generateAIResponse(
 
 async function callGemini(prompt: string, preferredModel: string, maxTokens: number, temperature: number, apiKey: string): Promise<string> {
   const allModels = preferredModel === 'gemini-2.5-pro' 
-    ? ['gemini-2.5-pro', 'gemini-2.5-flash', 'gemini-2.0-flash']
-    : preferredModel === 'gemini-2.0-flash'
-    ? ['gemini-2.0-flash', 'gemini-2.5-flash']
-    : ['gemini-2.5-flash', 'gemini-2.0-flash'];
+    ? ['gemini-2.5-pro', 'gemini-2.0-flash']
+    : ['gemini-2.0-flash', 'gemini-2.5-flash'];
 
   const requestBody = JSON.stringify({
     contents: [{ parts: [{ text: prompt }] }],
@@ -158,7 +156,7 @@ async function callGemini(prompt: string, preferredModel: string, maxTokens: num
       try {
         const start = Date.now();
         const controller = new AbortController();
-        const timeoutMs = model.includes('2.0-flash') ? 10000 : 25000;
+        const timeoutMs = model === 'gemini-2.5-pro' ? 20000 : 8000;
         const timeout = setTimeout(() => controller.abort(), timeoutMs);
         const response = await fetch(
           `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
@@ -168,7 +166,7 @@ async function callGemini(prompt: string, preferredModel: string, maxTokens: num
 
         if (response.status === 429) {
           console.log(`[Gemini] ${model} rate limited (attempt ${attempt + 1}), trying next...`);
-          if (attempt === 0) await new Promise(r => setTimeout(r, 2000));
+          if (attempt === 0) await new Promise(r => setTimeout(r, 1000));
           continue;
         }
 
@@ -181,7 +179,7 @@ async function callGemini(prompt: string, preferredModel: string, maxTokens: num
         if (data.error) {
           console.error(`[Gemini] ${model} error:`, data.error.message);
           if (data.error.code === 429 && attempt === 0) {
-            await new Promise(r => setTimeout(r, 3000));
+            await new Promise(r => setTimeout(r, 1500));
           }
           continue;
         }
@@ -200,7 +198,7 @@ async function callGemini(prompt: string, preferredModel: string, maxTokens: num
 
     if (attempt === 0) {
       console.log('[Gemini] All models failed on first attempt, retrying after delay...');
-      await new Promise(r => setTimeout(r, 3000));
+      await new Promise(r => setTimeout(r, 1500));
     }
   }
 

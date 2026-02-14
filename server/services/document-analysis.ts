@@ -1,108 +1,230 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
-
-const ai = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
 
 export const SUPPORTED_FILE_TYPES: Record<string, string> = {
   'text/plain': 'txt',
   'application/pdf': 'pdf',
   'application/msword': 'doc',
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'docx',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': 'xlsx',
+  'application/vnd.openxmlformats-officedocument.presentationml.presentation': 'pptx',
   'text/csv': 'csv',
   'application/json': 'json',
-  'text/markdown': 'md'
+  'text/markdown': 'md',
+  'text/html': 'html',
+  'text/xml': 'xml',
+  'application/xml': 'xml',
+  'application/rtf': 'rtf',
+  'image/png': 'png',
+  'image/jpeg': 'jpg',
+  'image/webp': 'webp',
+  'image/gif': 'gif',
 };
 
+const TEXT_MIME_TYPES = new Set([
+  'text/plain', 'text/csv', 'application/json', 'text/markdown',
+  'text/html', 'text/xml', 'application/xml', 'application/rtf'
+]);
+
+const GEMINI_INLINE_TYPES = new Set([
+  'application/pdf',
+  'image/png', 'image/jpeg', 'image/webp', 'image/gif',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+  'application/msword',
+]);
+
 export async function extractTextFromFile(fileBuffer: Buffer, mimeType: string, filename: string): Promise<string> {
-  try {
-    switch (mimeType) {
-      case 'text/plain':
-      case 'text/csv':
-      case 'application/json':
-      case 'text/markdown':
-        return fileBuffer.toString('utf-8');
-      
-      case 'application/pdf':
-        return `[PDF Document: ${filename}]\nPDF text extraction requires additional setup. Please convert to text format for analysis.`;
-      
-      case 'application/msword':
-      case 'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
-        return `[Word Document: ${filename}]\nWord document text extraction requires additional setup. Please convert to text format for analysis.`;
-      
-      default:
-        throw new Error(`Unsupported file type: ${mimeType}`);
-    }
-  } catch (error: any) {
-    throw new Error(`Failed to extract text from file: ${error.message}`);
+  if (TEXT_MIME_TYPES.has(mimeType)) {
+    return fileBuffer.toString('utf-8');
   }
+  return `__BINARY_FILE__`;
 }
 
 export async function analyzeDocument(
-  fileContent: string, 
-  filename: string, 
+  fileContent: string,
+  filename: string,
   analysisType: string = 'general',
-  conversationHistory: Array<{role: string, content: string}> = []
+  conversationHistory: Array<{role: string, content: string}> = [],
+  fileBuffer?: Buffer,
+  mimeType?: string
 ): Promise<string> {
-  
+
   let analysisPrompt = '';
-  
   switch (analysisType) {
     case 'summary':
-      analysisPrompt = `Please provide a clear summary of this document "${filename}". Focus on key points and main ideas.`;
+      analysisPrompt = `Provide a clear, detailed summary of this document "${filename}". Focus on key points, main ideas, and important details.`;
       break;
     case 'questions':
-      analysisPrompt = `Analyze this document "${filename}" and generate 5 important questions that could be answered based on its content.`;
+      analysisPrompt = `Analyze this document "${filename}" and generate 5-10 important questions that could be answered based on its content.`;
       break;
     case 'insights':
-      analysisPrompt = `Analyze this document "${filename}" and provide key insights, patterns, or important findings.`;
+      analysisPrompt = `Analyze this document "${filename}" and provide key insights, patterns, trends, or important findings. Be thorough.`;
       break;
     case 'extract':
-      analysisPrompt = `Extract the most important information from this document "${filename}". Organize it in a clear, structured way.`;
+      analysisPrompt = `Extract all important information from this document "${filename}". Organize it clearly with headings and bullet points.`;
       break;
     default:
-      analysisPrompt = `Analyze this document "${filename}". Provide a helpful overview of its content and key points.`;
+      analysisPrompt = `Analyze this document "${filename}" thoroughly. Provide a comprehensive overview of its content, key points, structure, and any important details.`;
   }
-  
-  const truncatedContent = fileContent.length > 3000 
-    ? fileContent.substring(0, 3000) + '\n\n[Content truncated for analysis...]'
+
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    throw new Error("Gemini API key not configured");
+  }
+
+  const isBinary = fileContent === '__BINARY_FILE__' && fileBuffer && mimeType;
+
+  if (isBinary && GEMINI_INLINE_TYPES.has(mimeType!)) {
+    return await analyzeWithGeminiInline(analysisPrompt, fileBuffer!, mimeType!, apiKey, conversationHistory);
+  }
+
+  const truncatedContent = fileContent.length > 30000
+    ? fileContent.substring(0, 30000) + '\n\n[Content truncated - showing first 30,000 characters]'
     : fileContent;
-  
+
   const fullPrompt = `${analysisPrompt}\n\nDocument Content:\n${truncatedContent}`;
 
-  try {
-    const model = ai.getGenerativeModel({ 
-      model: "gemini-2.5-flash",
-      generationConfig: {
-        temperature: 0.3,
-        maxOutputTokens: 4000,
+  return await callGeminiForDoc(fullPrompt, apiKey);
+}
+
+async function analyzeWithGeminiInline(
+  prompt: string,
+  fileBuffer: Buffer,
+  mimeType: string,
+  apiKey: string,
+  conversationHistory: Array<{role: string, content: string}> = []
+): Promise<string> {
+  const base64Data = fileBuffer.toString('base64');
+
+  const contextParts = conversationHistory.length > 0
+    ? `\n\nRecent conversation context:\n${conversationHistory.slice(-2).map(m => `${m.role}: ${m.content.slice(0, 300)}`).join('\n')}\n\n`
+    : '';
+
+  const requestBody = {
+    contents: [{
+      parts: [
+        {
+          inline_data: {
+            mime_type: mimeType,
+            data: base64Data
+          }
+        },
+        {
+          text: `${contextParts}${prompt}\n\nIMPORTANT: Read and analyze the ACTUAL content of this uploaded file. Extract real text, data, and information from it. Do NOT say you cannot read it.`
+        }
+      ]
+    }],
+    generationConfig: {
+      temperature: 0.2,
+      maxOutputTokens: 8000,
+    }
+  };
+
+  const models = ['gemini-2.0-flash', 'gemini-2.5-flash'];
+
+  for (const model of models) {
+    try {
+      const start = Date.now();
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 30000);
+
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(requestBody),
+          signal: controller.signal
+        }
+      );
+      clearTimeout(timeout);
+
+      if (response.status === 429 || response.status === 503) {
+        console.log(`[DocAnalysis] ${model} unavailable (${response.status}), trying next...`);
+        continue;
       }
-    });
-    
-    const result = await model.generateContent(fullPrompt);
-    const response = result.response;
-    return response.text() || "Unable to analyze document.";
-  } catch (error: any) {
-    console.error("Document analysis error:", error);
-    throw new Error(`Document analysis failed: ${error.message}`);
+
+      const data = await response.json();
+      if (data.error) {
+        console.error(`[DocAnalysis] ${model} error:`, data.error.message);
+        continue;
+      }
+
+      const content = data.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (!content) continue;
+
+      console.log(`[DocAnalysis] ${model} inline analysis completed in ${Date.now() - start}ms`);
+      return content;
+    } catch (error: any) {
+      console.log(`[DocAnalysis] ${model} failed: ${error.message}`);
+      continue;
+    }
   }
+
+  throw new Error('Document analysis temporarily unavailable. Please try again.');
+}
+
+async function callGeminiForDoc(prompt: string, apiKey: string): Promise<string> {
+  const requestBody = JSON.stringify({
+    contents: [{ parts: [{ text: prompt }] }],
+    generationConfig: { temperature: 0.2, maxOutputTokens: 8000 }
+  });
+
+  const models = ['gemini-2.0-flash', 'gemini-2.5-flash'];
+
+  for (const model of models) {
+    try {
+      const start = Date.now();
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 15000);
+
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: requestBody,
+          signal: controller.signal
+        }
+      );
+      clearTimeout(timeout);
+
+      if (response.status === 429 || response.status === 503) continue;
+
+      const data = await response.json();
+      if (data.error) continue;
+
+      const content = data.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (!content) continue;
+
+      console.log(`[DocAnalysis] ${model} text analysis completed in ${Date.now() - start}ms`);
+      return content;
+    } catch (error: any) {
+      continue;
+    }
+  }
+
+  throw new Error('Document analysis temporarily unavailable. Please try again.');
 }
 
 export function validateFile(fileSize: number, mimeType: string): { valid: boolean; error?: string } {
-  const maxSize = 10 * 1024 * 1024;
+  const maxSize = 20 * 1024 * 1024;
   if (fileSize > maxSize) {
-    return { valid: false, error: 'File size must be less than 10MB' };
+    return { valid: false, error: 'File size must be less than 20MB' };
   }
-  
+
   if (!SUPPORTED_FILE_TYPES[mimeType]) {
     const supportedTypes = Object.values(SUPPORTED_FILE_TYPES).join(', ');
     return { valid: false, error: `Unsupported file type. Supported types: ${supportedTypes}` };
   }
-  
+
   return { valid: true };
 }
 
 export function getAnalysisOptions() {
   return [
-    { value: 'general', label: 'General Analysis', description: 'Overall document overview and key points' },
+    { value: 'general', label: 'General Analysis', description: 'Complete document overview and key points' },
     { value: 'summary', label: 'Summary', description: 'Concise summary of main ideas' },
     { value: 'questions', label: 'Generate Questions', description: 'Create questions based on content' },
     { value: 'insights', label: 'Key Insights', description: 'Extract patterns and important findings' },
