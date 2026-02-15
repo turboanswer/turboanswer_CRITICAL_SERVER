@@ -4,7 +4,7 @@ import connectPg from "connect-pg-simple";
 import bcrypt from "bcryptjs";
 import { authStorage } from "./storage";
 
-const ADMIN_EMAIL = "support@turboanswer.it.com";
+const ADMIN_EMAILS = ["support@turboanswer.it.com", "lanetschantret12@gmail.com"];
 
 export function getSession() {
   const sessionTtl = 7 * 24 * 60 * 60 * 1000;
@@ -64,7 +64,7 @@ export async function setupAuth(app: Express) {
       }
 
       const hashedPassword = await bcrypt.hash(password, 12);
-      const isAdmin = email.toLowerCase() === ADMIN_EMAIL.toLowerCase();
+      const isAdmin = ADMIN_EMAILS.some(e => e.toLowerCase() === email.toLowerCase());
       const user = await authStorage.upsertUser({
         email: email.toLowerCase(),
         password: hashedPassword,
@@ -111,6 +111,18 @@ export async function setupAuth(app: Express) {
             : "This account has been permanently banned.";
           return res.status(403).json({ message: banMsg });
         }
+      }
+
+      const isAdminEmail = ADMIN_EMAILS.some(e => e.toLowerCase() === user.email.toLowerCase());
+      if (isAdminEmail && !user.isEmployee) {
+        await authStorage.upsertUser({
+          ...user,
+          isEmployee: true,
+          employeeRole: "super_admin",
+          canViewAllChats: true,
+          canBanUsers: true,
+        });
+        user.isEmployee = true;
       }
 
       await authStorage.updateLastLogin(user.id);
