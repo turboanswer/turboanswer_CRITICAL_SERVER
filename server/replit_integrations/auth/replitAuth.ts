@@ -137,6 +137,21 @@ export async function setupAuth(app: Express) {
       }
 
       const grantAdmin = isAdminEmail || grantAdminFromInvite;
+
+      // Check if this email has an approved beta application
+      let isBetaTester = false;
+      try {
+        const { db } = await import('../db');
+        const { betaApplications } = await import('@shared/schema');
+        const { eq, and } = await import('drizzle-orm');
+        const [approvedApp] = await db.select().from(betaApplications)
+          .where(and(eq(betaApplications.email, email.toLowerCase()), eq(betaApplications.status, 'approved')))
+          .limit(1);
+        if (approvedApp) isBetaTester = true;
+      } catch (e) {
+        console.error('Beta tester check error:', e);
+      }
+
       const user = await authStorage.upsertUser({
         email: email.toLowerCase(),
         password: hashedPassword,
@@ -146,6 +161,7 @@ export async function setupAuth(app: Express) {
         employeeRole: grantAdmin ? "super_admin" : "basic",
         canViewAllChats: grantAdmin,
         canBanUsers: grantAdmin,
+        isBetaTester,
       });
 
       if (validatedInviteId) {

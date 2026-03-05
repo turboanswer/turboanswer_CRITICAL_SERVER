@@ -2500,7 +2500,7 @@ ${template.bodyText.split('\n').map(line => {
       await sendBrevoEmail(
         app.email, app.name,
         'Congratulations! You\'ve been approved for TurboAnswer Beta Testing',
-        `Hi ${app.name},\n\nCongratulations! We're thrilled to let you know that your application to join the TurboAnswer Beta Testing Program has been approved.\n\nYou now have full beta tester access on your account. Please log in to TurboAnswer and look for the feedback button in your account — we'd love to hear your thoughts as you explore the platform.\n\nAs a beta tester, your feedback is invaluable in helping us build a better product. Don't hesitate to share detailed notes, bug reports, or feature suggestions.\n\nThank you for your interest and enthusiasm. We're excited to have you on board!\n\nBest regards,\nThe TurboAnswer Team`
+        `Hi ${app.name},\n\nCongratulations! We're thrilled to let you know that your application to join the TurboAnswer Beta Testing Program has been approved.\n\nTo get started, please create your TurboAnswer account using this exact email address: ${app.email}\n\nVisit https://turbo-answer.replit.app/register and sign up with the email above. Your account will automatically have beta tester access as soon as you register — no extra steps needed.\n\nOnce you're logged in, look for the green flask icon in the chat header to submit your feedback directly to our team.\n\nAs a beta tester, your feedback is invaluable. Don't hesitate to share detailed notes, bug reports, or feature suggestions — we read every one.\n\nThank you for your enthusiasm. We're excited to have you on board!\n\nBest regards,\nThe TurboAnswer Team`
       );
 
       res.json({ success: true });

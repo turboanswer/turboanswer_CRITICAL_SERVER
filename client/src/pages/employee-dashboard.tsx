@@ -2477,7 +2477,7 @@ function BetaTestingTab() {
               </div>
               <div className="text-gray-400 text-xs leading-relaxed">
                 {emailModal.type === 'approve'
-                  ? `Hi ${emailModal.name}, Congratulations! We're thrilled to let you know that your application has been approved. You now have full beta tester access…`
+                  ? `Hi ${emailModal.name}, Congratulations! Your application has been approved. To get started, create your account at turboanswer using this exact email: ${emailModal.email}. Your account will automatically have beta tester access when you register…`
                   : `Hi ${emailModal.name}, Thank you for applying. After careful review, your application has not been selected at this time.${customReason ? ` Reason: ${customReason}` : ''} We encourage you to apply again in the future…`}
               </div>
             </div>
@@ -2492,7 +2492,7 @@ function BetaTestingTab() {
                     ? "Congratulations! You've been approved for TurboAnswer Beta Testing"
                     : "TurboAnswer Beta Testing Application Update";
                   const body = emailModal.type === 'approve'
-                    ? `Hi ${emailModal.name},\n\nCongratulations! We're thrilled to let you know that your application to join the TurboAnswer Beta Testing Program has been approved.\n\nYou now have full beta tester access on your account. Please log in to TurboAnswer and look for the feedback button in your account — we'd love to hear your thoughts.\n\nThank you for your enthusiasm. We're excited to have you on board!\n\nBest regards,\nThe TurboAnswer Team`
+                    ? `Hi ${emailModal.name},\n\nCongratulations! We're thrilled to let you know that your application to join the TurboAnswer Beta Testing Program has been approved.\n\nTo get started, please create your TurboAnswer account using this exact email address: ${emailModal.email}\n\nVisit https://turbo-answer.replit.app/register and sign up with the email above. Your account will automatically have beta tester access as soon as you register — no extra steps needed.\n\nOnce you're logged in, look for the green flask icon in the chat header to submit your feedback directly to our team.\n\nThank you for your enthusiasm. We're excited to have you on board!\n\nBest regards,\nThe TurboAnswer Team`
                     : `Hi ${emailModal.name},\n\nThank you for taking the time to apply to the TurboAnswer Beta Testing Program. After careful review, we regret to inform you that your application has not been selected at this time.\n\n${customReason ? `Reason: ${customReason}\n\n` : ''}We encourage you to keep using TurboAnswer and apply again in the future.\n\nBest regards,\nThe TurboAnswer Team`;
                   sendEmailMutation.mutate({ email: emailModal.email, name: emailModal.name, subject, body });
                 }}
