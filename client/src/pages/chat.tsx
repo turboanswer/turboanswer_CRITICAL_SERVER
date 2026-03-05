@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Send, User, FileText, X, Brain, Settings, LogOut, Zap, Menu, QrCode, ImageIcon, Crown, CheckCircle, Star, Sun, Moon, Shield, Heart, Users, Copy, Sparkles, ArrowRight, Rocket, FlaskConical, MessageSquare } from "lucide-react";
+import { Send, User, FileText, X, Brain, Settings, LogOut, Zap, Menu, QrCode, ImageIcon, Crown, CheckCircle, Star, Sun, Moon, Shield, Heart, Users, Copy, Sparkles, ArrowRight, Rocket, FlaskConical, MessageSquare, Phone, Mail, Clock } from "lucide-react";
 import { QRCodeCanvas } from "qrcode.react";
 import { Link } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
@@ -26,6 +26,7 @@ export default function Chat() {
   const [currentLanguage, setCurrentLanguage] = useState("en");
   const [showToolbar, setShowToolbar] = useState(false);
   const [showQR, setShowQR] = useState(false);
+  const [showSupportPanel, setShowSupportPanel] = useState(false);
   const [showProPopup, setShowProPopup] = useState(false);
   const [showResearchPopup, setShowResearchPopup] = useState(false);
   const [showEnterprisePopup, setShowEnterprisePopup] = useState(false);
@@ -416,6 +417,55 @@ export default function Chat() {
                   <Heart className="h-4 w-4" />
                 </Button>
               </Link>
+              <div className="relative">
+                <Button onClick={() => setShowSupportPanel(!showSupportPanel)} variant="ghost" size="sm" className={`h-8 w-8 p-0 ${showSupportPanel ? 'text-green-400' : isDark ? 'text-gray-400 hover:text-green-400' : 'text-gray-500 hover:text-green-600'}`} title="Contact Support">
+                  <Phone className="h-4 w-4" />
+                </Button>
+                {showSupportPanel && (
+                  <div className={`absolute right-0 top-10 w-72 rounded-2xl border shadow-2xl z-50 p-4 ${isDark ? 'bg-zinc-900 border-zinc-700' : 'bg-white border-gray-200'}`}>
+                    <div className="flex items-center justify-between mb-3">
+                      <h3 className={`font-semibold text-sm ${isDark ? 'text-white' : 'text-gray-900'}`}>Contact Support</h3>
+                      <button onClick={() => setShowSupportPanel(false)} className={`${isDark ? 'text-gray-500 hover:text-white' : 'text-gray-400 hover:text-gray-900'}`}>
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+                    <div className="space-y-3">
+                      <a href="mailto:support@turboanswer.it.com" className={`flex items-center gap-3 p-2.5 rounded-xl transition-colors ${isDark ? 'hover:bg-zinc-800' : 'hover:bg-gray-50'}`}>
+                        <div className="w-8 h-8 rounded-full bg-blue-500/15 flex items-center justify-center flex-shrink-0">
+                          <Mail className="h-4 w-4 text-blue-400" />
+                        </div>
+                        <div>
+                          <p className={`text-xs font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Email</p>
+                          <p className="text-xs text-blue-400">support@turboanswer.it.com</p>
+                        </div>
+                      </a>
+                      <a href="tel:8664677269" className={`flex items-center gap-3 p-2.5 rounded-xl transition-colors ${isDark ? 'hover:bg-zinc-800' : 'hover:bg-gray-50'}`}>
+                        <div className="w-8 h-8 rounded-full bg-green-500/15 flex items-center justify-center flex-shrink-0">
+                          <Phone className="h-4 w-4 text-green-400" />
+                        </div>
+                        <div>
+                          <p className={`text-xs font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Phone</p>
+                          <p className="text-xs text-green-400">866-467-7269</p>
+                        </div>
+                      </a>
+                      <div className={`flex items-center gap-3 p-2.5 rounded-xl ${isDark ? 'bg-zinc-800/50' : 'bg-gray-50'}`}>
+                        <div className="w-8 h-8 rounded-full bg-purple-500/15 flex items-center justify-center flex-shrink-0">
+                          <Clock className="h-4 w-4 text-purple-400" />
+                        </div>
+                        <div>
+                          <p className={`text-xs font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Hours</p>
+                          <p className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Mon–Fri, 9:30am–6pm EST</p>
+                        </div>
+                      </div>
+                    </div>
+                    <Link href="/support">
+                      <Button size="sm" className="w-full mt-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-xs font-semibold h-8 rounded-xl">
+                        Visit Support Center
+                      </Button>
+                    </Link>
+                  </div>
+                )}
+              </div>
               <Link href="/ai-settings">
                 <Button variant="ghost" size="sm" className={`h-8 w-8 p-0 ${isDark ? 'text-gray-400 hover:text-white' : 'text-gray-500 hover:text-gray-900'}`}>
                   <Settings className="h-4 w-4" />

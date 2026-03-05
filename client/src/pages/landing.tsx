@@ -272,11 +272,11 @@ export default function LandingPage() {
             <button onClick={toggleTheme} className={`p-2 rounded-lg transition-colors ${isDark ? 'hover:bg-white/5 text-gray-400' : 'hover:bg-gray-100 text-gray-500'}`}>
               {isDark ? <span className="text-lg">&#9728;</span> : <span className="text-lg">&#9790;</span>}
             </button>
-            <a href={ctaHref}>
+            <Link href={ctaHref}>
               <Button size="sm" className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:from-indigo-500 hover:via-purple-500 hover:to-pink-500 font-semibold px-5 shadow-lg shadow-purple-500/20">
-
+                {ctaLabel}
               </Button>
-            </a>
+            </Link>
           </div>
 
           <div className="flex items-center gap-2 sm:hidden">
@@ -309,11 +309,11 @@ export default function LandingPage() {
                 Mobile
               </Button>
             </a>
-            <a href={ctaHref} className="block">
+            <Link href={ctaHref} className="block">
               <Button className="w-full bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:from-indigo-500 hover:via-purple-500 hover:to-pink-500 font-semibold">
-
+                {ctaLabel}
               </Button>
-            </a>
+            </Link>
           </div>
         )}
       </nav>
@@ -375,12 +375,12 @@ export default function LandingPage() {
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-10">
-            <a href={ctaHref}>
+            <Link href={ctaHref}>
               <Button size="lg" className="w-full sm:w-auto text-lg px-10 py-7 font-bold shadow-2xl bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:from-indigo-500 hover:via-purple-500 hover:to-pink-500 shadow-purple-500/25 rounded-2xl" style={isDark ? { animation: 'glow-pulse 3s ease-in-out infinite' } : {}}>
-
+                {ctaLabel}
                 <ArrowRight className="h-5 w-5 ml-2" />
               </Button>
-            </a>
+            </Link>
             <Button size="lg" variant="outline" className={`w-full sm:w-auto text-lg px-8 py-7 rounded-2xl ${isDark ? 'border-white/10 text-gray-300 hover:bg-white/5 hover:border-white/20' : 'border-gray-300 text-gray-600 hover:bg-gray-50'}`} onClick={() => setShowQR(true)}>
               <QrCode className="h-5 w-5 mr-2" />
               Open on Phone
@@ -556,11 +556,11 @@ export default function LandingPage() {
                   </li>
                 ))}
               </ul>
-              <a href={ctaHref}>
+              <Link href={ctaHref}>
                 <Button variant="outline" className={`w-full rounded-xl h-12 font-semibold ${isDark ? 'border-white/10 hover:bg-white/5 text-gray-300' : 'border-gray-300 hover:bg-gray-100'}`}>
-                  Get Started Free
+                  {isAuthenticated ? "Go to Chat" : "Get Started Free"}
                 </Button>
-              </a>
+              </Link>
             </div>
 
             <div className={`card-hologram rounded-2xl p-7 border-2 relative overflow-hidden ${isDark ? 'border-purple-500/40 bg-purple-500/[0.03]' : 'border-purple-400 bg-purple-50/30 shadow-lg shadow-purple-100'}`}>
@@ -588,11 +588,11 @@ export default function LandingPage() {
                   </li>
                 ))}
               </ul>
-              <a href={ctaHref}>
+              <Link href={ctaHref}>
                 <Button className="w-full rounded-xl h-12 font-bold bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 shadow-lg shadow-purple-500/20">
-                  Upgrade to Pro
+                  {isAuthenticated ? "Go to Chat" : "Upgrade to Pro"}
                 </Button>
-              </a>
+              </Link>
             </div>
 
             <div className={`card-hologram rounded-2xl p-7 border-2 relative overflow-hidden ${isDark ? 'border-indigo-500/40 bg-indigo-500/[0.03]' : 'border-indigo-400 bg-indigo-50/30 shadow-lg shadow-indigo-100'}`}>
@@ -617,11 +617,11 @@ export default function LandingPage() {
                   </li>
                 ))}
               </ul>
-              <a href={ctaHref}>
+              <Link href={ctaHref}>
                 <Button className="w-full rounded-xl h-12 font-bold bg-gradient-to-r from-indigo-600 to-cyan-600 hover:from-indigo-500 hover:to-cyan-500 shadow-lg shadow-indigo-500/20">
-                  Upgrade to Research
+                  {isAuthenticated ? "Go to Chat" : "Upgrade to Research"}
                 </Button>
-              </a>
+              </Link>
             </div>
 
           </div>
@@ -733,12 +733,12 @@ export default function LandingPage() {
               <p className={`text-lg mb-10 max-w-xl mx-auto ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
                 Join thousands using TurboAnswer to work smarter, learn faster, and create more. It's completely free to start.
               </p>
-              <a href={ctaHref}>
+              <Link href={ctaHref}>
                 <Button size="lg" className="text-lg px-12 py-7 font-bold shadow-2xl bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:from-indigo-500 hover:via-purple-500 hover:to-pink-500 shadow-purple-500/25 rounded-2xl" style={isDark ? { animation: 'glow-pulse 3s ease-in-out infinite' } : {}}>
-
+                  {ctaLabel}
                   <ArrowRight className="h-5 w-5 ml-2" />
                 </Button>
-              </a>
+              </Link>
             </div>
           </div>
         </div>
