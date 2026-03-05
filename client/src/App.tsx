@@ -26,6 +26,7 @@ import Register from "@/pages/register";
 import CrisisSupport from "@/pages/crisis-support";
 import CrisisInfo from "@/pages/crisis-info";
 import EmailTemplates from "@/pages/email-templates";
+import ForgotPassword from "@/pages/forgot-password";
 
 function AuthenticatedRouter() {
   return (
@@ -64,6 +65,7 @@ function UnauthenticatedRouter() {
       <Route path="/business" component={Business} />
       <Route path="/widget-demo" component={WidgetDemo} />
       <Route path="/crisis-info" component={CrisisInfo} />
+      <Route path="/forgot-password" component={ForgotPassword} />
       <Route component={LandingPage} />
     </Switch>
   );

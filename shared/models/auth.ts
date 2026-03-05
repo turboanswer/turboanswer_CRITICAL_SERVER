@@ -50,6 +50,10 @@ export const users = pgTable("users", {
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
   lastLoginAt: timestamp("last_login_at"),
+  passwordResetOtp: varchar("password_reset_otp"),
+  passwordResetOtpExpires: timestamp("password_reset_otp_expires"),
+  passwordResetVerified: boolean("password_reset_verified").default(false),
+  passwordResetVerifiedExpires: timestamp("password_reset_verified_expires"),
 });
 
 export type UpsertUser = typeof users.$inferInsert;
