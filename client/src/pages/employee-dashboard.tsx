@@ -2,12 +2,14 @@ import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
 import { useAuth } from '@/hooks/use-auth';
+import { useToast } from '@/hooks/use-toast';
 import { Link } from 'wouter';
 import {
   Search, Ban, Flag, Shield, Users, AlertTriangle, CheckCircle, Pause, Play, Eye,
   ArrowLeft, MessageSquare, X, Bell, ShieldAlert, Clock, Mail, User as UserIcon,
   FileText, CreditCard, Gift, Settings, Activity, Wrench, Crown, Zap, Server,
-  Database, Brain, DollarSign, TrendingUp, RefreshCw, ChevronDown, BarChart3, Trash2
+  Database, Brain, DollarSign, TrendingUp, RefreshCw, ChevronDown, BarChart3, Trash2,
+  Copy, Plus, ExternalLink, Link2, Calendar
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -75,7 +77,7 @@ interface AdminStats {
   estimatedMonthlyRevenue: string;
 }
 
-type TabType = 'overview' | 'users' | 'subscriptions' | 'system' | 'notifications' | 'flagged';
+type TabType = 'overview' | 'users' | 'subscriptions' | 'system' | 'notifications' | 'flagged' | 'invite';
 
 export default function EmployeeDashboard() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -475,6 +477,7 @@ export default function EmployeeDashboard() {
             { id: 'system', icon: Server, label: 'System & Debug' },
             { id: 'flagged', icon: Flag, label: 'Flagged' },
             { id: 'notifications', icon: Bell, label: 'Alerts' },
+            { id: 'invite', icon: Shield, label: 'Admin Invites' },
           ] as const).map(tab => (
             <Button
               key={tab.id}
@@ -946,6 +949,213 @@ export default function EmployeeDashboard() {
               </div>
             </CardContent>
           </Card>
+        </div>
+      )}
+
+        {activeTab === 'invite' && (
+          <AdminInviteTab currentUser={currentUser} />
+        )}
+    </div>
+  );
+}
+
+function AdminInviteTab({ currentUser }: { currentUser: any }) {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [newLabel, setNewLabel] = useState('');
+  const [maxUses, setMaxUses] = useState(1);
+  const [expiresInDays, setExpiresInDays] = useState<number | ''>('');
+  const [copiedId, setCopiedId] = useState<number | null>(null);
+
+  const { data: tokens = [], isLoading } = useQuery<any[]>({
+    queryKey: ['/api/admin/invite-tokens'],
+    refetchInterval: 10000,
+  });
+
+  const createMutation = useMutation({
+    mutationFn: async () => {
+      const res = await fetch('/api/admin/invite-tokens', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ label: newLabel || 'Admin Invite', maxUses, expiresInDays: expiresInDays || undefined }),
+      });
+      if (!res.ok) throw new Error('Failed to create token');
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/invite-tokens'] });
+      setNewLabel('');
+      setMaxUses(1);
+      setExpiresInDays('');
+      toast({ title: 'Invite link created!', description: 'Share the link with the person you want to give admin access.' });
+    },
+    onError: () => toast({ title: 'Error', description: 'Failed to create invite link.', variant: 'destructive' }),
+  });
+
+  const revokeMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const res = await fetch(`/api/admin/invite-tokens/${id}`, { method: 'DELETE', credentials: 'include' });
+      if (!res.ok) throw new Error('Failed to revoke');
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/invite-tokens'] });
+      toast({ title: 'Link revoked', description: 'The invite link is no longer usable.' });
+    },
+    onError: () => toast({ title: 'Error', description: 'Failed to revoke link.', variant: 'destructive' }),
+  });
+
+  const getInviteUrl = (token: string) => `${window.location.origin}/register?invite=${token}`;
+
+  const copyLink = (token: any) => {
+    navigator.clipboard.writeText(getInviteUrl(token.token));
+    setCopiedId(token.id);
+    setTimeout(() => setCopiedId(null), 2000);
+  };
+
+  const activeTokens = tokens.filter((t: any) => !t.isRevoked);
+  const revokedTokens = tokens.filter((t: any) => t.isRevoked);
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-xl font-bold text-white mb-1">Admin Invite Links</h2>
+        <p className="text-sm text-gray-400">Create invite links. Anyone who registers using one will automatically get admin access.</p>
+      </div>
+
+      <Card className="bg-gray-900 border-gray-700">
+        <CardHeader>
+          <CardTitle className="text-white text-base flex items-center gap-2">
+            <Plus size={16} className="text-red-400" /> Create New Invite Link
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div>
+              <label className="text-xs text-gray-400 mb-1 block">Label (optional)</label>
+              <Input
+                placeholder="e.g. John's admin link"
+                value={newLabel}
+                onChange={e => setNewLabel(e.target.value)}
+                className="bg-gray-800 border-gray-700 text-white"
+              />
+            </div>
+            <div>
+              <label className="text-xs text-gray-400 mb-1 block">Max uses</label>
+              <Input
+                type="number"
+                min={1}
+                max={100}
+                value={maxUses}
+                onChange={e => setMaxUses(parseInt(e.target.value) || 1)}
+                className="bg-gray-800 border-gray-700 text-white"
+              />
+            </div>
+            <div>
+              <label className="text-xs text-gray-400 mb-1 block">Expires in (days, optional)</label>
+              <Input
+                type="number"
+                min={1}
+                placeholder="No expiry"
+                value={expiresInDays}
+                onChange={e => setExpiresInDays(e.target.value ? parseInt(e.target.value) : '')}
+                className="bg-gray-800 border-gray-700 text-white"
+              />
+            </div>
+          </div>
+          <Button
+            onClick={() => createMutation.mutate()}
+            disabled={createMutation.isPending}
+            className="bg-red-700 hover:bg-red-800 text-white"
+          >
+            <Plus size={14} className="mr-1.5" />
+            {createMutation.isPending ? 'Creating...' : 'Generate Invite Link'}
+          </Button>
+        </CardContent>
+      </Card>
+
+      {isLoading ? (
+        <div className="text-center py-8 text-gray-500">Loading invite links...</div>
+      ) : activeTokens.length === 0 ? (
+        <div className="text-center py-12 text-gray-500">
+          <Shield size={40} className="mx-auto mb-3 opacity-30" />
+          <p>No active invite links. Create one above to get started.</p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider">Active Links ({activeTokens.length})</h3>
+          {activeTokens.map((token: any) => {
+            const url = getInviteUrl(token.token);
+            const isExpired = token.expiresAt && new Date() > new Date(token.expiresAt);
+            const isExhausted = token.maxUses && token.currentUses >= token.maxUses;
+            return (
+              <Card key={token.id} className={`border ${isExpired || isExhausted ? 'border-yellow-700/50 bg-yellow-900/10' : 'border-gray-700 bg-gray-900'}`}>
+                <CardContent className="p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Shield size={14} className="text-red-400 flex-shrink-0" />
+                        <span className="font-semibold text-white text-sm">{token.label}</span>
+                        {isExpired && <span className="text-[10px] bg-yellow-800 text-yellow-300 px-1.5 py-0.5 rounded">EXPIRED</span>}
+                        {isExhausted && <span className="text-[10px] bg-orange-800 text-orange-300 px-1.5 py-0.5 rounded">USED UP</span>}
+                        {!isExpired && !isExhausted && <span className="text-[10px] bg-green-800 text-green-300 px-1.5 py-0.5 rounded">ACTIVE</span>}
+                      </div>
+                      <div className="flex items-center gap-2 mb-2">
+                        <code className="text-[11px] text-gray-400 bg-gray-800 px-2 py-1 rounded truncate max-w-xs block">{url}</code>
+                      </div>
+                      <div className="flex flex-wrap gap-3 text-[11px] text-gray-500">
+                        <span className="flex items-center gap-1"><Users size={11} /> {token.currentUses}/{token.maxUses ?? '∞'} uses</span>
+                        <span className="flex items-center gap-1"><Calendar size={11} /> Created {new Date(token.createdAt).toLocaleDateString()}</span>
+                        {token.expiresAt && <span className="flex items-center gap-1"><Clock size={11} /> Expires {new Date(token.expiresAt).toLocaleDateString()}</span>}
+                        {token.createdByEmail && <span className="flex items-center gap-1"><UserIcon size={11} /> By {token.createdByEmail}</span>}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => copyLink(token)}
+                        className="border-gray-700 text-gray-300 hover:text-white hover:bg-gray-800 h-8 px-2.5"
+                      >
+                        {copiedId === token.id ? <CheckCircle size={13} className="text-green-400" /> : <Copy size={13} />}
+                        <span className="ml-1 text-xs">{copiedId === token.id ? 'Copied!' : 'Copy'}</span>
+                      </Button>
+                      <a href={url} target="_blank" rel="noopener noreferrer">
+                        <Button size="sm" variant="outline" className="border-gray-700 text-gray-300 hover:text-white hover:bg-gray-800 h-8 w-8 p-0">
+                          <ExternalLink size={13} />
+                        </Button>
+                      </a>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => revokeMutation.mutate(token.id)}
+                        disabled={revokeMutation.isPending}
+                        className="border-red-800 text-red-400 hover:text-red-300 hover:bg-red-900/30 h-8 px-2.5"
+                      >
+                        <Trash2 size={13} />
+                        <span className="ml-1 text-xs">Revoke</span>
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      )}
+
+      {revokedTokens.length > 0 && (
+        <div className="space-y-2">
+          <h3 className="text-sm font-semibold text-gray-600 uppercase tracking-wider">Revoked ({revokedTokens.length})</h3>
+          {revokedTokens.map((token: any) => (
+            <div key={token.id} className="flex items-center justify-between px-4 py-2 bg-gray-900/50 border border-gray-800 rounded-lg opacity-50">
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] bg-gray-700 text-gray-400 px-1.5 py-0.5 rounded">REVOKED</span>
+                <span className="text-sm text-gray-500">{token.label}</span>
+                <span className="text-xs text-gray-600">{token.currentUses}/{token.maxUses} uses · {new Date(token.createdAt).toLocaleDateString()}</span>
+              </div>
+            </div>
+          ))}
         </div>
       )}
     </div>

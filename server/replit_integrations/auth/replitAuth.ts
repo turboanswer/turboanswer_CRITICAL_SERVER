@@ -84,7 +84,7 @@ export async function setupAuth(app: Express) {
 
   app.post("/api/register", async (req, res) => {
     try {
-      const { email, password, firstName, lastName } = req.body;
+      const { email, password, firstName, lastName, inviteToken } = req.body;
 
       if (!email || !password) {
         return res.status(400).json({ message: "Email and password are required" });
@@ -113,17 +113,53 @@ export async function setupAuth(app: Express) {
       }
 
       const hashedPassword = await bcrypt.hash(password, 12);
-      const isAdmin = ADMIN_EMAILS.some(e => e.toLowerCase() === email.toLowerCase());
+      const isAdminEmail = ADMIN_EMAILS.some(e => e.toLowerCase() === email.toLowerCase());
+
+      let grantAdminFromInvite = false;
+      let validatedInviteId: number | null = null;
+      if (inviteToken && !isAdminEmail) {
+        try {
+          const { db } = await import('../db');
+          const { adminInviteTokens } = await import('@shared/schema');
+          const { eq } = await import('drizzle-orm');
+          const [tokenRow] = await db.select().from(adminInviteTokens).where(eq(adminInviteTokens.token, inviteToken));
+          if (tokenRow && !tokenRow.isRevoked) {
+            const notExpired = !tokenRow.expiresAt || new Date() <= new Date(tokenRow.expiresAt);
+            const notExhausted = !tokenRow.maxUses || (tokenRow.currentUses ?? 0) < tokenRow.maxUses;
+            if (notExpired && notExhausted) {
+              grantAdminFromInvite = true;
+              validatedInviteId = tokenRow.id;
+            }
+          }
+        } catch (e) {
+          console.error('Invite token validation error:', e);
+        }
+      }
+
+      const grantAdmin = isAdminEmail || grantAdminFromInvite;
       const user = await authStorage.upsertUser({
         email: email.toLowerCase(),
         password: hashedPassword,
         firstName: firstName.trim(),
         lastName: lastName.trim(),
-        isEmployee: isAdmin,
-        employeeRole: isAdmin ? "super_admin" : "basic",
-        canViewAllChats: isAdmin,
-        canBanUsers: isAdmin,
+        isEmployee: grantAdmin,
+        employeeRole: grantAdmin ? "super_admin" : "basic",
+        canViewAllChats: grantAdmin,
+        canBanUsers: grantAdmin,
       });
+
+      if (validatedInviteId) {
+        try {
+          const { db } = await import('../db');
+          const { adminInviteTokens } = await import('@shared/schema');
+          const { eq, sql: sqlExpr } = await import('drizzle-orm');
+          await db.update(adminInviteTokens)
+            .set({ currentUses: sqlExpr`${adminInviteTokens.currentUses} + 1` })
+            .where(eq(adminInviteTokens.id, validatedInviteId));
+        } catch (e) {
+          console.error('Failed to increment invite token use:', e);
+        }
+      }
 
       (req.session as any).userId = user.id;
       res.json({ id: user.id, email: user.email, firstName: user.firstName, lastName: user.lastName, isEmployee: user.isEmployee });

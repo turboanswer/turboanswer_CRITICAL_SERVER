@@ -6,7 +6,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 import multer from "multer";
 import { storage } from "./storage";
-import { insertConversationSchema, insertMessageSchema } from "@shared/schema";
+import { insertConversationSchema, insertMessageSchema, adminInviteTokens } from "@shared/schema";
 import { generateAIResponse, getAvailableModels } from "./services/multi-ai";
 import { moderateContent } from "./services/content-moderation";
 import { 
@@ -2404,6 +2404,75 @@ ${template.bodyText.split('\n').map(line => {
   });
 
 
+
+  // --- Admin Invite Token Routes ---
+  app.post('/api/admin/invite-tokens', isAdmin, async (req: any, res) => {
+    try {
+      const { label, maxUses, expiresInDays } = req.body;
+      const userId = req.user?.claims?.sub;
+      if (!userId) return res.status(401).json({ error: 'Unauthorized' });
+
+      const { authStorage } = await import('./replit_integrations/auth/storage');
+      const adminUser = await authStorage.getUser(userId);
+
+      const crypto = await import('crypto');
+      const token = crypto.randomBytes(32).toString('hex');
+      const expiresAt = expiresInDays ? new Date(Date.now() + expiresInDays * 24 * 60 * 60 * 1000) : null;
+
+      const { db } = await import('./db');
+      const [created] = await db.insert(adminInviteTokens).values({
+        token,
+        label: label || 'Admin Invite',
+        createdBy: userId,
+        createdByEmail: adminUser?.email || undefined,
+        maxUses: maxUses || 1,
+        currentUses: 0,
+        isRevoked: false,
+        ...(expiresAt ? { expiresAt } : {}),
+      }).returning();
+
+      res.json(created);
+    } catch (err: any) {
+      console.error('Create invite token error:', err);
+      res.status(500).json({ error: 'Failed to create invite token' });
+    }
+  });
+
+  app.get('/api/admin/invite-tokens', isAdmin, async (req: any, res) => {
+    try {
+      const { db } = await import('./db');
+      const { desc } = await import('drizzle-orm');
+      const tokens = await db.select().from(adminInviteTokens).orderBy(desc(adminInviteTokens.createdAt));
+      res.json(tokens);
+    } catch (err: any) {
+      res.status(500).json({ error: 'Failed to fetch invite tokens' });
+    }
+  });
+
+  app.delete('/api/admin/invite-tokens/:id', isAdmin, async (req: any, res) => {
+    try {
+      const { db } = await import('./db');
+      const { eq } = await import('drizzle-orm');
+      await db.update(adminInviteTokens).set({ isRevoked: true }).where(eq(adminInviteTokens.id, parseInt(req.params.id)));
+      res.json({ success: true });
+    } catch (err: any) {
+      res.status(500).json({ error: 'Failed to revoke token' });
+    }
+  });
+
+  app.get('/api/invite/validate/:token', async (req, res) => {
+    try {
+      const { db } = await import('./db');
+      const { eq } = await import('drizzle-orm');
+      const [token] = await db.select().from(adminInviteTokens).where(eq(adminInviteTokens.token, req.params.token));
+      if (!token || token.isRevoked) return res.json({ valid: false, reason: 'Invalid or revoked link' });
+      if (token.expiresAt && new Date() > token.expiresAt) return res.json({ valid: false, reason: 'This invite link has expired' });
+      if (token.maxUses && token.currentUses !== null && token.currentUses >= token.maxUses) return res.json({ valid: false, reason: 'This invite link has reached its usage limit' });
+      res.json({ valid: true, label: token.label });
+    } catch (err: any) {
+      res.status(500).json({ valid: false, reason: 'Error validating link' });
+    }
+  });
 
   startProactiveDiagnostics();
 

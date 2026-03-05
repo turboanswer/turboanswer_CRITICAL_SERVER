@@ -4,6 +4,24 @@ import { z } from "zod";
 
 export * from "./models/auth";
 
+import { pgTable as _pgTable, text as _text, boolean as _boolean, timestamp as _timestamp, serial as _serial, integer as _integer, varchar as _varchar } from "drizzle-orm/pg-core";
+
+export const adminInviteTokens = _pgTable("admin_invite_tokens", {
+  id: _serial("id").primaryKey(),
+  token: _varchar("token", { length: 64 }).notNull().unique(),
+  label: _text("label").notNull().default("Admin Invite"),
+  createdBy: _text("created_by").notNull(),
+  createdByEmail: _text("created_by_email"),
+  maxUses: _integer("max_uses").default(1),
+  currentUses: _integer("current_uses").default(0),
+  isRevoked: _boolean("is_revoked").default(false),
+  createdAt: _timestamp("created_at").defaultNow().notNull(),
+  expiresAt: _timestamp("expires_at"),
+});
+
+export type AdminInviteToken = typeof adminInviteTokens.$inferSelect;
+export type InsertAdminInviteToken = typeof adminInviteTokens.$inferInsert;
+
 export const conversations = pgTable("conversations", {
   id: serial("id").primaryKey(),
   title: text("title").default("New Conversation"),
