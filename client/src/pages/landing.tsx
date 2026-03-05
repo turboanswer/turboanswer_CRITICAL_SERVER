@@ -484,6 +484,9 @@ export default function LandingPage() {
             <p className={`text-lg max-w-xl mx-auto ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>
               Start free, upgrade when you need more power
             </p>
+            <div className="inline-flex items-center gap-2 mt-4 bg-green-500/10 border border-green-500/20 text-green-400 text-sm font-semibold px-4 py-1.5 rounded-full">
+              <Check className="h-4 w-4" /> All paid plans include a 7-day free trial
+            </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
@@ -526,6 +529,9 @@ export default function LandingPage() {
                   <span className="text-4xl font-black">$6.99</span>
                   <span className={`text-sm ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>/month</span>
                 </div>
+                <div className="inline-flex items-center gap-1 mt-1.5 bg-green-500/15 text-green-400 text-xs font-semibold px-2.5 py-0.5 rounded-full">
+                  <Check className="h-3 w-3" /> 7-day free trial
+                </div>
               </div>
               <div className={`text-sm mb-5 font-medium ${isDark ? 'text-purple-400' : 'text-purple-600'}`}>Gemini Pro</div>
               <ul className="space-y-3 mb-7">
@@ -554,6 +560,9 @@ export default function LandingPage() {
                 <div className="flex items-baseline gap-1 mt-2">
                   <span className="text-4xl font-black">$15</span>
                   <span className={`text-sm ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>/month</span>
+                </div>
+                <div className="inline-flex items-center gap-1 mt-1.5 bg-green-500/15 text-green-400 text-xs font-semibold px-2.5 py-0.5 rounded-full">
+                  <Check className="h-3 w-3" /> 7-day free trial
                 </div>
               </div>
               <div className={`text-sm mb-5 font-medium ${isDark ? 'text-indigo-400' : 'text-indigo-600'}`}>Gemini 2.5 Pro</div>

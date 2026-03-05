@@ -72,23 +72,50 @@ export async function ensureSubscriptionPlans(): Promise<{ pro: string; research
   let researchPlanId: string | null = null;
   let enterprisePlanId: string | null = null;
 
+  const deactivatePlan = async (id: string, reason: string) => {
+    console.log(`[PayPal] Deactivating plan ${id}: ${reason}`);
+    await paypalRequest("POST", `/v1/billing/plans/${id}/deactivate`, {}).catch(() => {});
+  };
+
   for (const plan of plans.plans || []) {
     if (plan.status !== "ACTIVE") continue;
-    if (plan.name === "Turbo Answer Pro") proPlanId = plan.id;
-    if (plan.name === "Turbo Answer Research") researchPlanId = plan.id;
+
+    if (plan.name === "Turbo Answer Pro") {
+      try {
+        const details = await paypalRequest("GET", `/v1/billing/plans/${plan.id}`);
+        const hasTrial = details?.billing_cycles?.some((c: any) => c.tenure_type === "TRIAL");
+        if (hasTrial) {
+          proPlanId = plan.id;
+        } else {
+          await deactivatePlan(plan.id, "no 7-day trial — will recreate");
+        }
+      } catch { proPlanId = plan.id; }
+    }
+
+    if (plan.name === "Turbo Answer Research") {
+      try {
+        const details = await paypalRequest("GET", `/v1/billing/plans/${plan.id}`);
+        const hasTrial = details?.billing_cycles?.some((c: any) => c.tenure_type === "TRIAL");
+        if (hasTrial) {
+          researchPlanId = plan.id;
+        } else {
+          await deactivatePlan(plan.id, "no 7-day trial — will recreate");
+        }
+      } catch { researchPlanId = plan.id; }
+    }
+
     if (plan.name === "Turbo Answer Enterprise") {
       try {
         const details = await paypalRequest("GET", `/v1/billing/plans/${plan.id}`);
-        const price = details?.billing_cycles?.[0]?.pricing_scheme?.fixed_price?.value;
-        if (price && parseFloat(price) === 50) {
+        const hasTrial = details?.billing_cycles?.some((c: any) => c.tenure_type === "TRIAL");
+        const regularCycle = details?.billing_cycles?.find((c: any) => c.tenure_type === "REGULAR");
+        const price = regularCycle?.pricing_scheme?.fixed_price?.value;
+        if (hasTrial && price && parseFloat(price) === 50) {
           enterprisePlanId = plan.id;
         } else {
-          console.log(`[PayPal] Found old Enterprise plan ${plan.id} with price $${price}, deactivating...`);
-          await paypalRequest("PATCH", `/v1/billing/plans/${plan.id}`, [{ op: "replace", path: "/", value: { status: "INACTIVE" } }]).catch(() => {});
+          await deactivatePlan(plan.id, `missing trial or wrong price ($${price}) — will recreate`);
         }
-      } catch (e) {
-        enterprisePlanId = plan.id;
-      }
+      } catch { enterprisePlanId = plan.id; }
     }
   }
 
@@ -113,70 +140,93 @@ export async function ensureSubscriptionPlans(): Promise<{ pro: string; research
       console.log("[PayPal] Created product:", productId);
     }
 
+    const trialCycle = {
+      frequency: { interval_unit: "DAY", interval_count: 7 },
+      tenure_type: "TRIAL",
+      sequence: 1,
+      total_cycles: 1,
+      pricing_scheme: { fixed_price: { value: "0", currency_code: "USD" } },
+    };
+
     if (!proPlanId) {
       const plan = await paypalRequest("POST", "/v1/billing/plans", {
         product_id: productId,
         name: "Turbo Answer Pro",
-        description: "Pro tier - Gemini 2.5 Flash Pro with advanced AI",
+        description: "Pro tier - Gemini 2.5 Flash Pro with advanced AI. 7-day free trial.",
         status: "ACTIVE",
-        billing_cycles: [{
-          frequency: { interval_unit: "MONTH", interval_count: 1 },
-          tenure_type: "REGULAR",
-          sequence: 1,
-          total_cycles: 0,
-          pricing_scheme: { fixed_price: { value: "6.99", currency_code: "USD" } },
-        }],
+        billing_cycles: [
+          trialCycle,
+          {
+            frequency: { interval_unit: "MONTH", interval_count: 1 },
+            tenure_type: "REGULAR",
+            sequence: 2,
+            total_cycles: 0,
+            pricing_scheme: { fixed_price: { value: "6.99", currency_code: "USD" } },
+          },
+        ],
         payment_preferences: {
           auto_bill_outstanding: true,
           payment_failure_threshold: 3,
+          setup_fee: { value: "0", currency_code: "USD" },
+          setup_fee_failure_action: "CONTINUE",
         },
       });
       proPlanId = plan.id;
-      console.log("[PayPal] Created Pro plan:", proPlanId);
+      console.log("[PayPal] Created Pro plan (with 7-day trial):", proPlanId);
     }
 
     if (!researchPlanId) {
       const plan = await paypalRequest("POST", "/v1/billing/plans", {
         product_id: productId,
         name: "Turbo Answer Research",
-        description: "Research tier - Gemini 2.5 Pro for deep research",
+        description: "Research tier - Gemini 2.5 Pro for deep research. 7-day free trial.",
         status: "ACTIVE",
-        billing_cycles: [{
-          frequency: { interval_unit: "MONTH", interval_count: 1 },
-          tenure_type: "REGULAR",
-          sequence: 1,
-          total_cycles: 0,
-          pricing_scheme: { fixed_price: { value: "15.00", currency_code: "USD" } },
-        }],
+        billing_cycles: [
+          trialCycle,
+          {
+            frequency: { interval_unit: "MONTH", interval_count: 1 },
+            tenure_type: "REGULAR",
+            sequence: 2,
+            total_cycles: 0,
+            pricing_scheme: { fixed_price: { value: "15.00", currency_code: "USD" } },
+          },
+        ],
         payment_preferences: {
           auto_bill_outstanding: true,
           payment_failure_threshold: 3,
+          setup_fee: { value: "0", currency_code: "USD" },
+          setup_fee_failure_action: "CONTINUE",
         },
       });
       researchPlanId = plan.id;
-      console.log("[PayPal] Created Research plan:", researchPlanId);
+      console.log("[PayPal] Created Research plan (with 7-day trial):", researchPlanId);
     }
 
     if (!enterprisePlanId) {
       const plan = await paypalRequest("POST", "/v1/billing/plans", {
         product_id: productId,
         name: "Turbo Answer Enterprise",
-        description: "Enterprise tier - Research access for teams with shareable codes",
+        description: "Enterprise tier - Research access for teams with shareable codes. 7-day free trial.",
         status: "ACTIVE",
-        billing_cycles: [{
-          frequency: { interval_unit: "MONTH", interval_count: 1 },
-          tenure_type: "REGULAR",
-          sequence: 1,
-          total_cycles: 0,
-          pricing_scheme: { fixed_price: { value: "50.00", currency_code: "USD" } },
-        }],
+        billing_cycles: [
+          trialCycle,
+          {
+            frequency: { interval_unit: "MONTH", interval_count: 1 },
+            tenure_type: "REGULAR",
+            sequence: 2,
+            total_cycles: 0,
+            pricing_scheme: { fixed_price: { value: "50.00", currency_code: "USD" } },
+          },
+        ],
         payment_preferences: {
           auto_bill_outstanding: true,
           payment_failure_threshold: 3,
+          setup_fee: { value: "0", currency_code: "USD" },
+          setup_fee_failure_action: "CONTINUE",
         },
       });
       enterprisePlanId = plan.id;
-      console.log("[PayPal] Created Enterprise plan:", enterprisePlanId);
+      console.log("[PayPal] Created Enterprise plan (with 7-day trial):", enterprisePlanId);
     }
   }
 
