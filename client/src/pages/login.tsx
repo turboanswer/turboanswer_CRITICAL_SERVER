@@ -72,7 +72,7 @@ export default function Login() {
           title: "Welcome back!",
           description: "You're now signed in to Turbo Answer.",
         });
-        setLocation("/");
+        setLocation("/chat");
       } else {
         toast({
           title: "Error",

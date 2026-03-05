@@ -319,7 +319,7 @@ export default function Chat() {
       {/* Header */}
       <header className={`${isDark ? 'bg-black/95 border-gray-800' : 'bg-white border-gray-200'} border-b px-3 sm:px-5 py-2.5 relative z-40 shrink-0`}>
         <div className="flex items-center justify-between gap-2">
-          <Link href="/home">
+          <Link href="/">
             <div className="flex items-center gap-2 sm:gap-3 min-w-0 cursor-pointer group">
               <img src={turboLogo} alt="TurboAnswer" className="w-9 h-9 sm:w-11 sm:h-11 rounded-full object-cover group-hover:opacity-80 transition-opacity" />
               <div className="min-w-0">

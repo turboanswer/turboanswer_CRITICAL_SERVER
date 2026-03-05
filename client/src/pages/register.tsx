@@ -80,7 +80,7 @@ export default function Register() {
           title: "Account created!",
           description: data.isEmployee ? "Welcome! Your admin account is ready." : "Welcome to Turbo Answer!",
         });
-        setLocation(data.isEmployee ? "/employee/dashboard" : "/");
+        setLocation(data.isEmployee ? "/employee/dashboard" : "/chat");
       } else {
         toast({ title: "Error", description: data.message || "Failed to create account", variant: "destructive" });
       }

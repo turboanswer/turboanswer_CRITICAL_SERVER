@@ -32,9 +32,9 @@ import BetaApply from "@/pages/beta-apply";
 function AuthenticatedRouter() {
   return (
     <Switch>
+      <Route path="/" component={LandingPage} />
       <Route path="/home" component={LandingPage} />
       <Route path="/chat" component={Chat} />
-      <Route path="/" component={Chat} />
       <Route path="/ai-settings" component={AISettings} />
       <Route path="/subscribe" component={Subscribe} />
       <Route path="/pricing" component={Pricing} />

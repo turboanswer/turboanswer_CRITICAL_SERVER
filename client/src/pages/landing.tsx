@@ -200,7 +200,7 @@ export default function LandingPage() {
   const { theme, toggleTheme } = useTheme();
   const isDark = theme === "dark";
   // Auth-aware CTA
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const ctaHref = isAuthenticated ? "/chat" : "/login";
   const ctaLabel = isAuthenticated ? "Go to Chat" : "Login / Sign Up";
   const appUrl = typeof window !== "undefined" ? window.location.origin : "";
@@ -831,6 +831,22 @@ export default function LandingPage() {
       </section>
 
       <TrustpilotWidget isDark={isDark} />
+
+      {/* Floating Open Chat button for authenticated users */}
+      {isAuthenticated && (
+        <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-2">
+          <div className={`text-xs font-medium px-3 py-1 rounded-full ${isDark ? 'bg-zinc-800 text-gray-400' : 'bg-gray-100 text-gray-500'} shadow`}>
+            Signed in as {user?.firstName || user?.email?.split("@")[0] || "you"}
+          </div>
+          <Link href="/chat">
+            <button className="flex items-center gap-2.5 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:from-indigo-500 hover:via-purple-500 hover:to-pink-500 text-white font-bold px-6 py-3.5 rounded-2xl shadow-2xl shadow-purple-500/40 transition-all hover:scale-105 active:scale-95 text-sm">
+              <MessageSquare className="h-4 w-4" />
+              Open Chat
+              <ArrowRight className="h-4 w-4" />
+            </button>
+          </Link>
+        </div>
+      )}
 
       <footer className={`border-t py-8 px-4 relative z-10 ${isDark ? 'border-white/5 bg-[#030014]/80' : 'border-gray-200'}`}>
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
