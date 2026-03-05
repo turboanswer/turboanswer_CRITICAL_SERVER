@@ -9,7 +9,7 @@ import {
   ArrowLeft, MessageSquare, X, Bell, ShieldAlert, Clock, Mail, User as UserIcon,
   FileText, CreditCard, Gift, Settings, Activity, Wrench, Crown, Zap, Server,
   Database, Brain, DollarSign, TrendingUp, RefreshCw, ChevronDown, BarChart3, Trash2,
-  Copy, Plus, ExternalLink, Link2, Calendar
+  Copy, Plus, ExternalLink, Link2, Calendar, FlaskConical, Send, ThumbsUp, ThumbsDown
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -79,7 +79,7 @@ interface AdminStats {
   estimatedMonthlyRevenue: string;
 }
 
-type TabType = 'overview' | 'users' | 'subscriptions' | 'system' | 'notifications' | 'flagged' | 'invite';
+type TabType = 'overview' | 'users' | 'subscriptions' | 'system' | 'notifications' | 'flagged' | 'invite' | 'beta';
 
 export default function EmployeeDashboard() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -496,6 +496,7 @@ export default function EmployeeDashboard() {
             { id: 'flagged', icon: Flag, label: 'Flagged' },
             { id: 'notifications', icon: Bell, label: 'Alerts' },
             { id: 'invite', icon: Shield, label: 'Admin Invites' },
+            { id: 'beta', icon: FlaskConical, label: 'Beta Testing' },
           ] as const).map(tab => (
             <Button
               key={tab.id}
@@ -986,6 +987,9 @@ export default function EmployeeDashboard() {
 
         {activeTab === 'invite' && (
           <AdminInviteTab currentUser={currentUser} />
+        )}
+        {activeTab === 'beta' && (
+          <BetaTestingTab />
         )}
     </div>
   );
@@ -2137,6 +2141,368 @@ function ViewConversationMessages({ conversationId }: { conversationId: number }
           <span>{msg.content.length > 300 ? msg.content.slice(0, 300) + '...' : msg.content}</span>
         </div>
       ))}
+    </div>
+  );
+}
+
+function BetaTestingTab() {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [activeSection, setActiveSection] = useState<'applications' | 'feedback'>('applications');
+  const [denyModal, setDenyModal] = useState<{ id: number; name: string; email: string } | null>(null);
+  const [denyReason, setDenyReason] = useState('');
+  const [emailModal, setEmailModal] = useState<{ id: number; name: string; email: string; type: 'approve' | 'deny' } | null>(null);
+  const [customReason, setCustomReason] = useState('');
+
+  const { data: applications = [], isLoading: appsLoading, refetch: refetchApps } = useQuery<any[]>({
+    queryKey: ['/api/admin/beta/applications'],
+    refetchInterval: 15000,
+  });
+
+  const { data: feedback = [], isLoading: feedbackLoading } = useQuery<any[]>({
+    queryKey: ['/api/admin/beta/feedback'],
+    refetchInterval: 15000,
+  });
+
+  const approveMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const res = await fetch(`/api/admin/beta/applications/${id}/approve`, { method: 'POST', credentials: 'include' });
+      if (!res.ok) { const d = await res.json(); throw new Error(d.error); }
+      return res.json();
+    },
+    onSuccess: () => {
+      toast({ title: 'Approved', description: 'Application approved and email sent.' });
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/beta/applications'] });
+    },
+    onError: (e: any) => toast({ title: 'Error', description: e.message, variant: 'destructive' }),
+  });
+
+  const denyMutation = useMutation({
+    mutationFn: async ({ id, reason }: { id: number; reason: string }) => {
+      const res = await fetch(`/api/admin/beta/applications/${id}/deny`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ reason }),
+      });
+      if (!res.ok) { const d = await res.json(); throw new Error(d.error); }
+      return res.json();
+    },
+    onSuccess: () => {
+      toast({ title: 'Denied', description: 'Application denied and email sent.' });
+      setDenyModal(null);
+      setDenyReason('');
+      queryClient.invalidateQueries({ queryKey: ['/api/admin/beta/applications'] });
+    },
+    onError: (e: any) => toast({ title: 'Error', description: e.message, variant: 'destructive' }),
+  });
+
+  const sendEmailMutation = useMutation({
+    mutationFn: async (payload: { email: string; name: string; subject: string; body: string }) => {
+      const res = await fetch('/api/admin/beta/send-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) { const d = await res.json(); throw new Error(d.error); }
+      return res.json();
+    },
+    onSuccess: () => {
+      toast({ title: 'Email Sent', description: 'Email delivered successfully.' });
+      setEmailModal(null);
+    },
+    onError: (e: any) => toast({ title: 'Error', description: e.message, variant: 'destructive' }),
+  });
+
+  const pendingApps = applications.filter((a: any) => a.status === 'pending');
+  const reviewedApps = applications.filter((a: any) => a.status !== 'pending');
+
+  const categoryColor = (cat: string) => {
+    switch (cat) {
+      case 'bug': return 'bg-red-600/20 text-red-400';
+      case 'feature': return 'bg-blue-600/20 text-blue-400';
+      case 'ui': return 'bg-purple-600/20 text-purple-400';
+      case 'performance': return 'bg-orange-600/20 text-orange-400';
+      default: return 'bg-gray-600/20 text-gray-400';
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <Card className="bg-gradient-to-br from-green-900/30 to-green-800/20 border-green-700/50">
+        <CardContent className="p-6">
+          <div className="flex items-center gap-3 mb-3">
+            <FlaskConical className="w-6 h-6 text-green-400" />
+            <h2 className="text-xl font-bold text-white">Beta Testing Program</h2>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="text-center p-3 bg-gray-800/50 rounded-lg">
+              <div className="text-2xl font-bold text-white">{applications.length}</div>
+              <div className="text-xs text-gray-400">Total Applications</div>
+            </div>
+            <div className="text-center p-3 bg-yellow-900/30 rounded-lg">
+              <div className="text-2xl font-bold text-yellow-400">{pendingApps.length}</div>
+              <div className="text-xs text-gray-400">Pending Review</div>
+            </div>
+            <div className="text-center p-3 bg-green-900/30 rounded-lg">
+              <div className="text-2xl font-bold text-green-400">{applications.filter((a: any) => a.status === 'approved').length}</div>
+              <div className="text-xs text-gray-400">Approved</div>
+            </div>
+            <div className="text-center p-3 bg-gray-800/50 rounded-lg">
+              <div className="text-2xl font-bold text-white">{feedback.length}</div>
+              <div className="text-xs text-gray-400">Feedback Notes</div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Section Switcher */}
+      <div className="flex gap-2">
+        <Button
+          size="sm"
+          onClick={() => setActiveSection('applications')}
+          className={activeSection === 'applications' ? 'bg-green-700 text-white' : 'bg-gray-800 text-gray-400 hover:text-white'}
+        >
+          <FlaskConical className="w-4 h-4 mr-1" /> Applications {pendingApps.length > 0 && <span className="ml-1.5 bg-yellow-500 text-black text-xs px-1.5 py-0.5 rounded-full font-bold">{pendingApps.length}</span>}
+        </Button>
+        <Button
+          size="sm"
+          onClick={() => setActiveSection('feedback')}
+          className={activeSection === 'feedback' ? 'bg-green-700 text-white' : 'bg-gray-800 text-gray-400 hover:text-white'}
+        >
+          <MessageSquare className="w-4 h-4 mr-1" /> Feedback
+        </Button>
+      </div>
+
+      {/* Applications Section */}
+      {activeSection === 'applications' && (
+        <div className="space-y-4">
+          {appsLoading ? (
+            <Card className="bg-gray-900 border-gray-800"><CardContent className="p-6 text-center text-gray-500">Loading applications…</CardContent></Card>
+          ) : applications.length === 0 ? (
+            <Card className="bg-gray-900 border-gray-800">
+              <CardContent className="p-10 text-center">
+                <FlaskConical className="w-12 h-12 text-gray-600 mx-auto mb-3" />
+                <p className="text-gray-500">No applications yet. They'll appear here when users apply from the website.</p>
+              </CardContent>
+            </Card>
+          ) : (
+            <>
+              {pendingApps.length > 0 && (
+                <div>
+                  <h3 className="text-sm font-semibold text-yellow-400 mb-3 flex items-center gap-2"><Clock className="w-4 h-4" /> Pending Review ({pendingApps.length})</h3>
+                  <div className="space-y-3">
+                    {pendingApps.map((app: any) => (
+                      <Card key={app.id} className="bg-gray-900 border-yellow-700/30">
+                        <CardContent className="p-5">
+                          <div className="flex flex-col md:flex-row md:items-start gap-4">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-1">
+                                <span className="font-semibold text-white">{app.name}</span>
+                                <span className="text-xs px-2 py-0.5 rounded bg-yellow-600/20 text-yellow-400">PENDING</span>
+                              </div>
+                              <div className="text-sm text-gray-400 mb-3">{app.email}</div>
+                              <div className="space-y-2">
+                                {app.answers && typeof app.answers === 'object' && Object.entries(app.answers).map(([q, a]) => (
+                                  <div key={q} className="text-xs">
+                                    <span className="text-gray-500 font-medium">{q}:</span>
+                                    <span className="text-gray-300 ml-1">{String(a)}</span>
+                                  </div>
+                                ))}
+                              </div>
+                              <div className="text-xs text-gray-600 mt-2">Applied: {new Date(app.appliedAt).toLocaleDateString()}</div>
+                            </div>
+                            <div className="flex flex-row md:flex-col gap-2 flex-shrink-0">
+                              <Button
+                                size="sm"
+                                className="bg-green-700 hover:bg-green-600 text-white"
+                                onClick={() => approveMutation.mutate(app.id)}
+                                disabled={approveMutation.isPending}
+                              >
+                                <ThumbsUp className="w-3 h-3 mr-1" /> Approve
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="border-red-700 text-red-400 hover:bg-red-900/20"
+                                onClick={() => setDenyModal({ id: app.id, name: app.name, email: app.email })}
+                              >
+                                <ThumbsDown className="w-3 h-3 mr-1" /> Deny
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="text-blue-400 hover:bg-blue-900/20"
+                                onClick={() => setEmailModal({ id: app.id, name: app.name, email: app.email, type: 'approve' })}
+                              >
+                                <Mail className="w-3 h-3 mr-1" /> Email
+                              </Button>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {reviewedApps.length > 0 && (
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-400 mb-3">Previously Reviewed ({reviewedApps.length})</h3>
+                  <div className="space-y-2">
+                    {reviewedApps.map((app: any) => (
+                      <Card key={app.id} className="bg-gray-900 border-gray-800">
+                        <CardContent className="p-4">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <span className="font-medium text-white">{app.name}</span>
+                              <span className="text-gray-500 text-sm ml-2">{app.email}</span>
+                              {app.denialReason && <div className="text-xs text-gray-500 mt-1">Denial reason: {app.denialReason}</div>}
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className={`text-xs px-2 py-0.5 rounded font-medium ${app.status === 'approved' ? 'bg-green-600/20 text-green-400' : 'bg-red-600/20 text-red-400'}`}>
+                                {app.status.toUpperCase()}
+                              </span>
+                              <Button size="sm" variant="ghost" className="text-blue-400 hover:bg-blue-900/20 h-7 px-2" onClick={() => setEmailModal({ id: app.id, name: app.name, email: app.email, type: app.status === 'approved' ? 'approve' : 'deny' })}>
+                                <Mail className="w-3 h-3 mr-1" /> Email
+                              </Button>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      )}
+
+      {/* Feedback Section */}
+      {activeSection === 'feedback' && (
+        <div className="space-y-3">
+          {feedbackLoading ? (
+            <Card className="bg-gray-900 border-gray-800"><CardContent className="p-6 text-center text-gray-500">Loading feedback…</CardContent></Card>
+          ) : feedback.length === 0 ? (
+            <Card className="bg-gray-900 border-gray-800">
+              <CardContent className="p-10 text-center">
+                <MessageSquare className="w-12 h-12 text-gray-600 mx-auto mb-3" />
+                <p className="text-gray-500">No feedback yet. Beta testers can submit feedback from the chat page.</p>
+              </CardContent>
+            </Card>
+          ) : (
+            feedback.map((fb: any) => (
+              <Card key={fb.id} className="bg-gray-900 border-gray-800">
+                <CardContent className="p-4">
+                  <div className="flex items-start gap-3">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-1.5">
+                        <span className="font-medium text-white text-sm">{fb.userName || 'Anonymous'}</span>
+                        <span className="text-gray-500 text-xs">{fb.userEmail}</span>
+                        <span className={`text-xs px-2 py-0.5 rounded capitalize ${categoryColor(fb.category)}`}>{fb.category || 'general'}</span>
+                      </div>
+                      <p className="text-gray-300 text-sm leading-relaxed">{fb.message}</p>
+                      <div className="text-xs text-gray-600 mt-2">{new Date(fb.submittedAt).toLocaleString()}</div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))
+          )}
+        </div>
+      )}
+
+      {/* Deny Modal */}
+      {denyModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-gray-900 border border-gray-700 rounded-2xl p-6 max-w-md w-full shadow-2xl">
+            <h3 className="text-lg font-bold text-white mb-2">Deny Application</h3>
+            <p className="text-gray-400 text-sm mb-4">Denying <strong className="text-white">{denyModal.name}</strong> ({denyModal.email}). Optionally enter a reason — it will be included in the denial email.</p>
+            <textarea
+              value={denyReason}
+              onChange={e => setDenyReason(e.target.value)}
+              placeholder="Reason for denial (optional)…"
+              rows={3}
+              className="w-full px-3 py-2 rounded-md border border-gray-700 bg-gray-800 text-white text-sm resize-none mb-4 focus:border-red-500 outline-none"
+            />
+            <div className="flex gap-2 justify-end">
+              <Button variant="ghost" onClick={() => { setDenyModal(null); setDenyReason(''); }} className="text-gray-400">Cancel</Button>
+              <Button className="bg-red-700 hover:bg-red-600 text-white" onClick={() => denyMutation.mutate({ id: denyModal.id, reason: denyReason })} disabled={denyMutation.isPending}>
+                <ThumbsDown className="w-3 h-3 mr-1" /> {denyMutation.isPending ? 'Sending…' : 'Deny & Send Email'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Email Template Modal */}
+      {emailModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-gray-900 border border-gray-700 rounded-2xl p-6 max-w-lg w-full shadow-2xl">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-bold text-white flex items-center gap-2"><Mail className="w-5 h-5 text-blue-400" /> Send Email to {emailModal.name}</h3>
+              <button onClick={() => setEmailModal(null)} className="text-gray-500 hover:text-white"><X className="w-4 h-4" /></button>
+            </div>
+
+            <div className="flex gap-2 mb-4">
+              <Button size="sm" onClick={() => setEmailModal({ ...emailModal, type: 'approve' })} className={emailModal.type === 'approve' ? 'bg-green-700 text-white' : 'bg-gray-800 text-gray-400'}>
+                Approval Template
+              </Button>
+              <Button size="sm" onClick={() => setEmailModal({ ...emailModal, type: 'deny' })} className={emailModal.type === 'deny' ? 'bg-red-700 text-white' : 'bg-gray-800 text-gray-400'}>
+                Denial Template
+              </Button>
+            </div>
+
+            {emailModal.type === 'deny' && (
+              <div className="mb-3">
+                <label className="text-xs font-medium text-gray-400 mb-1 block">Reason for Denial (included in email)</label>
+                <textarea
+                  value={customReason}
+                  onChange={e => setCustomReason(e.target.value)}
+                  placeholder="Explain why the application was not selected…"
+                  rows={2}
+                  className="w-full px-3 py-2 rounded-md border border-gray-700 bg-gray-800 text-white text-sm resize-none focus:border-red-500 outline-none"
+                />
+              </div>
+            )}
+
+            <div className={`rounded-lg border p-4 text-sm mb-4 ${emailModal.type === 'approve' ? 'border-green-700/40 bg-green-900/20' : 'border-red-700/40 bg-red-900/20'}`}>
+              <div className="font-medium text-white mb-2">
+                {emailModal.type === 'approve'
+                  ? "Congratulations! You've been approved for TurboAnswer Beta Testing"
+                  : "TurboAnswer Beta Testing Application Update"}
+              </div>
+              <div className="text-gray-400 text-xs leading-relaxed">
+                {emailModal.type === 'approve'
+                  ? `Hi ${emailModal.name}, Congratulations! We're thrilled to let you know that your application has been approved. You now have full beta tester access…`
+                  : `Hi ${emailModal.name}, Thank you for applying. After careful review, your application has not been selected at this time.${customReason ? ` Reason: ${customReason}` : ''} We encourage you to apply again in the future…`}
+              </div>
+            </div>
+
+            <div className="flex gap-2 justify-end">
+              <Button variant="ghost" onClick={() => setEmailModal(null)} className="text-gray-400">Cancel</Button>
+              <Button
+                className={emailModal.type === 'approve' ? 'bg-green-700 hover:bg-green-600 text-white' : 'bg-blue-700 hover:bg-blue-600 text-white'}
+                disabled={sendEmailMutation.isPending}
+                onClick={() => {
+                  const subject = emailModal.type === 'approve'
+                    ? "Congratulations! You've been approved for TurboAnswer Beta Testing"
+                    : "TurboAnswer Beta Testing Application Update";
+                  const body = emailModal.type === 'approve'
+                    ? `Hi ${emailModal.name},\n\nCongratulations! We're thrilled to let you know that your application to join the TurboAnswer Beta Testing Program has been approved.\n\nYou now have full beta tester access on your account. Please log in to TurboAnswer and look for the feedback button in your account — we'd love to hear your thoughts.\n\nThank you for your enthusiasm. We're excited to have you on board!\n\nBest regards,\nThe TurboAnswer Team`
+                    : `Hi ${emailModal.name},\n\nThank you for taking the time to apply to the TurboAnswer Beta Testing Program. After careful review, we regret to inform you that your application has not been selected at this time.\n\n${customReason ? `Reason: ${customReason}\n\n` : ''}We encourage you to keep using TurboAnswer and apply again in the future.\n\nBest regards,\nThe TurboAnswer Team`;
+                  sendEmailMutation.mutate({ email: emailModal.email, name: emailModal.name, subject, body });
+                }}
+              >
+                <Send className="w-3 h-3 mr-1" /> {sendEmailMutation.isPending ? 'Sending…' : 'Send Email'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

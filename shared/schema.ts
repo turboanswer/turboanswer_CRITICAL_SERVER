@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, timestamp, boolean } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, timestamp, boolean, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -168,3 +168,32 @@ export const insertAuditLogSchema = createInsertSchema(auditLogs).pick({
 
 export type InsertAuditLog = z.infer<typeof insertAuditLogSchema>;
 export type AuditLog = typeof auditLogs.$inferSelect;
+
+// Beta Testing
+export const betaApplications = pgTable("beta_applications", {
+  id: serial("id").primaryKey(),
+  userId: text("user_id"),
+  name: text("name").notNull(),
+  email: text("email").notNull(),
+  answers: jsonb("answers").notNull(),
+  status: text("status").default("pending"), // pending | approved | denied
+  denialReason: text("denial_reason"),
+  appliedAt: timestamp("applied_at").defaultNow(),
+  reviewedAt: timestamp("reviewed_at"),
+});
+
+export const betaFeedback = pgTable("beta_feedback", {
+  id: serial("id").primaryKey(),
+  userId: text("user_id").notNull(),
+  userName: text("user_name"),
+  userEmail: text("user_email"),
+  message: text("message").notNull(),
+  category: text("category").default("general"),
+  submittedAt: timestamp("submitted_at").defaultNow(),
+});
+
+export const insertBetaApplicationSchema = createInsertSchema(betaApplications).omit({ id: true, appliedAt: true, reviewedAt: true });
+export const insertBetaFeedbackSchema = createInsertSchema(betaFeedback).omit({ id: true, submittedAt: true });
+
+export type BetaApplication = typeof betaApplications.$inferSelect;
+export type BetaFeedback = typeof betaFeedback.$inferSelect;

@@ -28,6 +28,7 @@ import CrisisInfo from "@/pages/crisis-info";
 import EmailTemplates from "@/pages/email-templates";
 import ForgotPassword from "@/pages/forgot-password";
 import ImageStudio from "@/pages/image-studio";
+import BetaApply from "@/pages/beta-apply";
 
 function AuthenticatedRouter() {
   return (
@@ -50,6 +51,7 @@ function AuthenticatedRouter() {
       <Route path="/crisis-info" component={CrisisInfo} />
       <Route path="/email-templates" component={EmailTemplates} />
       <Route path="/image-studio" component={ImageStudio} />
+      <Route path="/beta" component={BetaApply} />
       <Route component={NotFound} />
     </Switch>
   );
@@ -69,6 +71,7 @@ function UnauthenticatedRouter() {
       <Route path="/crisis-info" component={CrisisInfo} />
       <Route path="/forgot-password" component={ForgotPassword} />
       <Route path="/image-studio" component={ImageStudio} />
+      <Route path="/beta" component={BetaApply} />
       <Route component={LandingPage} />
     </Switch>
   );

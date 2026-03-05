@@ -57,6 +57,7 @@ Subscription preference: Lifetime free premium access through promo code system 
 - **Crisis Support Bot**: Dedicated AI companion for mental health crisis support with AES-256-GCM encrypted conversations. Fully private - exempt from content moderation, no admin access, no data shared with authorities. Includes crisis hotline resources (988, Crisis Text Line). Users can delete all crisis data permanently. Specialized Gemini-powered AI with safety settings disabled for sensitive topic support.
 - **AI Image & Video Generation**: Integration with OpenAI DALL-E 3 and a framework for video generation with multi-provider architecture.
 - **Embeddable AI Widget System**: A universal JavaScript widget (`turbo-answer-widget.js`) for seamless integration into any website.
+- **Beta Testing Program**: Public 10-question application form at `/beta` and as a section on the landing page. Admin can approve/deny applications with automatic email (Brevo). Approved users get `isBetaTester = true` on their account. Beta testers see a green flask button in the chat header to submit categorized feedback (bugs, features, UI, performance). Admin panel has a dedicated "Beta Testing" tab showing all applications (pending/reviewed) and all feedback notes, plus email template modal for sending approval/denial emails with optional denial reason.
 
 ## External Dependencies
 

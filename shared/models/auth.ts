@@ -54,6 +54,7 @@ export const users = pgTable("users", {
   passwordResetOtpExpires: timestamp("password_reset_otp_expires"),
   passwordResetVerified: boolean("password_reset_verified").default(false),
   passwordResetVerifiedExpires: timestamp("password_reset_verified_expires"),
+  isBetaTester: boolean("is_beta_tester").default(false),
 });
 
 export type UpsertUser = typeof users.$inferInsert;

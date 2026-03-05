@@ -792,6 +792,39 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* Beta Testing Section */}
+      <section className={`py-16 px-4 relative z-10 ${isDark ? 'bg-gradient-to-b from-transparent to-purple-950/20' : 'bg-gradient-to-b from-transparent to-purple-50'}`}>
+        <div className="max-w-4xl mx-auto">
+          <div className={`rounded-2xl border-2 ${isDark ? 'border-purple-600/40 bg-purple-950/30' : 'border-purple-300 bg-purple-50'} p-8 md:p-12 text-center relative overflow-hidden`}>
+            <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ background: 'radial-gradient(circle at 50% 50%, #7c3aed, transparent 70%)' }} />
+            <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold mb-4 ${isDark ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30' : 'bg-yellow-100 text-yellow-700 border border-yellow-300'}`}>
+              <span className="w-2 h-2 rounded-full bg-yellow-400 animate-pulse" /> BETA PROGRAM — NOT A JOB APPLICATION
+            </div>
+            <h2 className={`text-3xl md:text-4xl font-bold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+              Help Shape the Future of TurboAnswer
+            </h2>
+            <p className={`text-lg mb-2 max-w-xl mx-auto ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+              We're looking for passionate users to join our exclusive beta testing program. Get early access, try new features before anyone else, and help us build something extraordinary.
+            </p>
+            <p className={`text-sm mb-8 ${isDark ? 'text-yellow-400/80' : 'text-yellow-700'}`}>
+              This is strictly a beta testing application and will not affect any job applications.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <Link href="/beta">
+                <Button className="bg-purple-600 hover:bg-purple-700 text-white px-8 py-3 text-base font-semibold rounded-xl shadow-lg shadow-purple-900/30">
+                  Apply to Be a Beta Tester
+                </Button>
+              </Link>
+            </div>
+            <div className={`mt-6 flex flex-wrap justify-center gap-6 text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+              <span className="flex items-center gap-1.5">✓ Early feature access</span>
+              <span className="flex items-center gap-1.5">✓ Direct line to the team</span>
+              <span className="flex items-center gap-1.5">✓ Shape the product roadmap</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <TrustpilotWidget isDark={isDark} />
 
       <footer className={`border-t py-8 px-4 relative z-10 ${isDark ? 'border-white/5 bg-[#030014]/80' : 'border-gray-200'}`}>

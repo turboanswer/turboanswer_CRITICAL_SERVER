@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Send, User, FileText, X, Brain, Settings, LogOut, Zap, Menu, QrCode, ImageIcon, Crown, CheckCircle, Star, Sun, Moon, Shield, Heart, Users, Copy, Sparkles, ArrowRight, Rocket } from "lucide-react";
+import { Send, User, FileText, X, Brain, Settings, LogOut, Zap, Menu, QrCode, ImageIcon, Crown, CheckCircle, Star, Sun, Moon, Shield, Heart, Users, Copy, Sparkles, ArrowRight, Rocket, FlaskConical, MessageSquare } from "lucide-react";
 import { QRCodeCanvas } from "qrcode.react";
 import { Link } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
@@ -39,6 +39,10 @@ export default function Chat() {
   const [showPromoPopup, setShowPromoPopup] = useState(false);
   const [messageCountSinceLastPromo, setMessageCountSinceLastPromo] = useState(0);
   const [lastPromoDismissedAt, setLastPromoDismissedAt] = useState(0);
+  const [showBetaFeedback, setShowBetaFeedback] = useState(false);
+  const [betaFeedbackMsg, setBetaFeedbackMsg] = useState("");
+  const [betaFeedbackCategory, setBetaFeedbackCategory] = useState("general");
+  const [betaFeedbackSent, setBetaFeedbackSent] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const timedPromoShown = useRef(false);
@@ -354,6 +358,11 @@ export default function Chat() {
                     <Shield className="h-4 w-4" />
                   </Button>
                 </Link>
+              )}
+              {(user as any)?.isBetaTester && (
+                <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-green-400 hover:text-green-300" title="Beta Feedback" onClick={() => { setShowBetaFeedback(true); setBetaFeedbackSent(false); setBetaFeedbackMsg(""); }}>
+                  <FlaskConical className="h-4 w-4" />
+                </Button>
               )}
               <Link href="/crisis-support">
                 <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-pink-400 hover:text-pink-300" title="Crisis Support">
@@ -1044,6 +1053,78 @@ export default function Chat() {
             >
               Maybe later
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Beta Feedback Modal */}
+      {showBetaFeedback && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className={`w-full max-w-md rounded-2xl border shadow-2xl p-6 ${isDark ? 'bg-gray-900 border-gray-800 text-white' : 'bg-white border-gray-200 text-gray-900'}`}>
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <FlaskConical className="w-5 h-5 text-green-400" />
+                <h3 className="font-bold text-lg">Beta Tester Feedback</h3>
+              </div>
+              <button onClick={() => setShowBetaFeedback(false)} className={`p-1 rounded-md ${isDark ? 'text-gray-500 hover:text-white' : 'text-gray-400 hover:text-gray-700'}`}>
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            {betaFeedbackSent ? (
+              <div className="text-center py-8">
+                <CheckCircle className="w-12 h-12 text-green-400 mx-auto mb-3" />
+                <p className="font-semibold text-lg mb-1">Thank you!</p>
+                <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Your feedback has been sent to the team.</p>
+                <Button className="mt-4 bg-green-600 hover:bg-green-700 text-white" onClick={() => setShowBetaFeedback(false)}>Close</Button>
+              </div>
+            ) : (
+              <>
+                <p className={`text-sm mb-4 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                  Share your thoughts, bugs, or suggestions as a beta tester. Your feedback goes directly to our team.
+                </p>
+                <div className="mb-3">
+                  <label className={`text-xs font-medium mb-1 block ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Category</label>
+                  <select
+                    value={betaFeedbackCategory}
+                    onChange={e => setBetaFeedbackCategory(e.target.value)}
+                    className={`w-full px-3 py-2 rounded-md border text-sm ${isDark ? 'bg-gray-800 border-gray-700 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
+                  >
+                    <option value="general">General Feedback</option>
+                    <option value="bug">Bug Report</option>
+                    <option value="feature">Feature Request</option>
+                    <option value="ui">UI/UX Issue</option>
+                    <option value="performance">Performance</option>
+                  </select>
+                </div>
+                <div className="mb-4">
+                  <label className={`text-xs font-medium mb-1 block ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Your Feedback *</label>
+                  <Textarea
+                    value={betaFeedbackMsg}
+                    onChange={e => setBetaFeedbackMsg(e.target.value)}
+                    placeholder="Describe what you experienced, what worked well, or what could be improved…"
+                    rows={4}
+                    className={`resize-none ${isDark ? 'bg-gray-800 border-gray-700 text-white placeholder:text-gray-600' : 'bg-gray-50 border-gray-200'}`}
+                  />
+                </div>
+                <Button
+                  className="w-full bg-green-600 hover:bg-green-700 text-white"
+                  disabled={!betaFeedbackMsg.trim()}
+                  onClick={async () => {
+                    try {
+                      const res = await fetch('/api/beta/feedback', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include',
+                        body: JSON.stringify({ message: betaFeedbackMsg, category: betaFeedbackCategory }),
+                      });
+                      if (res.ok) setBetaFeedbackSent(true);
+                    } catch {}
+                  }}
+                >
+                  <MessageSquare className="w-4 h-4 mr-2" /> Send Feedback
+                </Button>
+              </>
+            )}
           </div>
         </div>
       )}

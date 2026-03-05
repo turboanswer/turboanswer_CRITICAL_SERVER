@@ -6,7 +6,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 import multer from "multer";
 import { storage } from "./storage";
-import { insertConversationSchema, insertMessageSchema, adminInviteTokens } from "@shared/schema";
+import { insertConversationSchema, insertMessageSchema, adminInviteTokens, betaApplications, betaFeedback } from "@shared/schema";
 import { generateAIResponse, getAvailableModels } from "./services/multi-ai";
 import { moderateContent } from "./services/content-moderation";
 import { 
@@ -2434,6 +2434,169 @@ ${template.bodyText.split('\n').map(line => {
     } catch (err: any) {
       console.error('Set admin error:', err);
       res.status(500).json({ error: 'Failed to update admin status' });
+    }
+  });
+
+  // --- Beta Testing Routes ---
+
+  // Submit beta application (public)
+  app.post('/api/beta/apply', async (req: any, res) => {
+    try {
+      const { name, email, answers } = req.body;
+      if (!name || !email || !answers) return res.status(400).json({ error: 'Missing required fields' });
+
+      const { db } = await import('./db');
+      const { eq } = await import('drizzle-orm');
+
+      // Check duplicate
+      const existing = await db.select().from(betaApplications).where(eq(betaApplications.email, email)).limit(1);
+      if (existing.length > 0) return res.status(409).json({ error: 'An application with this email already exists.' });
+
+      const userId = req.user?.claims?.sub || null;
+      const [app] = await db.insert(betaApplications).values({ name, email, answers, userId, status: 'pending' }).returning();
+
+      // Notify admins
+      await db.insert((await import('@shared/schema')).adminNotifications).values({
+        type: 'system',
+        title: 'New Beta Application',
+        message: `${name} (${email}) submitted a beta testing application.`,
+        userId: null,
+        userFirstName: name,
+        userLastName: '',
+        userEmail: email,
+        isRead: false,
+        severity: 'info',
+      });
+
+      res.json({ success: true, id: app.id });
+    } catch (err: any) {
+      console.error('Beta apply error:', err);
+      res.status(500).json({ error: 'Failed to submit application' });
+    }
+  });
+
+  // Get all beta applications (admin)
+  app.get('/api/admin/beta/applications', isAdmin, async (_req, res) => {
+    try {
+      const { db } = await import('./db');
+      const apps = await db.select().from(betaApplications).orderBy(betaApplications.appliedAt);
+      res.json(apps.reverse());
+    } catch (err: any) {
+      res.status(500).json({ error: 'Failed to fetch applications' });
+    }
+  });
+
+  // Approve beta application (admin)
+  app.post('/api/admin/beta/applications/:id/approve', isAdmin, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const { db } = await import('./db');
+      const { eq } = await import('drizzle-orm');
+      const { authStorage } = await import('./replit_integrations/auth/storage');
+
+      const [app] = await db.select().from(betaApplications).where(eq(betaApplications.id, parseInt(id))).limit(1);
+      if (!app) return res.status(404).json({ error: 'Application not found' });
+
+      await db.update(betaApplications).set({ status: 'approved', reviewedAt: new Date() }).where(eq(betaApplications.id, parseInt(id)));
+
+      // Grant beta tester status if user has account
+      if (app.userId) {
+        const user = await authStorage.getUser(app.userId);
+        if (user) await authStorage.upsertUser({ ...user, isBetaTester: true });
+      } else {
+        // Find user by email
+        const user = await authStorage.getUserByEmail(app.email);
+        if (user) await authStorage.upsertUser({ ...user, isBetaTester: true });
+      }
+
+      // Send approval email
+      await sendBrevoEmail(
+        app.email, app.name,
+        'Congratulations! You\'ve been approved for TurboAnswer Beta Testing',
+        `Hi ${app.name},\n\nCongratulations! We're thrilled to let you know that your application to join the TurboAnswer Beta Testing Program has been approved.\n\nYou now have full beta tester access on your account. Please log in to TurboAnswer and look for the feedback button in your account — we'd love to hear your thoughts as you explore the platform.\n\nAs a beta tester, your feedback is invaluable in helping us build a better product. Don't hesitate to share detailed notes, bug reports, or feature suggestions.\n\nThank you for your interest and enthusiasm. We're excited to have you on board!\n\nBest regards,\nThe TurboAnswer Team`
+      );
+
+      res.json({ success: true });
+    } catch (err: any) {
+      console.error('Beta approve error:', err);
+      res.status(500).json({ error: 'Failed to approve application' });
+    }
+  });
+
+  // Deny beta application (admin)
+  app.post('/api/admin/beta/applications/:id/deny', isAdmin, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const { reason } = req.body;
+      const { db } = await import('./db');
+      const { eq } = await import('drizzle-orm');
+
+      const [app] = await db.select().from(betaApplications).where(eq(betaApplications.id, parseInt(id))).limit(1);
+      if (!app) return res.status(404).json({ error: 'Application not found' });
+
+      await db.update(betaApplications).set({ status: 'denied', denialReason: reason || '', reviewedAt: new Date() }).where(eq(betaApplications.id, parseInt(id)));
+
+      // Send denial email
+      await sendBrevoEmail(
+        app.email, app.name,
+        'TurboAnswer Beta Testing Application Update',
+        `Hi ${app.name},\n\nThank you for taking the time to apply to the TurboAnswer Beta Testing Program. After careful review, we regret to inform you that your application has not been selected at this time.\n\n${reason ? `Reason: ${reason}\n\n` : ''}Please know that this decision is not a reflection of your qualifications or interest. We receive many applications and are only able to onboard a limited number of testers at each phase.\n\nWe encourage you to keep using TurboAnswer and you are always welcome to apply again in the future.\n\nThank you for your understanding and continued support.\n\nBest regards,\nThe TurboAnswer Team`
+      );
+
+      res.json({ success: true });
+    } catch (err: any) {
+      console.error('Beta deny error:', err);
+      res.status(500).json({ error: 'Failed to deny application' });
+    }
+  });
+
+  // Send custom beta email (admin)
+  app.post('/api/admin/beta/send-email', isAdmin, async (req: any, res) => {
+    try {
+      const { email, name, subject, body } = req.body;
+      if (!email || !subject || !body) return res.status(400).json({ error: 'Missing fields' });
+      await sendBrevoEmail(email, name || email, subject, body);
+      res.json({ success: true });
+    } catch (err: any) {
+      res.status(500).json({ error: 'Failed to send email' });
+    }
+  });
+
+  // Submit beta feedback (beta testers only)
+  app.post('/api/beta/feedback', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      const { authStorage } = await import('./replit_integrations/auth/storage');
+      const user = await authStorage.getUser(userId);
+      if (!user?.isBetaTester) return res.status(403).json({ error: 'Beta tester access required' });
+
+      const { message, category } = req.body;
+      if (!message) return res.status(400).json({ error: 'Message is required' });
+
+      const { db } = await import('./db');
+      await db.insert(betaFeedback).values({
+        userId,
+        userName: `${user.firstName || ''} ${user.lastName || ''}`.trim(),
+        userEmail: user.email || '',
+        message,
+        category: category || 'general',
+      });
+
+      res.json({ success: true });
+    } catch (err: any) {
+      console.error('Beta feedback error:', err);
+      res.status(500).json({ error: 'Failed to submit feedback' });
+    }
+  });
+
+  // Get all beta feedback (admin)
+  app.get('/api/admin/beta/feedback', isAdmin, async (_req, res) => {
+    try {
+      const { db } = await import('./db');
+      const feedback = await db.select().from(betaFeedback).orderBy(betaFeedback.submittedAt);
+      res.json(feedback.reverse());
+    } catch (err: any) {
+      res.status(500).json({ error: 'Failed to fetch feedback' });
     }
   });
 
