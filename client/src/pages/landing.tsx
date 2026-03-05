@@ -4,6 +4,7 @@ import { Zap, Brain, FileText, Globe, Shield, MessageSquare, Menu, X, QrCode, Im
 import { Link } from "wouter";
 import { QRCodeSVG } from "qrcode.react";
 import { useTheme } from "@/hooks/use-theme";
+import { useAuth } from "@/hooks/use-auth";
 import TurboLogo from "@/components/TurboLogo";
 
 const TRUSTPILOT_BUSINESS_UNIT_ID = "";
@@ -198,6 +199,10 @@ export default function LandingPage() {
   const [showQR, setShowQR] = useState(false);
   const { theme, toggleTheme } = useTheme();
   const isDark = theme === "dark";
+  // Auth-aware CTA
+  const { isAuthenticated } = useAuth();
+  const ctaHref = isAuthenticated ? "/chat" : "/login";
+  const ctaLabel = isAuthenticated ? "Go to Chat" : "Login / Sign Up";
   const appUrl = typeof window !== "undefined" ? window.location.origin : "";
 
   const features = [
@@ -267,9 +272,9 @@ export default function LandingPage() {
             <button onClick={toggleTheme} className={`p-2 rounded-lg transition-colors ${isDark ? 'hover:bg-white/5 text-gray-400' : 'hover:bg-gray-100 text-gray-500'}`}>
               {isDark ? <span className="text-lg">&#9728;</span> : <span className="text-lg">&#9790;</span>}
             </button>
-            <a href="/login">
+            <a href={ctaHref}>
               <Button size="sm" className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:from-indigo-500 hover:via-purple-500 hover:to-pink-500 font-semibold px-5 shadow-lg shadow-purple-500/20">
-                Login / Sign Up
+
               </Button>
             </a>
           </div>
@@ -304,9 +309,9 @@ export default function LandingPage() {
                 Mobile
               </Button>
             </a>
-            <a href="/login" className="block">
+            <a href={ctaHref} className="block">
               <Button className="w-full bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:from-indigo-500 hover:via-purple-500 hover:to-pink-500 font-semibold">
-                Login / Sign Up
+
               </Button>
             </a>
           </div>
@@ -370,9 +375,9 @@ export default function LandingPage() {
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-10">
-            <a href="/login">
+            <a href={ctaHref}>
               <Button size="lg" className="w-full sm:w-auto text-lg px-10 py-7 font-bold shadow-2xl bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:from-indigo-500 hover:via-purple-500 hover:to-pink-500 shadow-purple-500/25 rounded-2xl" style={isDark ? { animation: 'glow-pulse 3s ease-in-out infinite' } : {}}>
-                Login / Sign Up Free
+
                 <ArrowRight className="h-5 w-5 ml-2" />
               </Button>
             </a>
@@ -551,7 +556,7 @@ export default function LandingPage() {
                   </li>
                 ))}
               </ul>
-              <a href="/login">
+              <a href={ctaHref}>
                 <Button variant="outline" className={`w-full rounded-xl h-12 font-semibold ${isDark ? 'border-white/10 hover:bg-white/5 text-gray-300' : 'border-gray-300 hover:bg-gray-100'}`}>
                   Get Started Free
                 </Button>
@@ -583,7 +588,7 @@ export default function LandingPage() {
                   </li>
                 ))}
               </ul>
-              <a href="/login">
+              <a href={ctaHref}>
                 <Button className="w-full rounded-xl h-12 font-bold bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 shadow-lg shadow-purple-500/20">
                   Upgrade to Pro
                 </Button>
@@ -612,7 +617,7 @@ export default function LandingPage() {
                   </li>
                 ))}
               </ul>
-              <a href="/login">
+              <a href={ctaHref}>
                 <Button className="w-full rounded-xl h-12 font-bold bg-gradient-to-r from-indigo-600 to-cyan-600 hover:from-indigo-500 hover:to-cyan-500 shadow-lg shadow-indigo-500/20">
                   Upgrade to Research
                 </Button>
@@ -728,9 +733,9 @@ export default function LandingPage() {
               <p className={`text-lg mb-10 max-w-xl mx-auto ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
                 Join thousands using TurboAnswer to work smarter, learn faster, and create more. It's completely free to start.
               </p>
-              <a href="/login">
+              <a href={ctaHref}>
                 <Button size="lg" className="text-lg px-12 py-7 font-bold shadow-2xl bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:from-indigo-500 hover:via-purple-500 hover:to-pink-500 shadow-purple-500/25 rounded-2xl" style={isDark ? { animation: 'glow-pulse 3s ease-in-out infinite' } : {}}>
-                  Login / Sign Up Free
+
                   <ArrowRight className="h-5 w-5 ml-2" />
                 </Button>
               </a>

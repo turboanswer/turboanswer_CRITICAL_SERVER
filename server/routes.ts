@@ -2487,12 +2487,14 @@ ${template.bodyText.split('\n').map(line => {
       await db.update(betaApplications).set({ status: 'approved', reviewedAt: new Date() }).where(eq(betaApplications.id, parseInt(id)));
 
       // Grant beta tester status if user has account
+      let updatedUser = false;
       if (app.userId) {
         const user = await authStorage.getUser(app.userId);
-        if (user) await authStorage.upsertUser({ ...user, isBetaTester: true });
-      } else {
-        // Find user by email
-        const user = await authStorage.getUserByEmail(app.email);
+        if (user) { await authStorage.upsertUser({ ...user, isBetaTester: true }); updatedUser = true; }
+      }
+      if (!updatedUser) {
+        // Find user by email (try exact, then lowercase)
+        const user = await authStorage.getUserByEmail(app.email) || await authStorage.getUserByEmail(app.email.toLowerCase());
         if (user) await authStorage.upsertUser({ ...user, isBetaTester: true });
       }
 

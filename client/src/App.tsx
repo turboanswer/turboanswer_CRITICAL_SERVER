@@ -6,7 +6,6 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { useAuth } from "@/hooks/use-auth";
 import { ThemeProvider } from "@/hooks/use-theme";
 import { Loader2 } from "lucide-react";
-import Home from "@/pages/home";
 import Chat from "@/pages/chat";
 import AISettings from "@/pages/ai-settings";
 import Subscribe from "@/pages/subscribe";
@@ -33,7 +32,7 @@ import BetaApply from "@/pages/beta-apply";
 function AuthenticatedRouter() {
   return (
     <Switch>
-      <Route path="/home" component={Home} />
+      <Route path="/home" component={LandingPage} />
       <Route path="/chat" component={Chat} />
       <Route path="/" component={Chat} />
       <Route path="/ai-settings" component={AISettings} />
