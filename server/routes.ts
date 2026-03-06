@@ -556,11 +556,11 @@ function downloadAAB(){
           let wasBanned = false;
           let wasSuspended = false;
 
-          // Auto-lockdown platform for terrorism or serious threat content
+          // Auto-lockdown platform for any threat or terrorism content
           if (modResult.type === "terrorism") {
             autoActivateLockdown('public_safety', `Terrorism content detected from user ${userId}: "${modResult.matchedWords.join(', ')}"`);
-          } else if (modResult.type === "threat" && modResult.autoBan) {
-            autoActivateLockdown('public_safety', `Serious threat content detected from user ${userId}: "${modResult.matchedWords.join(', ')}"`);
+          } else if (modResult.type === "threat") {
+            autoActivateLockdown('public_safety', `Threat content detected from user ${userId}: "${modResult.matchedWords.join(', ')}"`);
           }
 
           if (modResult.autoBan && (modResult.type === "sexual" || modResult.type === "terrorism" || modResult.type === "threat")) {
