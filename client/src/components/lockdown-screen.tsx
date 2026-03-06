@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { getAudioContext, primeAudioContext, isUnlocked } from '@/lib/audio-manager';
+import { getAudioContext, primeAudioContext } from '@/lib/audio-manager';
 
 function makeReverb(ctx: AudioContext, duration = 4, decay = 2.5): ConvolverNode {
   const rate = ctx.sampleRate;
@@ -18,16 +18,13 @@ function makeReverb(ctx: AudioContext, duration = 4, decay = 2.5): ConvolverNode
 
 function buildHorrorAlarm(ctx: AudioContext): () => void {
   const dest = ctx.destination;
-
-  // Master
   const master = ctx.createGain();
   master.gain.value = 0.75;
   master.connect(dest);
 
-  // Reverb send for cavernous depth
   const reverb = makeReverb(ctx, 5, 2.2);
   const reverbGain = ctx.createGain();
-  reverbGain.gain.value = 0.45;
+  reverbGain.gain.value = 0.4;
   reverb.connect(reverbGain);
   reverbGain.connect(master);
 
@@ -36,8 +33,7 @@ function buildHorrorAlarm(ctx: AudioContext): () => void {
     node.connect(reverb);
   }
 
-  // ── Layer 1: Deep horror drone — two slightly detuned low oscillators ──
-  // Creates that classic horror "BRAAAM" / dread sound
+  // Deep horror drone — two mistuned oscillators cause slow nauseating beating
   const droneA = ctx.createOscillator();
   droneA.type = 'sine';
   droneA.frequency.value = 58;
@@ -49,96 +45,89 @@ function buildHorrorAlarm(ctx: AudioContext): () => void {
 
   const droneB = ctx.createOscillator();
   droneB.type = 'sine';
-  droneB.frequency.value = 61.5; // slightly detuned — creates beating/unease
+  droneB.frequency.value = 61.5;
   const droneBGain = ctx.createGain();
-  droneBGain.gain.value = 0.6;
+  droneBGain.gain.value = 0.55;
   droneB.connect(droneBGain);
   droneBGain.connect(reverb);
   droneB.start();
 
-  // ── Layer 2: Slow warbling horror alarm tone ──
-  // Rises painfully slowly from 90Hz to 360Hz over 10 seconds, then falls back
+  // Sub-bass rumble
+  const sub = ctx.createOscillator();
+  sub.type = 'sine';
+  sub.frequency.value = 28;
+  const subGain = ctx.createGain();
+  subGain.gain.value = 0.65;
+  sub.connect(subGain);
+  subGain.connect(master);
+  sub.start();
+
+  // Slow wailing alarm — rises over 10 seconds, holds, falls over 8 seconds
   const wail = ctx.createOscillator();
   wail.type = 'triangle';
   wail.frequency.value = 90;
   const wailGain = ctx.createGain();
-  wailGain.gain.value = 0.65;
+  wailGain.gain.value = 0;
   wail.connect(wailGain);
   wire(wailGain);
   wail.start();
 
   const wail2 = ctx.createOscillator();
   wail2.type = 'triangle';
-  wail2.frequency.value = 88; // slight detune for horror wobble
+  wail2.frequency.value = 88;
   const wail2Gain = ctx.createGain();
-  wail2Gain.gain.value = 0.45;
+  wail2Gain.gain.value = 0;
   wail2.connect(wail2Gain);
   wire(wail2Gain);
   wail2.start();
 
-  const RISE = 10.0;  // 10 seconds to rise — uncomfortably slow
-  const HOLD = 2.5;   // linger at the top
-  const FALL = 8.0;   // 8 seconds to fall
-  const GAP  = 1.5;   // brief silence before next cycle
+  const RISE = 10.0;
+  const HOLD = 2.5;
+  const FALL = 8.0;
+  const GAP  = 2.0;
   const CYCLE = RISE + HOLD + FALL + GAP;
 
   for (let i = 0; i < 30; i++) {
     const t = ctx.currentTime + i * CYCLE;
-    // Silence in gap
     wailGain.gain.setValueAtTime(0, t);
     wail2Gain.gain.setValueAtTime(0, t);
-    // Fade in and rise
-    wailGain.gain.linearRampToValueAtTime(0.65, t + 0.8);
-    wail2Gain.gain.linearRampToValueAtTime(0.45, t + 0.8);
+    wailGain.gain.linearRampToValueAtTime(0.65, t + 1.2);
+    wail2Gain.gain.linearRampToValueAtTime(0.45, t + 1.2);
     wail.frequency.setValueAtTime(90, t);
     wail2.frequency.setValueAtTime(88, t);
     wail.frequency.exponentialRampToValueAtTime(360, t + RISE);
     wail2.frequency.exponentialRampToValueAtTime(355, t + RISE);
-    // Hold
     wail.frequency.setValueAtTime(360, t + RISE);
     wail2.frequency.setValueAtTime(355, t + RISE);
-    // Fall
     wail.frequency.exponentialRampToValueAtTime(90, t + RISE + HOLD + FALL);
     wail2.frequency.exponentialRampToValueAtTime(88, t + RISE + HOLD + FALL);
-    // Fade out at end of fall
-    wailGain.gain.setValueAtTime(0.65, t + RISE + HOLD + FALL - 0.8);
+    wailGain.gain.setValueAtTime(0.65, t + RISE + HOLD + FALL - 1.0);
     wailGain.gain.linearRampToValueAtTime(0, t + RISE + HOLD + FALL);
-    wail2Gain.gain.setValueAtTime(0.45, t + RISE + HOLD + FALL - 0.8);
+    wail2Gain.gain.setValueAtTime(0.45, t + RISE + HOLD + FALL - 1.0);
     wail2Gain.gain.linearRampToValueAtTime(0, t + RISE + HOLD + FALL);
   }
 
-  // ── Layer 3: Sub-bass rumble — physical dread ──
-  const sub = ctx.createOscillator();
-  sub.type = 'sine';
-  sub.frequency.value = 28;
-  const subGain = ctx.createGain();
-  subGain.gain.value = 0.7;
-  sub.connect(subGain);
-  subGain.connect(master);
-  sub.start();
-
-  // ── Layer 4: High eerie whistle — barely audible discomfort ──
+  // High eerie whistle with trembling LFO
   const whistle = ctx.createOscillator();
   whistle.type = 'sine';
   whistle.frequency.value = 2800;
   const whistleGain = ctx.createGain();
-  whistleGain.gain.value = 0.06;
+  whistleGain.gain.value = 0.055;
   whistle.connect(whistleGain);
   wire(whistleGain);
   whistle.start();
 
-  // ── LFO: slowly tremble the high whistle pitch ──
   const lfo = ctx.createOscillator();
   lfo.type = 'sine';
-  lfo.frequency.value = 0.2;
+  lfo.frequency.value = 0.18;
   const lfoDepth = ctx.createGain();
-  lfoDepth.gain.value = 40;
+  lfoDepth.gain.value = 45;
   lfo.connect(lfoDepth);
   lfoDepth.connect(whistle.frequency);
   lfo.start();
 
   return () => {
-    [droneA, droneB, wail, wail2, sub, whistle, lfo].forEach(o => {
+    [droneA, droneB, sub, wail, wail2, whistle, lfo].forEach(o => {
       try { o.stop(); } catch {}
     });
     master.disconnect();
@@ -150,11 +139,18 @@ export default function LockdownScreen() {
   const stopRef = useRef<(() => void) | null>(null);
   const startedRef = useRef(false);
 
-  function tryStartAlarm() {
+  function tryStart() {
     if (startedRef.current) return;
     const ctx = getAudioContext();
-    if (!ctx || ctx.state !== 'running') {
-      setNeedsClick(true);
+    if (!ctx) { setNeedsClick(true); return; }
+    if (ctx.state !== 'running') {
+      ctx.resume().then(() => {
+        if (!startedRef.current) {
+          startedRef.current = true;
+          setNeedsClick(false);
+          stopRef.current = buildHorrorAlarm(ctx);
+        }
+      }).catch(() => setNeedsClick(true));
       return;
     }
     startedRef.current = true;
@@ -163,34 +159,19 @@ export default function LockdownScreen() {
   }
 
   function handleClick() {
-    if (!isUnlocked()) {
-      primeAudioContext();
-      // Wait a tick for context to resume
-      setTimeout(() => {
-        const ctx = getAudioContext();
-        if (ctx) {
-          ctx.resume().then(() => {
-            startedRef.current = false;
-            tryStartAlarm();
-          });
-        }
-      }, 100);
-    }
+    primeAudioContext();
+    setTimeout(() => {
+      startedRef.current = false;
+      tryStart();
+    }, 80);
   }
 
   useEffect(() => {
-    // Try immediately — works if user already interacted with the app
-    tryStartAlarm();
-
-    // Fallback: retry on any interaction
-    const retry = () => {
-      startedRef.current = false;
-      tryStartAlarm();
-    };
+    tryStart();
+    const retry = () => { startedRef.current = false; tryStart(); };
     window.addEventListener('click', retry, { once: true });
     window.addEventListener('keydown', retry, { once: true });
     window.addEventListener('touchstart', retry, { once: true });
-
     return () => {
       window.removeEventListener('click', retry);
       window.removeEventListener('keydown', retry);
@@ -202,45 +183,197 @@ export default function LockdownScreen() {
   return (
     <div
       className="fixed inset-0 z-[9999] flex flex-col items-center justify-center"
-      style={{ background: '#8b0000' }}
+      style={{ background: '#000000' }}
       onClick={needsClick ? handleClick : undefined}
     >
-      <div className="flex flex-col items-center text-center px-8 max-w-xl mx-auto gap-8">
+      {/* Fallen robot illustration */}
+      <svg
+        viewBox="0 0 420 340"
+        style={{ width: 'min(420px, 80vw)', marginBottom: '2rem', overflow: 'visible' }}
+        aria-hidden="true"
+      >
+        {/* Floor shadow */}
+        <ellipse cx="210" cy="330" rx="130" ry="10" fill="rgba(255,0,0,0.08)" />
 
-        <div style={{ fontSize: '5rem', lineHeight: 1 }}>⚠</div>
+        {/* Robot group — tilted to show it collapsed on the floor */}
+        <g transform="rotate(28, 210, 200)">
 
+          {/* Left leg — sprawled */}
+          <rect x="148" y="258" width="30" height="72" rx="7"
+            fill="#1e1e1e" stroke="#3a3a3a" strokeWidth="1.5"
+            transform="rotate(-18, 163, 294)" />
+          <rect x="148" y="322" width="30" height="14" rx="4"
+            fill="#252525" stroke="#444" strokeWidth="1.5"
+            transform="rotate(-18, 163, 329)" />
+
+          {/* Right leg — kicked out */}
+          <rect x="182" y="260" width="30" height="72" rx="7"
+            fill="#1e1e1e" stroke="#3a3a3a" strokeWidth="1.5"
+            transform="rotate(22, 197, 296)" />
+          <rect x="182" y="324" width="30" height="14" rx="4"
+            fill="#252525" stroke="#444" strokeWidth="1.5"
+            transform="rotate(22, 197, 331)" />
+
+          {/* Knee joints */}
+          <circle cx="162" cy="262" r="9" fill="#141414" stroke="#3a3a3a" strokeWidth="1.5" />
+          <circle cx="198" cy="264" r="9" fill="#141414" stroke="#3a3a3a" strokeWidth="1.5" />
+
+          {/* Torso */}
+          <rect x="130" y="155" width="100" height="108" rx="12"
+            fill="#1a1a1a" stroke="#3d3d3d" strokeWidth="2" />
+
+          {/* Torso panel DOOR — swung open, hinged top-left */}
+          <rect x="85" y="158" width="44" height="52" rx="5"
+            fill="#111" stroke="#555" strokeWidth="1.5"
+            transform="rotate(-50, 131, 175)" />
+          {/* Hinge dot */}
+          <circle cx="131" cy="162" r="3" fill="#555" />
+
+          {/* Panel interior — exposed circuit board */}
+          <rect x="136" y="165" width="82" height="86" rx="5"
+            fill="#040c04" stroke="#1a3a1a" strokeWidth="1" />
+          {/* Circuit traces */}
+          <line x1="146" y1="178" x2="208" y2="178" stroke="#00cc55" strokeWidth="1.2" opacity="0.7" />
+          <line x1="146" y1="188" x2="190" y2="188" stroke="#00cc55" strokeWidth="1" opacity="0.5" />
+          <line x1="158" y1="178" x2="158" y2="238" stroke="#00cc55" strokeWidth="1" opacity="0.6" />
+          <line x1="178" y1="188" x2="178" y2="235" stroke="#00cc55" strokeWidth="1" opacity="0.4" />
+          <line x1="195" y1="178" x2="195" y2="220" stroke="#00cc55" strokeWidth="1" opacity="0.5" />
+          <rect x="165" y="198" width="22" height="14" rx="2" fill="#001a00" stroke="#00cc55" strokeWidth="1" opacity="0.7" />
+          <circle cx="158" cy="178" r="3.5" fill="#00cc55" opacity="0.9" />
+          <circle cx="178" cy="188" r="3.5" fill="#00cc55" opacity="0.7" />
+          <circle cx="195" cy="178" r="3" fill="#00cc55" opacity="0.8" />
+          {/* Blown capacitor — small red dot */}
+          <circle cx="200" cy="215" r="5" fill="#cc0000" opacity="0.85" />
+
+          {/* Left arm — splayed out to the left */}
+          <rect x="52" y="148" width="78" height="24" rx="9"
+            fill="#1e1e1e" stroke="#3a3a3a" strokeWidth="1.5"
+            transform="rotate(-30, 130, 160)" />
+          <rect x="40" y="138" width="18" height="24" rx="6"
+            fill="#252525" stroke="#444" strokeWidth="1.5"
+            transform="rotate(-30, 49, 150)" />
+
+          {/* Right arm — flung to the right */}
+          <rect x="230" y="158" width="78" height="24" rx="9"
+            fill="#1e1e1e" stroke="#3a3a3a" strokeWidth="1.5"
+            transform="rotate(18, 230, 170)" />
+          <rect x="304" y="160" width="18" height="24" rx="6"
+            fill="#252525" stroke="#444" strokeWidth="1.5"
+            transform="rotate(18, 313, 172)" />
+
+          {/* Shoulder joints */}
+          <circle cx="130" cy="162" r="11" fill="#141414" stroke="#444" strokeWidth="1.5" />
+          <circle cx="230" cy="170" r="11" fill="#141414" stroke="#444" strokeWidth="1.5" />
+
+          {/* Neck */}
+          <rect x="153" y="144" width="28" height="14" rx="5"
+            fill="#191919" stroke="#3a3a3a" strokeWidth="1.5" />
+
+          {/* Head */}
+          <rect x="133" y="80" width="94" height="68" rx="12"
+            fill="#1a1a1a" stroke="#3d3d3d" strokeWidth="2" />
+
+          {/* Visor / eye bar — cracked, dim, barely alive */}
+          <rect x="142" y="98" width="76" height="22" rx="6"
+            fill="#180000" stroke="#3a3a3a" strokeWidth="1" />
+          {/* Left eye — dead */}
+          <rect x="146" y="101" width="22" height="16" rx="4"
+            fill="#220000" opacity="0.5" />
+          {/* Right eye — flickering red, dying */}
+          <rect x="192" y="101" width="22" height="16" rx="4"
+            fill="#6b0000" opacity="0.8" />
+          <rect x="196" y="104" width="14" height="10" rx="2"
+            fill="#cc0000" opacity="0.5" />
+          {/* Visor crack */}
+          <polyline points="172,96 176,108 170,120" stroke="#0a0a0a"
+            strokeWidth="2.5" fill="none" strokeLinecap="round" />
+
+          {/* Mouth / grille — damaged */}
+          <rect x="155" y="130" width="50" height="8" rx="3"
+            fill="#111" stroke="#333" strokeWidth="1" />
+          <line x1="165" y1="130" x2="165" y2="138" stroke="#1a1a1a" strokeWidth="1.5" />
+          <line x1="175" y1="130" x2="175" y2="138" stroke="#1a1a1a" strokeWidth="1.5" />
+          <line x1="185" y1="130" x2="185" y2="138" stroke="#1a1a1a" strokeWidth="1.5" />
+          <line x1="195" y1="130" x2="195" y2="138" stroke="#1a1a1a" strokeWidth="1.5" />
+
+          {/* Antenna — broken, bent sideways */}
+          <line x1="180" y1="80" x2="176" y2="58" stroke="#3a3a3a"
+            strokeWidth="3.5" strokeLinecap="round" />
+          <line x1="176" y1="58" x2="160" y2="44" stroke="#333"
+            strokeWidth="2.5" strokeLinecap="round" />
+          <circle cx="160" cy="43" r="5" fill="#252525" stroke="#444" strokeWidth="1.5" />
+        </g>
+
+        {/* Electric bolt — outside robot group so it escapes the rotation */}
+        {/* Positioned where the open panel is after 28deg rotation */}
+        <g>
+          {/* Glow behind bolt */}
+          <polyline
+            points="108,188 88,205 112,216 85,238 114,234 92,262"
+            stroke="#FFD700" strokeWidth="14" strokeLinecap="round"
+            strokeLinejoin="round" fill="none" opacity="0.15" />
+          <polyline
+            points="108,188 88,205 112,216 85,238 114,234 92,262"
+            stroke="#FFD700" strokeWidth="8" strokeLinecap="round"
+            strokeLinejoin="round" fill="none" opacity="0.35" />
+          {/* Core bolt — sharp white center */}
+          <polyline
+            points="108,188 88,205 112,216 85,238 114,234 92,262"
+            stroke="#FFFFFF" strokeWidth="3" strokeLinecap="round"
+            strokeLinejoin="round" fill="none" />
+          <polyline
+            points="108,188 88,205 112,216 85,238 114,234 92,262"
+            stroke="#FFD700" strokeWidth="5" strokeLinecap="round"
+            strokeLinejoin="round" fill="none" opacity="0.8" />
+
+          {/* Sparks radiating out */}
+          <line x1="88" y1="205" x2="72" y2="196" stroke="#FFD700" strokeWidth="2" strokeLinecap="round" opacity="0.9" />
+          <line x1="88" y1="205" x2="74" y2="218" stroke="#FFD700" strokeWidth="1.5" strokeLinecap="round" opacity="0.7" />
+          <line x1="85" y1="238" x2="66" y2="232" stroke="#FFD700" strokeWidth="2" strokeLinecap="round" opacity="0.9" />
+          <line x1="85" y1="238" x2="70" y2="250" stroke="#FFE066" strokeWidth="1.5" strokeLinecap="round" opacity="0.6" />
+          <line x1="92" y1="262" x2="76" y2="270" stroke="#FFD700" strokeWidth="2" strokeLinecap="round" opacity="0.8" />
+          <line x1="92" y1="262" x2="80" y2="255" stroke="#FFE066" strokeWidth="1.5" strokeLinecap="round" opacity="0.5" />
+          {/* Spark dots */}
+          <circle cx="70" cy="196" r="2.5" fill="#FFD700" opacity="0.9" />
+          <circle cx="63" cy="233" r="2" fill="#FFE066" opacity="0.8" />
+          <circle cx="74" cy="271" r="2.5" fill="#FFD700" opacity="0.7" />
+          <circle cx="98" cy="278" r="1.5" fill="#FFFFFF" opacity="0.8" />
+        </g>
+      </svg>
+
+      {/* Text block */}
+      <div className="flex flex-col items-center text-center px-8 max-w-lg mx-auto gap-5">
         <h1
           className="font-black uppercase tracking-widest"
           style={{
-            fontSize: 'clamp(2.2rem, 5vw, 3.8rem)',
+            fontSize: 'clamp(1.8rem, 4.5vw, 3rem)',
             color: '#ffffff',
-            textShadow: '0 0 40px rgba(0,0,0,0.8)',
             lineHeight: 1.1,
           }}
         >
-          System<br />Lockdown
+          System Lockdown
         </h1>
 
-        <p style={{ color: 'rgba(255,255,255,0.75)', fontSize: '1.1rem', lineHeight: 1.7 }}>
-          TurboAnswer is currently offline. Our team has been notified and is working to restore service.
+        <p style={{ color: 'rgba(255,255,255,0.65)', fontSize: '1rem', lineHeight: 1.7 }}>
+          TurboAnswer is experiencing a critical system failure. Our engineering team has been notified and is working urgently to restore service.
         </p>
 
-        <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '0.8rem', letterSpacing: '0.15em' }}>
-          support@turboanswer.it.com
+        <p style={{ color: 'rgba(255,255,255,0.25)', fontSize: '0.75rem', letterSpacing: '0.15em', fontFamily: 'monospace' }}>
+          support@turboanswer.it.com · 866-467-7269
         </p>
 
         {needsClick && (
           <button
-            onClick={handleClick}
+            onClick={(e) => { e.stopPropagation(); handleClick(); }}
             style={{
-              marginTop: '1rem',
-              padding: '0.6rem 1.6rem',
-              background: 'rgba(0,0,0,0.3)',
-              border: '1px solid rgba(255,255,255,0.3)',
-              color: 'rgba(255,255,255,0.7)',
+              marginTop: '0.5rem',
+              padding: '0.5rem 1.4rem',
+              background: 'rgba(255,255,255,0.05)',
+              border: '1px solid rgba(255,255,255,0.2)',
+              color: 'rgba(255,255,255,0.5)',
               borderRadius: '4px',
               fontFamily: 'monospace',
-              fontSize: '0.75rem',
+              fontSize: '0.7rem',
               letterSpacing: '0.2em',
               cursor: 'pointer',
             }}

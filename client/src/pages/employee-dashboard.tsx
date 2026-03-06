@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { primeAudioContext } from '@/lib/audio-manager';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
 import { useAuth } from '@/hooks/use-auth';
@@ -593,7 +594,7 @@ export default function EmployeeDashboard() {
                 <div className="flex items-center gap-1.5">
                   <span className="text-[10px] font-mono text-red-400">Confirm?</span>
                   <button
-                    onClick={() => activateLockdownMutation.mutate()}
+                    onClick={() => { primeAudioContext(); activateLockdownMutation.mutate(); }}
                     disabled={activateLockdownMutation.isPending}
                     className="px-2.5 py-1.5 rounded font-mono text-[10px] font-black uppercase tracking-widest transition-all"
                     style={{ background: '#dc2626', color: '#fff', border: '1px solid #ef4444' }}>
