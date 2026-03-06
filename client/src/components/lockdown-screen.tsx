@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from 'react';
-import { getAudioContext, primeAudioContext } from '@/lib/audio-manager';
 
 function makeReverb(ctx: AudioContext, duration = 4, decay = 2.5): ConvolverNode {
   const rate = ctx.sampleRate;
@@ -17,10 +16,9 @@ function makeReverb(ctx: AudioContext, duration = 4, decay = 2.5): ConvolverNode
 }
 
 function buildHorrorAlarm(ctx: AudioContext): () => void {
-  const dest = ctx.destination;
   const master = ctx.createGain();
   master.gain.value = 0.75;
-  master.connect(dest);
+  master.connect(ctx.destination);
 
   const reverb = makeReverb(ctx, 5, 2.2);
   const reverbGain = ctx.createGain();
@@ -33,7 +31,6 @@ function buildHorrorAlarm(ctx: AudioContext): () => void {
     node.connect(reverb);
   }
 
-  // Deep horror drone — two mistuned oscillators cause slow nauseating beating
   const droneA = ctx.createOscillator();
   droneA.type = 'sine';
   droneA.frequency.value = 58;
@@ -52,7 +49,6 @@ function buildHorrorAlarm(ctx: AudioContext): () => void {
   droneBGain.connect(reverb);
   droneB.start();
 
-  // Sub-bass rumble
   const sub = ctx.createOscillator();
   sub.type = 'sine';
   sub.frequency.value = 28;
@@ -62,7 +58,6 @@ function buildHorrorAlarm(ctx: AudioContext): () => void {
   subGain.connect(master);
   sub.start();
 
-  // Slow wailing alarm — rises over 10 seconds, holds, falls over 8 seconds
   const wail = ctx.createOscillator();
   wail.type = 'triangle';
   wail.frequency.value = 90;
@@ -107,7 +102,6 @@ function buildHorrorAlarm(ctx: AudioContext): () => void {
     wail2Gain.gain.linearRampToValueAtTime(0, t + RISE + HOLD + FALL);
   }
 
-  // High eerie whistle with trembling LFO
   const whistle = ctx.createOscillator();
   whistle.type = 'sine';
   whistle.frequency.value = 2800;
@@ -130,52 +124,77 @@ function buildHorrorAlarm(ctx: AudioContext): () => void {
     [droneA, droneB, sub, wail, wail2, whistle, lfo].forEach(o => {
       try { o.stop(); } catch {}
     });
-    master.disconnect();
+    try { master.disconnect(); } catch {}
+    try { ctx.close(); } catch {}
   };
 }
 
 export default function LockdownScreen() {
   const [needsClick, setNeedsClick] = useState(false);
+  const playingRef = useRef(false);
   const stopRef = useRef<(() => void) | null>(null);
-  const startedRef = useRef(false);
+  const ctxRef = useRef<AudioContext | null>(null);
 
-  function tryStart() {
-    if (startedRef.current) return;
-    const ctx = getAudioContext();
-    if (!ctx) { setNeedsClick(true); return; }
-    if (ctx.state !== 'running') {
+  async function attemptPlay() {
+    if (playingRef.current) return;
+    try {
+      const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      ctxRef.current = ctx;
+      if (ctx.state === 'suspended') {
+        await ctx.resume();
+      }
+      if (ctx.state === 'running') {
+        playingRef.current = true;
+        setNeedsClick(false);
+        stopRef.current = buildHorrorAlarm(ctx);
+      } else {
+        ctx.close();
+        setNeedsClick(true);
+      }
+    } catch {
+      setNeedsClick(true);
+    }
+  }
+
+  function handleUserGesture() {
+    if (playingRef.current) return;
+    // Called from direct user click — AudioContext will definitely start
+    try {
+      const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      ctxRef.current = ctx;
+      // resume() inside a click handler is always allowed
       ctx.resume().then(() => {
-        if (!startedRef.current) {
-          startedRef.current = true;
+        if (!playingRef.current && ctx.state === 'running') {
+          playingRef.current = true;
           setNeedsClick(false);
           stopRef.current = buildHorrorAlarm(ctx);
         }
-      }).catch(() => setNeedsClick(true));
-      return;
-    }
-    startedRef.current = true;
-    setNeedsClick(false);
-    stopRef.current = buildHorrorAlarm(ctx);
-  }
-
-  function handleClick() {
-    primeAudioContext();
-    setTimeout(() => {
-      startedRef.current = false;
-      tryStart();
-    }, 80);
+      });
+    } catch {}
   }
 
   useEffect(() => {
-    tryStart();
-    const retry = () => { startedRef.current = false; tryStart(); };
-    window.addEventListener('click', retry, { once: true });
-    window.addEventListener('keydown', retry, { once: true });
-    window.addEventListener('touchstart', retry, { once: true });
+    // First attempt — works if user has site interaction history (high MEI)
+    attemptPlay();
+
+    // Retry a few times in case browser needs a moment
+    const t1 = setTimeout(() => { if (!playingRef.current) attemptPlay(); }, 500);
+    const t2 = setTimeout(() => { if (!playingRef.current) attemptPlay(); }, 1500);
+    const t3 = setTimeout(() => { if (!playingRef.current) setNeedsClick(true); }, 2000);
+
+    // Catch any user interaction anywhere on the page
+    const onInteract = () => handleUserGesture();
+    document.addEventListener('click', onInteract);
+    document.addEventListener('keydown', onInteract);
+    document.addEventListener('touchstart', onInteract);
+
     return () => {
-      window.removeEventListener('click', retry);
-      window.removeEventListener('keydown', retry);
-      window.removeEventListener('touchstart', retry);
+      clearTimeout(t1);
+      clearTimeout(t2);
+      clearTimeout(t3);
+      document.removeEventListener('click', onInteract);
+      document.removeEventListener('keydown', onInteract);
+      document.removeEventListener('touchstart', onInteract);
       stopRef.current?.();
     };
   }, []);
@@ -184,55 +203,40 @@ export default function LockdownScreen() {
     <div
       className="fixed inset-0 z-[9999] flex flex-col items-center justify-center"
       style={{ background: '#000000' }}
-      onClick={needsClick ? handleClick : undefined}
+      onClick={handleUserGesture}
     >
-      {/* Fallen robot illustration */}
+      {/* Fallen robot */}
       <svg
         viewBox="0 0 420 340"
         style={{ width: 'min(420px, 80vw)', marginBottom: '2rem', overflow: 'visible' }}
         aria-hidden="true"
       >
-        {/* Floor shadow */}
         <ellipse cx="210" cy="330" rx="130" ry="10" fill="rgba(255,0,0,0.08)" />
 
-        {/* Robot group — tilted to show it collapsed on the floor */}
         <g transform="rotate(28, 210, 200)">
-
-          {/* Left leg — sprawled */}
           <rect x="148" y="258" width="30" height="72" rx="7"
             fill="#1e1e1e" stroke="#3a3a3a" strokeWidth="1.5"
             transform="rotate(-18, 163, 294)" />
           <rect x="148" y="322" width="30" height="14" rx="4"
             fill="#252525" stroke="#444" strokeWidth="1.5"
             transform="rotate(-18, 163, 329)" />
-
-          {/* Right leg — kicked out */}
           <rect x="182" y="260" width="30" height="72" rx="7"
             fill="#1e1e1e" stroke="#3a3a3a" strokeWidth="1.5"
             transform="rotate(22, 197, 296)" />
           <rect x="182" y="324" width="30" height="14" rx="4"
             fill="#252525" stroke="#444" strokeWidth="1.5"
             transform="rotate(22, 197, 331)" />
-
-          {/* Knee joints */}
           <circle cx="162" cy="262" r="9" fill="#141414" stroke="#3a3a3a" strokeWidth="1.5" />
           <circle cx="198" cy="264" r="9" fill="#141414" stroke="#3a3a3a" strokeWidth="1.5" />
 
-          {/* Torso */}
           <rect x="130" y="155" width="100" height="108" rx="12"
             fill="#1a1a1a" stroke="#3d3d3d" strokeWidth="2" />
-
-          {/* Torso panel DOOR — swung open, hinged top-left */}
           <rect x="85" y="158" width="44" height="52" rx="5"
             fill="#111" stroke="#555" strokeWidth="1.5"
             transform="rotate(-50, 131, 175)" />
-          {/* Hinge dot */}
           <circle cx="131" cy="162" r="3" fill="#555" />
-
-          {/* Panel interior — exposed circuit board */}
           <rect x="136" y="165" width="82" height="86" rx="5"
             fill="#040c04" stroke="#1a3a1a" strokeWidth="1" />
-          {/* Circuit traces */}
           <line x1="146" y1="178" x2="208" y2="178" stroke="#00cc55" strokeWidth="1.2" opacity="0.7" />
           <line x1="146" y1="188" x2="190" y2="188" stroke="#00cc55" strokeWidth="1" opacity="0.5" />
           <line x1="158" y1="178" x2="158" y2="238" stroke="#00cc55" strokeWidth="1" opacity="0.6" />
@@ -242,61 +246,43 @@ export default function LockdownScreen() {
           <circle cx="158" cy="178" r="3.5" fill="#00cc55" opacity="0.9" />
           <circle cx="178" cy="188" r="3.5" fill="#00cc55" opacity="0.7" />
           <circle cx="195" cy="178" r="3" fill="#00cc55" opacity="0.8" />
-          {/* Blown capacitor — small red dot */}
           <circle cx="200" cy="215" r="5" fill="#cc0000" opacity="0.85" />
 
-          {/* Left arm — splayed out to the left */}
           <rect x="52" y="148" width="78" height="24" rx="9"
             fill="#1e1e1e" stroke="#3a3a3a" strokeWidth="1.5"
             transform="rotate(-30, 130, 160)" />
           <rect x="40" y="138" width="18" height="24" rx="6"
             fill="#252525" stroke="#444" strokeWidth="1.5"
             transform="rotate(-30, 49, 150)" />
-
-          {/* Right arm — flung to the right */}
           <rect x="230" y="158" width="78" height="24" rx="9"
             fill="#1e1e1e" stroke="#3a3a3a" strokeWidth="1.5"
             transform="rotate(18, 230, 170)" />
           <rect x="304" y="160" width="18" height="24" rx="6"
             fill="#252525" stroke="#444" strokeWidth="1.5"
             transform="rotate(18, 313, 172)" />
-
-          {/* Shoulder joints */}
           <circle cx="130" cy="162" r="11" fill="#141414" stroke="#444" strokeWidth="1.5" />
           <circle cx="230" cy="170" r="11" fill="#141414" stroke="#444" strokeWidth="1.5" />
 
-          {/* Neck */}
           <rect x="153" y="144" width="28" height="14" rx="5"
             fill="#191919" stroke="#3a3a3a" strokeWidth="1.5" />
-
-          {/* Head */}
           <rect x="133" y="80" width="94" height="68" rx="12"
             fill="#1a1a1a" stroke="#3d3d3d" strokeWidth="2" />
-
-          {/* Visor / eye bar — cracked, dim, barely alive */}
           <rect x="142" y="98" width="76" height="22" rx="6"
             fill="#180000" stroke="#3a3a3a" strokeWidth="1" />
-          {/* Left eye — dead */}
           <rect x="146" y="101" width="22" height="16" rx="4"
             fill="#220000" opacity="0.5" />
-          {/* Right eye — flickering red, dying */}
           <rect x="192" y="101" width="22" height="16" rx="4"
             fill="#6b0000" opacity="0.8" />
           <rect x="196" y="104" width="14" height="10" rx="2"
             fill="#cc0000" opacity="0.5" />
-          {/* Visor crack */}
           <polyline points="172,96 176,108 170,120" stroke="#0a0a0a"
             strokeWidth="2.5" fill="none" strokeLinecap="round" />
-
-          {/* Mouth / grille — damaged */}
           <rect x="155" y="130" width="50" height="8" rx="3"
             fill="#111" stroke="#333" strokeWidth="1" />
           <line x1="165" y1="130" x2="165" y2="138" stroke="#1a1a1a" strokeWidth="1.5" />
           <line x1="175" y1="130" x2="175" y2="138" stroke="#1a1a1a" strokeWidth="1.5" />
           <line x1="185" y1="130" x2="185" y2="138" stroke="#1a1a1a" strokeWidth="1.5" />
           <line x1="195" y1="130" x2="195" y2="138" stroke="#1a1a1a" strokeWidth="1.5" />
-
-          {/* Antenna — broken, bent sideways */}
           <line x1="180" y1="80" x2="176" y2="58" stroke="#3a3a3a"
             strokeWidth="3.5" strokeLinecap="round" />
           <line x1="176" y1="58" x2="160" y2="44" stroke="#333"
@@ -304,10 +290,8 @@ export default function LockdownScreen() {
           <circle cx="160" cy="43" r="5" fill="#252525" stroke="#444" strokeWidth="1.5" />
         </g>
 
-        {/* Electric bolt — outside robot group so it escapes the rotation */}
-        {/* Positioned where the open panel is after 28deg rotation */}
+        {/* Electric bolt — outside robot group */}
         <g>
-          {/* Glow behind bolt */}
           <polyline
             points="108,188 88,205 112,216 85,238 114,234 92,262"
             stroke="#FFD700" strokeWidth="14" strokeLinecap="round"
@@ -316,7 +300,6 @@ export default function LockdownScreen() {
             points="108,188 88,205 112,216 85,238 114,234 92,262"
             stroke="#FFD700" strokeWidth="8" strokeLinecap="round"
             strokeLinejoin="round" fill="none" opacity="0.35" />
-          {/* Core bolt — sharp white center */}
           <polyline
             points="108,188 88,205 112,216 85,238 114,234 92,262"
             stroke="#FFFFFF" strokeWidth="3" strokeLinecap="round"
@@ -325,31 +308,21 @@ export default function LockdownScreen() {
             points="108,188 88,205 112,216 85,238 114,234 92,262"
             stroke="#FFD700" strokeWidth="5" strokeLinecap="round"
             strokeLinejoin="round" fill="none" opacity="0.8" />
-
-          {/* Sparks radiating out */}
           <line x1="88" y1="205" x2="72" y2="196" stroke="#FFD700" strokeWidth="2" strokeLinecap="round" opacity="0.9" />
           <line x1="88" y1="205" x2="74" y2="218" stroke="#FFD700" strokeWidth="1.5" strokeLinecap="round" opacity="0.7" />
           <line x1="85" y1="238" x2="66" y2="232" stroke="#FFD700" strokeWidth="2" strokeLinecap="round" opacity="0.9" />
           <line x1="85" y1="238" x2="70" y2="250" stroke="#FFE066" strokeWidth="1.5" strokeLinecap="round" opacity="0.6" />
           <line x1="92" y1="262" x2="76" y2="270" stroke="#FFD700" strokeWidth="2" strokeLinecap="round" opacity="0.8" />
-          <line x1="92" y1="262" x2="80" y2="255" stroke="#FFE066" strokeWidth="1.5" strokeLinecap="round" opacity="0.5" />
-          {/* Spark dots */}
           <circle cx="70" cy="196" r="2.5" fill="#FFD700" opacity="0.9" />
           <circle cx="63" cy="233" r="2" fill="#FFE066" opacity="0.8" />
           <circle cx="74" cy="271" r="2.5" fill="#FFD700" opacity="0.7" />
-          <circle cx="98" cy="278" r="1.5" fill="#FFFFFF" opacity="0.8" />
         </g>
       </svg>
 
-      {/* Text block */}
       <div className="flex flex-col items-center text-center px-8 max-w-lg mx-auto gap-5">
         <h1
           className="font-black uppercase tracking-widest"
-          style={{
-            fontSize: 'clamp(1.8rem, 4.5vw, 3rem)',
-            color: '#ffffff',
-            lineHeight: 1.1,
-          }}
+          style={{ fontSize: 'clamp(1.8rem, 4.5vw, 3rem)', color: '#ffffff', lineHeight: 1.1 }}
         >
           System Lockdown
         </h1>
@@ -364,7 +337,7 @@ export default function LockdownScreen() {
 
         {needsClick && (
           <button
-            onClick={(e) => { e.stopPropagation(); handleClick(); }}
+            onClick={(e) => { e.stopPropagation(); handleUserGesture(); }}
             style={{
               marginTop: '0.5rem',
               padding: '0.5rem 1.4rem',
