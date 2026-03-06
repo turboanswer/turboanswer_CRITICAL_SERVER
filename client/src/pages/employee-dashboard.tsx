@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { primeAudioContext } from '@/lib/audio-manager';
+import { SCENARIOS, type LockdownScenario } from '@/components/lockdown-screen';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
 import { useAuth } from '@/hooks/use-auth';
@@ -124,6 +125,7 @@ export default function EmployeeDashboard() {
   const [activeTab, setActiveTab] = useState<TabType>('commandcenter');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [lockdownConfirm, setLockdownConfirm] = useState(false);
+  const [lockdownScenario, setLockdownScenario] = useState<LockdownScenario>('system_failure');
   const [selectedNotification, setSelectedNotification] = useState<AdminNotification | null>(null);
   const [subModalUser, setSubModalUser] = useState<UserData | null>(null);
   const [subModalTier, setSubModalTier] = useState('');
@@ -167,7 +169,7 @@ export default function EmployeeDashboard() {
   });
 
   const activateLockdownMutation = useMutation({
-    mutationFn: () => apiRequest('POST', '/api/admin/lockdown/activate'),
+    mutationFn: () => apiRequest('POST', '/api/admin/lockdown/activate', { scenario: lockdownScenario }),
     onSuccess: () => { refetchLockdown(); setLockdownConfirm(false); toast({ title: 'Lockdown activated', description: 'All users now see the critical malfunction screen.', variant: 'destructive' }); },
     onError: () => toast({ title: 'Failed to activate lockdown', variant: 'destructive' }),
   });
@@ -591,14 +593,22 @@ export default function EmployeeDashboard() {
               </button>
             ) : (
               lockdownConfirm ? (
-                <div className="flex items-center gap-1.5">
-                  <span className="text-[10px] font-mono text-red-400">Confirm?</span>
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <select
+                    value={lockdownScenario}
+                    onChange={e => setLockdownScenario(e.target.value as LockdownScenario)}
+                    className="px-2 py-1.5 rounded font-mono text-[10px] outline-none"
+                    style={{ background: '#1a1a1a', border: '1px solid #333', color: '#ccc', maxWidth: '160px' }}>
+                    {(Object.entries(SCENARIOS) as [LockdownScenario, typeof SCENARIOS[LockdownScenario]][]).map(([key, s]) => (
+                      <option key={key} value={key}>{s.label}</option>
+                    ))}
+                  </select>
                   <button
                     onClick={() => { primeAudioContext(); activateLockdownMutation.mutate(); }}
                     disabled={activateLockdownMutation.isPending}
                     className="px-2.5 py-1.5 rounded font-mono text-[10px] font-black uppercase tracking-widest transition-all"
                     style={{ background: '#dc2626', color: '#fff', border: '1px solid #ef4444' }}>
-                    {activateLockdownMutation.isPending ? '...' : 'YES, LOCK'}
+                    {activateLockdownMutation.isPending ? '...' : 'CONFIRM LOCK'}
                   </button>
                   <button
                     onClick={() => setLockdownConfirm(false)}

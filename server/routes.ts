@@ -127,6 +127,7 @@ const MAX_ACTIVITY_LOG = 300;
 let lockdownActive = false;
 let lockdownActivatedBy = '';
 let lockdownActivatedAt: Date | null = null;
+let lockdownScenario = 'system_failure';
 
 export async function registerRoutes(app: Express): Promise<Server> {
   await setupAuth(app);
@@ -154,7 +155,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.get('/api/system/lockdown-status', (req, res) => {
-    res.json({ active: lockdownActive, activatedAt: lockdownActivatedAt });
+    res.json({ active: lockdownActive, activatedAt: lockdownActivatedAt, scenario: lockdownScenario });
   });
 
   app.post('/api/admin/lockdown/activate', isAdmin, async (req: any, res) => {
@@ -166,8 +167,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     lockdownActive = true;
     lockdownActivatedBy = dbUser.email;
     lockdownActivatedAt = new Date();
-    console.log(`[LOCKDOWN] ACTIVATED by ${dbUser.email} at ${lockdownActivatedAt}`);
-    res.json({ success: true, active: true, activatedAt: lockdownActivatedAt });
+    lockdownScenario = req.body?.scenario || 'system_failure';
+    console.log(`[LOCKDOWN] ACTIVATED by ${dbUser.email} — scenario: ${lockdownScenario}`);
+    res.json({ success: true, active: true, activatedAt: lockdownActivatedAt, scenario: lockdownScenario });
   });
 
   app.post('/api/admin/lockdown/deactivate', isAdmin, async (req: any, res) => {

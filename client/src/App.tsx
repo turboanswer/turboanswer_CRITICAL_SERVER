@@ -95,7 +95,7 @@ function AppContent() {
     };
   }, []);
 
-  const { data: lockdownStatus } = useQuery<{ active: boolean }>({
+  const { data: lockdownStatus } = useQuery<{ active: boolean; scenario?: string }>({
     queryKey: ['/api/system/lockdown-status'],
     refetchInterval: 15000,
     staleTime: 0,
@@ -114,7 +114,7 @@ function AppContent() {
 
   return (
     <>
-      {showLockdown && <LockdownScreen />}
+      {showLockdown && <LockdownScreen scenario={lockdownStatus?.scenario || 'system_failure'} />}
       {isAuthenticated ? <AuthenticatedRouter /> : <UnauthenticatedRouter />}
     </>
   );
