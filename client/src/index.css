@@ -134,3 +134,45 @@ header, .input-area {
 .shrink-0 {
   flex-shrink: 0 !important;
 }
+
+/* ── Admin Panel: pure black override ── */
+.admin-panel .bg-gray-900,
+.admin-panel [class*="bg-gray-900"] {
+  background-color: #0a0a0a !important;
+}
+.admin-panel .bg-gray-800,
+.admin-panel [class*="bg-gray-800"] {
+  background-color: #111111 !important;
+}
+.admin-panel .border-gray-800,
+.admin-panel [class*="border-gray-800"] {
+  border-color: #1c1c1c !important;
+}
+.admin-panel .border-gray-700,
+.admin-panel [class*="border-gray-700"] {
+  border-color: #222222 !important;
+}
+.admin-panel .text-gray-400 {
+  color: #555555 !important;
+}
+.admin-panel .text-gray-300 {
+  color: #888888 !important;
+}
+.admin-panel .hover\:bg-gray-800:hover {
+  background-color: #161616 !important;
+}
+.admin-panel .bg-black {
+  background-color: #000000 !important;
+}
+.admin-panel .bg-black\/70 {
+  background-color: rgba(0,0,0,0.85) !important;
+}
+.admin-panel table {
+  border-color: #1a1a1a !important;
+}
+.admin-panel td, .admin-panel th {
+  border-color: #141414 !important;
+}
+.admin-panel .divide-y > * {
+  border-color: #141414 !important;
+}

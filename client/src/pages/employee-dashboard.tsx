@@ -122,6 +122,7 @@ export default function EmployeeDashboard() {
   const [banDuration, setBanDuration] = useState<number>(0);
   const [activeTab, setActiveTab] = useState<TabType>('commandcenter');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [lockdownConfirm, setLockdownConfirm] = useState(false);
   const [selectedNotification, setSelectedNotification] = useState<AdminNotification | null>(null);
   const [subModalUser, setSubModalUser] = useState<UserData | null>(null);
   const [subModalTier, setSubModalTier] = useState('');
@@ -133,6 +134,7 @@ export default function EmployeeDashboard() {
   const [deleteError, setDeleteError] = useState('');
   const queryClient = useQueryClient();
   const { user: currentUser } = useAuth();
+  const { toast } = useToast();
 
   const { data: users = [], isLoading } = useQuery<UserData[]>({
     queryKey: ['/api/employee/users'],
@@ -156,6 +158,23 @@ export default function EmployeeDashboard() {
   const { data: systemHealth, refetch: refetchHealth } = useQuery<SystemHealth>({
     queryKey: ['/api/admin/system-health'],
     refetchInterval: 30000,
+  });
+
+  const { data: lockdownStatus, refetch: refetchLockdown } = useQuery<{ active: boolean; activatedAt: string | null }>({
+    queryKey: ['/api/system/lockdown-status'],
+    refetchInterval: 10000,
+  });
+
+  const activateLockdownMutation = useMutation({
+    mutationFn: () => apiRequest('POST', '/api/admin/lockdown/activate'),
+    onSuccess: () => { refetchLockdown(); setLockdownConfirm(false); toast({ title: 'Lockdown activated', description: 'All users now see the critical malfunction screen.', variant: 'destructive' }); },
+    onError: () => toast({ title: 'Failed to activate lockdown', variant: 'destructive' }),
+  });
+
+  const deactivateLockdownMutation = useMutation({
+    mutationFn: () => apiRequest('POST', '/api/admin/lockdown/deactivate'),
+    onSuccess: () => { refetchLockdown(); toast({ title: 'Lockdown lifted', description: 'Service restored to all users.' }); },
+    onError: () => toast({ title: 'Failed to lift lockdown', variant: 'destructive' }),
   });
 
   const unreadCount = unreadData?.count || 0;
@@ -393,7 +412,7 @@ export default function EmployeeDashboard() {
   if (selectedUserId) {
     const selectedUser = users.find(u => u.id === selectedUserId);
     return (
-      <div className="min-h-screen bg-[#030c1a] text-slate-100 p-4 md:p-6">
+      <div className="min-h-screen bg-black text-slate-100 p-4 md:p-6">
         <div className="max-w-5xl mx-auto">
           <Button variant="ghost" onClick={() => setSelectedUserId(null)} className="mb-4 text-slate-400 hover:text-white">
             <ArrowLeft className="w-4 h-4 mr-2" /> Back
@@ -509,54 +528,99 @@ export default function EmployeeDashboard() {
 
   const svcStatus = systemHealth?.services;
 
+  const isOwner = (currentUser as any)?.email === 'support@turboanswer.it.com';
+  const isLocked = lockdownStatus?.active ?? false;
+
   return (
-    <div className="h-screen flex flex-col overflow-hidden" style={{ background: '#030c1a', color: '#e2e8f0' }}>
+    <div className="admin-panel h-screen flex flex-col overflow-hidden" style={{ background: '#000000', color: '#e2e8f0' }}>
 
       {/* ── TOP STATUS BAR ── */}
-      <header className="flex-shrink-0 flex items-center justify-between px-4 py-2.5 border-b"
-        style={{ background: '#010810', borderColor: '#0f1e30' }}>
+      <header className="flex-shrink-0 flex items-center justify-between px-4 py-2 border-b"
+        style={{ background: '#080808', borderColor: '#1a1a1a', minHeight: '44px' }}>
         <div className="flex items-center gap-3">
-          <button onClick={() => setSidebarCollapsed(!sidebarCollapsed)} className="p-1 rounded hover:bg-slate-800 text-slate-400 hover:text-white transition-colors">
+          <button onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+            className="p-1 rounded text-zinc-600 hover:text-zinc-300 transition-colors">
             {sidebarCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
           </button>
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded bg-cyan-500/20 border border-cyan-500/40 flex items-center justify-center">
-              <Zap className="w-3.5 h-3.5 text-cyan-400" />
+            <div className="w-5 h-5 rounded bg-white/5 border border-white/10 flex items-center justify-center">
+              <Zap className="w-3 h-3 text-white/60" />
             </div>
-            <span className="text-sm font-bold text-white tracking-wide">TURBO ADMIN</span>
-            <span className="text-xs text-slate-600 font-mono ml-1">v2.0</span>
+            <span className="text-xs font-bold text-white/80 tracking-[0.15em] uppercase">Turbo Admin</span>
           </div>
-          <div className="w-px h-4 bg-slate-800 mx-1" />
-          <div className="flex items-center gap-2">
+          <div className="w-px h-3 bg-white/10 mx-1" />
+          <div className="flex items-center gap-2.5">
             {['database', 'paypal', 'ai'].map((svc, i) => {
               const st = [svcStatus?.database, svcStatus?.paypal, svcStatus?.ai][i];
               const labels = ['DB', 'PAY', 'AI'];
-              const color = st === 'healthy' ? '#00cc88' : st === 'degraded' ? '#f59e0b' : st ? '#ef4444' : '#475569';
+              const dot = st === 'healthy' ? '#22c55e' : st === 'degraded' ? '#eab308' : st ? '#ef4444' : '#333';
               return (
-                <div key={svc} className="flex items-center gap-1 text-xs font-mono">
-                  <span style={{ color, fontSize: '10px' }}>●</span>
-                  <span style={{ color: st ? (st === 'healthy' ? '#6ee7b7' : st === 'degraded' ? '#fde68a' : '#fca5a5') : '#475569' }}>{labels[i]}</span>
+                <div key={svc} className="flex items-center gap-1 font-mono text-[10px]">
+                  <span style={{ color: dot }}>●</span>
+                  <span style={{ color: '#555' }}>{labels[i]}</span>
                 </div>
               );
             })}
           </div>
         </div>
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-3 text-xs font-mono text-slate-500">
-            <span className="text-slate-400">{adminStats?.totalUsers || users.length} <span className="text-slate-600">users</span></span>
-            <span className="text-green-400 font-semibold">${adminStats?.estimatedMonthlyRevenue || '0'}<span className="text-slate-600">/mo</span></span>
-            {systemHealth?.uptimeFormatted && <span className="text-slate-500">↑{systemHealth.uptimeFormatted}</span>}
+
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 text-[10px] font-mono" style={{ color: '#444' }}>
+            <span style={{ color: '#555' }}>{adminStats?.totalUsers || users.length}<span style={{ color: '#333' }}> users</span></span>
+            <span style={{ color: '#22c55e' }}>${adminStats?.estimatedMonthlyRevenue || '0'}<span style={{ color: '#333' }}>/mo</span></span>
+            {systemHealth?.uptimeFormatted && <span>↑{systemHealth.uptimeFormatted}</span>}
           </div>
           {hasActiveOutage && (
-            <div className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold animate-pulse"
-              style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.4)', color: '#f87171' }}>
-              <AlertTriangle className="w-3 h-3" /> OUTAGE
+            <div className="flex items-center gap-1 px-2 py-1 rounded font-mono text-[10px] font-bold animate-pulse"
+              style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.25)', color: '#ef4444' }}>
+              <AlertTriangle className="w-2.5 h-2.5" /> OUTAGE
             </div>
           )}
+
+          {/* LOCKDOWN BUTTON — owner only */}
+          {isOwner && (
+            isLocked ? (
+              <button
+                onClick={() => deactivateLockdownMutation.mutate()}
+                disabled={deactivateLockdownMutation.isPending}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded font-mono text-[10px] font-bold tracking-widest uppercase transition-all animate-pulse"
+                style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.5)', color: '#ef4444' }}>
+                <Shield className="w-3 h-3" />
+                {deactivateLockdownMutation.isPending ? 'LIFTING...' : '⚠ LOCKED — LIFT'}
+              </button>
+            ) : (
+              lockdownConfirm ? (
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[10px] font-mono text-red-400">Confirm?</span>
+                  <button
+                    onClick={() => activateLockdownMutation.mutate()}
+                    disabled={activateLockdownMutation.isPending}
+                    className="px-2.5 py-1.5 rounded font-mono text-[10px] font-black uppercase tracking-widest transition-all"
+                    style={{ background: '#dc2626', color: '#fff', border: '1px solid #ef4444' }}>
+                    {activateLockdownMutation.isPending ? '...' : 'YES, LOCK'}
+                  </button>
+                  <button
+                    onClick={() => setLockdownConfirm(false)}
+                    className="px-2 py-1.5 rounded font-mono text-[10px] text-zinc-500 hover:text-white transition-colors"
+                    style={{ border: '1px solid #222' }}>
+                    Cancel
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => setLockdownConfirm(true)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded font-mono text-[10px] font-bold tracking-widest uppercase transition-all hover:scale-105"
+                  style={{ background: 'rgba(220,38,38,0.08)', border: '1px solid rgba(220,38,38,0.2)', color: '#dc2626' }}>
+                  <Shield className="w-3 h-3" /> LOCKDOWN
+                </button>
+              )
+            )
+          )}
+
           <Link href="/">
-            <button className="flex items-center gap-1.5 px-3 py-1.5 rounded text-xs text-slate-400 hover:text-white transition-colors"
-              style={{ background: '#0d1b2a', border: '1px solid #1e3048' }}>
-              <ArrowLeft className="w-3 h-3" /> Back to App
+            <button className="flex items-center gap-1.5 px-2.5 py-1.5 rounded font-mono text-[10px] text-zinc-600 hover:text-zinc-300 transition-colors"
+              style={{ border: '1px solid #1a1a1a' }}>
+              <ArrowLeft className="w-3 h-3" /> App
             </button>
           </Link>
         </div>
@@ -567,27 +631,27 @@ export default function EmployeeDashboard() {
 
         {/* ── SIDEBAR ── */}
         <aside className="flex-shrink-0 flex flex-col border-r overflow-y-auto"
-          style={{ width: sidebarCollapsed ? '52px' : '200px', background: '#010810', borderColor: '#0f1e30', transition: 'width 0.2s' }}>
-          <nav className="flex flex-col gap-0.5 p-2 flex-1">
+          style={{ width: sidebarCollapsed ? '48px' : '190px', background: '#050505', borderColor: '#141414', transition: 'width 0.2s ease' }}>
+          <nav className="flex flex-col gap-px p-1.5 flex-1">
             {navItems.map(item => {
               const isActive = activeTab === item.id;
               return (
                 <button
                   key={item.id}
                   onClick={() => setActiveTab(item.id)}
-                  className="flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-left relative transition-all group"
+                  className="flex items-center gap-2.5 px-2.5 py-2 rounded text-left relative transition-all"
                   style={{
-                    background: isActive ? 'rgba(6,182,212,0.12)' : 'transparent',
-                    borderLeft: isActive ? '2px solid #06b6d4' : '2px solid transparent',
-                    color: isActive ? '#22d3ee' : '#64748b',
+                    background: isActive ? 'rgba(255,255,255,0.06)' : 'transparent',
+                    borderLeft: isActive ? '2px solid rgba(255,255,255,0.5)' : '2px solid transparent',
+                    color: isActive ? '#f4f4f5' : '#525252',
                   }}
                   title={sidebarCollapsed ? item.label : undefined}
                 >
-                  <item.icon className="w-4 h-4 flex-shrink-0" style={{ color: isActive ? '#22d3ee' : '#475569' }} />
-                  {!sidebarCollapsed && <span className="text-xs font-medium truncate">{item.label}</span>}
+                  <item.icon className="w-3.5 h-3.5 flex-shrink-0" style={{ color: isActive ? '#e4e4e7' : '#404040' }} />
+                  {!sidebarCollapsed && <span className="text-[11px] font-medium truncate tracking-wide">{item.label}</span>}
                   {item.badge && item.badge > 0 && (
-                    <span className="absolute right-2 top-1.5 min-w-[18px] h-[18px] flex items-center justify-center rounded-full text-[10px] font-bold"
-                      style={{ background: item.id === 'notifications' ? '#dc2626' : '#ea580c', color: 'white' }}>
+                    <span className="absolute right-2 top-1.5 min-w-[16px] h-4 flex items-center justify-center rounded text-[9px] font-bold"
+                      style={{ background: '#7f1d1d', color: '#fca5a5' }}>
                       {item.badge > 99 ? '99+' : item.badge}
                     </span>
                   )}
@@ -595,12 +659,13 @@ export default function EmployeeDashboard() {
               );
             })}
             <div className="flex-1" />
-            <div className="border-t mt-2 pt-2" style={{ borderColor: '#0f1e30' }}>
+            <div className="border-t mt-2 pt-1.5" style={{ borderColor: '#141414' }}>
               <Link href="/email-templates">
-                <button className="flex items-center gap-2.5 px-2.5 py-2 rounded-lg w-full transition-colors text-slate-600 hover:text-slate-300"
+                <button className="flex items-center gap-2.5 px-2.5 py-2 rounded w-full transition-colors"
+                  style={{ color: '#3f3f46' }}
                   title={sidebarCollapsed ? 'Email Templates' : undefined}>
-                  <Mail className="w-4 h-4 flex-shrink-0" />
-                  {!sidebarCollapsed && <span className="text-xs font-medium">Email Templates</span>}
+                  <Mail className="w-3.5 h-3.5 flex-shrink-0 text-zinc-700" />
+                  {!sidebarCollapsed && <span className="text-[11px] font-medium">Email Templates</span>}
                 </button>
               </Link>
             </div>
@@ -608,7 +673,7 @@ export default function EmployeeDashboard() {
         </aside>
 
         {/* ── MAIN CONTENT ── */}
-        <main className="flex-1 overflow-y-auto" style={{ background: '#030c1a' }}>
+        <main className="flex-1 overflow-y-auto" style={{ background: '#000000' }}>
           <div className="p-5">
 
         {activeTab === 'commandcenter' && (
@@ -1380,7 +1445,7 @@ function CommandCenter({
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
         {metrics.map(m => (
           <div key={m.label} className="rounded-lg p-3 flex flex-col gap-1"
-            style={{ background: '#040f20', border: '1px solid #0d1e30' }}>
+            style={{ background: '#0d0d0d', border: '1px solid #0d1e30' }}>
             <div className="flex items-center justify-between">
               <m.icon className="w-3.5 h-3.5" style={{ color: m.color }} />
               <span className="text-[10px] font-mono text-slate-600">KPI</span>
@@ -1396,8 +1461,8 @@ function CommandCenter({
 
         {/* ── LIVE ACTIVITY FEED ── */}
         <div className="lg:col-span-2 rounded-lg overflow-hidden"
-          style={{ background: '#010810', border: '1px solid #0d1e30' }}>
-          <div className="flex items-center justify-between px-3 py-2 border-b" style={{ borderColor: '#0d1e30' }}>
+          style={{ background: '#080808', border: '1px solid #0d1e30' }}>
+          <div className="flex items-center justify-between px-3 py-2 border-b" style={{ borderColor: '#1a1a1a' }}>
             <div className="flex items-center gap-2">
               <Radio className="w-3.5 h-3.5 text-green-400 animate-pulse" />
               <span className="text-xs font-bold text-slate-300 font-mono">LIVE API FEED</span>
@@ -1407,7 +1472,7 @@ function CommandCenter({
                 <button key={f} onClick={() => setActivityFilter(f)}
                   className="px-2 py-0.5 rounded text-[10px] font-mono transition-colors"
                   style={{
-                    background: activityFilter === f ? '#0e2a40' : 'transparent',
+                    background: activityFilter === f ? '#1a1a1a' : 'transparent',
                     color: activityFilter === f ? '#22d3ee' : '#475569',
                     border: activityFilter === f ? '1px solid #1e4a6e' : '1px solid transparent',
                   }}>
@@ -1433,7 +1498,7 @@ function CommandCenter({
             ) : (
               filteredActivity.map((entry, i) => (
                 <div key={entry.id || i} className="flex items-center gap-2 px-3 py-1.5 border-b"
-                  style={{ borderColor: '#060e1a', background: statusBg(entry.status) }}>
+                  style={{ borderColor: '#111111', background: statusBg(entry.status) }}>
                   <span className="text-[9px] text-slate-600 w-16 flex-shrink-0">
                     {new Date(entry.timestamp).toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' })}
                   </span>
@@ -1459,8 +1524,8 @@ function CommandCenter({
         <div className="flex flex-col gap-4">
 
           {/* Services */}
-          <div className="rounded-lg overflow-hidden" style={{ background: '#010810', border: '1px solid #0d1e30' }}>
-            <div className="px-3 py-2 border-b flex items-center gap-2" style={{ borderColor: '#0d1e30' }}>
+          <div className="rounded-lg overflow-hidden" style={{ background: '#080808', border: '1px solid #0d1e30' }}>
+            <div className="px-3 py-2 border-b flex items-center gap-2" style={{ borderColor: '#1a1a1a' }}>
               <Server className="w-3.5 h-3.5 text-slate-500" />
               <span className="text-xs font-bold text-slate-300 font-mono">SERVICES</span>
             </div>
@@ -1489,7 +1554,7 @@ function CommandCenter({
               })}
               {systemHealth?.uptimeFormatted && (
                 <div className="pt-2 mt-1 border-t text-[10px] font-mono text-slate-600 flex justify-between"
-                  style={{ borderColor: '#0d1e30' }}>
+                  style={{ borderColor: '#1a1a1a' }}>
                   <span>uptime</span>
                   <span className="text-green-500">{systemHealth.uptimeFormatted}</span>
                 </div>
@@ -1498,8 +1563,8 @@ function CommandCenter({
           </div>
 
           {/* Recent Alerts */}
-          <div className="rounded-lg overflow-hidden flex-1" style={{ background: '#010810', border: '1px solid #0d1e30' }}>
-            <div className="px-3 py-2 border-b flex items-center justify-between" style={{ borderColor: '#0d1e30' }}>
+          <div className="rounded-lg overflow-hidden flex-1" style={{ background: '#080808', border: '1px solid #0d1e30' }}>
+            <div className="px-3 py-2 border-b flex items-center justify-between" style={{ borderColor: '#1a1a1a' }}>
               <div className="flex items-center gap-2">
                 <Bell className="w-3.5 h-3.5 text-slate-500" />
                 <span className="text-xs font-bold text-slate-300 font-mono">RECENT ALERTS</span>
@@ -1515,7 +1580,7 @@ function CommandCenter({
               {notifications.slice(0, 8).map(n => (
                 <div key={n.id}
                   className="px-3 py-2 border-b flex items-start gap-2 cursor-pointer hover:bg-white/5 transition-colors"
-                  style={{ borderColor: '#060e1a', background: n.isRead === 'false' ? 'rgba(234,88,12,0.05)' : 'transparent' }}
+                  style={{ borderColor: '#111111', background: n.isRead === 'false' ? 'rgba(234,88,12,0.05)' : 'transparent' }}
                   onClick={() => onMarkRead(n.id)}>
                   <div className="flex-shrink-0 mt-0.5">
                     {n.type === 'system_outage' ? (
@@ -1543,7 +1608,7 @@ function CommandCenter({
                 </div>
               )}
             </div>
-            <div className="px-3 py-1.5 border-t" style={{ borderColor: '#0d1e30' }}>
+            <div className="px-3 py-1.5 border-t" style={{ borderColor: '#1a1a1a' }}>
               <button onClick={() => onTabChange('notifications')}
                 className="text-[10px] font-mono text-cyan-600 hover:text-cyan-400 transition-colors">
                 View all alerts →
@@ -1553,7 +1618,7 @@ function CommandCenter({
 
           {/* Error summary */}
           {errorLog && (errorLog.stats.unresolved > 0 || errorLog.stats.critical > 0) && (
-            <div className="rounded-lg overflow-hidden" style={{ background: '#010810', border: '1px solid rgba(239,68,68,0.25)' }}>
+            <div className="rounded-lg overflow-hidden" style={{ background: '#080808', border: '1px solid rgba(239,68,68,0.25)' }}>
               <div className="px-3 py-2 border-b flex items-center gap-2" style={{ borderColor: 'rgba(239,68,68,0.2)' }}>
                 <Bug className="w-3.5 h-3.5 text-red-400" />
                 <span className="text-xs font-bold text-red-300 font-mono">ERROR TRACKER</span>
@@ -1589,7 +1654,7 @@ function CommandCenter({
         ].map(action => (
           <button key={action.tab} onClick={() => onTabChange(action.tab)}
             className="flex items-center gap-2.5 p-3 rounded-lg text-left transition-all hover:scale-[1.02]"
-            style={{ background: '#040f20', border: '1px solid #0d1e30' }}>
+            style={{ background: '#0d0d0d', border: '1px solid #0d1e30' }}>
             <action.icon className="w-4 h-4 flex-shrink-0" style={{ color: action.color }} />
             <span className="text-xs text-slate-400 font-medium">{action.label}</span>
             <ChevronRight className="w-3 h-3 text-slate-700 ml-auto" />

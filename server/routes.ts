@@ -124,6 +124,10 @@ interface ActivityEntry {
 const activityLog: ActivityEntry[] = [];
 const MAX_ACTIVITY_LOG = 300;
 
+let lockdownActive = false;
+let lockdownActivatedBy = '';
+let lockdownActivatedAt: Date | null = null;
+
 export async function registerRoutes(app: Express): Promise<Server> {
   await setupAuth(app);
   registerAuthRoutes(app);
@@ -147,6 +151,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (activityLog.length > MAX_ACTIVITY_LOG) activityLog.shift();
     });
     next();
+  });
+
+  app.get('/api/system/lockdown-status', (req, res) => {
+    res.json({ active: lockdownActive, activatedAt: lockdownActivatedAt });
+  });
+
+  app.post('/api/admin/lockdown/activate', isAdmin, (req: any, res) => {
+    const user = req.user as any;
+    if (user?.email !== 'support@turboanswer.it.com') {
+      return res.status(403).json({ error: 'Forbidden' });
+    }
+    lockdownActive = true;
+    lockdownActivatedBy = user.email;
+    lockdownActivatedAt = new Date();
+    console.log(`[LOCKDOWN] ACTIVATED by ${user.email} at ${lockdownActivatedAt}`);
+    res.json({ success: true, active: true, activatedAt: lockdownActivatedAt });
+  });
+
+  app.post('/api/admin/lockdown/deactivate', isAdmin, (req: any, res) => {
+    const user = req.user as any;
+    if (user?.email !== 'support@turboanswer.it.com') {
+      return res.status(403).json({ error: 'Forbidden' });
+    }
+    lockdownActive = false;
+    lockdownActivatedBy = '';
+    lockdownActivatedAt = null;
+    console.log(`[LOCKDOWN] DEACTIVATED by ${user.email}`);
+    res.json({ success: true, active: false });
   });
 
   app.get("/download/turbo-answer.aab", async (req, res) => {
