@@ -243,7 +243,11 @@ export default function EmployeeDashboard() {
 
   const unflagMutation = useMutation({
     mutationFn: (userId: string) => apiRequest('POST', `/api/employee/users/${userId}/unflag`),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['/api/employee/users'] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/employee/users'] });
+      toast({ title: 'User unflagged', description: 'The flag has been cleared.' });
+    },
+    onError: (err: any) => toast({ title: 'Failed to unflag user', description: err?.message || 'Unknown error', variant: 'destructive' }),
   });
 
   const suspendMutation = useMutation({

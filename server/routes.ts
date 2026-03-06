@@ -2832,12 +2832,18 @@ ${template.bodyText.split('\n').map(line => {
 
   startProactiveDiagnostics();
 
-  // Auto-lockdown on critical diagnostic failure
+  // Auto-lockdown on critical infrastructure failure (DB or AI down — not memory pressure)
+  const LOCKDOWN_CRITICAL_CHECKS = ['Database Connection', 'AI Engine (Gemini)'];
   setInterval(async () => {
     const report = getLatestReport();
-    if (report && report.overallStatus === 'critical' && !lockdownActive) {
-      const failedChecks = report.results.filter(r => r.status === 'fail').map(r => r.check).join(', ');
-      autoActivateLockdown('system_failure', `Proactive diagnostics detected critical failure: ${failedChecks}`);
+    if (report && !lockdownActive) {
+      const infraFailures = report.results.filter(r =>
+        r.status === 'fail' && LOCKDOWN_CRITICAL_CHECKS.includes(r.check)
+      );
+      if (infraFailures.length > 0) {
+        const failedChecks = infraFailures.map(r => r.check).join(', ');
+        autoActivateLockdown('system_failure', `Critical infrastructure failure: ${failedChecks}`);
+      }
     }
   }, 5 * 60 * 1000); // check every 5 minutes
 
