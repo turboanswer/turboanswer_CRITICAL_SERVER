@@ -174,6 +174,13 @@ export default function EmployeeDashboard() {
     onError: () => toast({ title: 'Failed to activate lockdown', variant: 'destructive' }),
   });
 
+  const [showEmailPreview, setShowEmailPreview] = useState(false);
+  const emailAllMutation = useMutation({
+    mutationFn: () => apiRequest('POST', '/api/admin/lockdown/email-all', { scenario: lockdownScenario }),
+    onSuccess: (data: any) => { toast({ title: `Emails sent`, description: `${data.sent} of ${data.total} users notified.` }); setShowEmailPreview(false); },
+    onError: () => toast({ title: 'Email blast failed', variant: 'destructive' }),
+  });
+
   const deactivateLockdownMutation = useMutation({
     mutationFn: () => apiRequest('POST', '/api/admin/lockdown/deactivate'),
     onSuccess: () => { refetchLockdown(); toast({ title: 'Lockdown lifted', description: 'Service restored to all users.' }); },
@@ -583,14 +590,22 @@ export default function EmployeeDashboard() {
           {/* LOCKDOWN BUTTON — owner only */}
           {isOwner && (
             isLocked ? (
-              <button
-                onClick={() => deactivateLockdownMutation.mutate()}
-                disabled={deactivateLockdownMutation.isPending}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded font-mono text-[10px] font-bold tracking-widest uppercase transition-all animate-pulse"
-                style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.5)', color: '#ef4444' }}>
-                <Shield className="w-3 h-3" />
-                {deactivateLockdownMutation.isPending ? 'LIFTING...' : '⚠ LOCKED — LIFT'}
-              </button>
+              <div className="flex items-center gap-1.5">
+                <button
+                  onClick={() => deactivateLockdownMutation.mutate()}
+                  disabled={deactivateLockdownMutation.isPending}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded font-mono text-[10px] font-bold tracking-widest uppercase transition-all animate-pulse"
+                  style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.5)', color: '#ef4444' }}>
+                  <Shield className="w-3 h-3" />
+                  {deactivateLockdownMutation.isPending ? 'LIFTING...' : '⚠ LIFT'}
+                </button>
+                <button
+                  onClick={() => setShowEmailPreview(v => !v)}
+                  className="flex items-center gap-1 px-2.5 py-1.5 rounded font-mono text-[10px] font-bold uppercase tracking-widest transition-all"
+                  style={{ background: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.3)', color: '#60a5fa' }}>
+                  <Mail className="w-3 h-3" /> EMAIL ALL
+                </button>
+              </div>
             ) : (
               lockdownConfirm ? (
                 <div className="flex items-center gap-1.5 flex-wrap">
@@ -636,6 +651,38 @@ export default function EmployeeDashboard() {
           </Link>
         </div>
       </header>
+
+      {/* ── EMAIL ALL PREVIEW PANEL ── */}
+      {showEmailPreview && isOwner && isLocked && (
+        <div className="flex-shrink-0 px-4 py-3 border-b flex items-start gap-4"
+          style={{ background: 'rgba(30,58,138,0.15)', borderColor: 'rgba(59,130,246,0.2)' }}>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-1">
+              <Mail className="w-3.5 h-3.5 text-blue-400" />
+              <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-blue-400">Incident Email Blast</span>
+              <span className="font-mono text-[9px] text-zinc-500">— will notify all non-banned users about this {lockdownScenario.replace('_', ' ')} event</span>
+            </div>
+            <p className="text-[11px] text-zinc-400">
+              This will send a transactional email to every active account notifying them of the current lockdown event. Emails are rate-limited per-user and delivered via Brevo.
+            </p>
+          </div>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <button
+              onClick={() => emailAllMutation.mutate()}
+              disabled={emailAllMutation.isPending}
+              className="px-3 py-1.5 rounded font-mono text-[10px] font-bold uppercase tracking-widest transition-all"
+              style={{ background: '#1d4ed8', color: '#fff', border: '1px solid #3b82f6' }}>
+              {emailAllMutation.isPending ? 'SENDING...' : 'SEND EMAILS'}
+            </button>
+            <button
+              onClick={() => setShowEmailPreview(false)}
+              className="p-1.5 rounded text-zinc-500 hover:text-zinc-300 transition-colors"
+              style={{ border: '1px solid #1a1a1a' }}>
+              <X className="w-3 h-3" />
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* ── BODY: SIDEBAR + MAIN ── */}
       <div className="flex flex-1 overflow-hidden">
