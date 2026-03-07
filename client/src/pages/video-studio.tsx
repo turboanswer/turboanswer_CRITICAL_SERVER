@@ -8,7 +8,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useQuery } from "@tanstack/react-query";
 import {
   Video, Download, Loader2, Sparkles, ArrowLeft,
-  Play, RefreshCw, Wand2, Clock, Zap, Film, Monitor, Smartphone
+  Play, Wand2, Clock, Zap, Film, Monitor, Smartphone, Lock, Check
 } from "lucide-react";
 
 const ASPECT_OPTIONS = [
@@ -75,7 +75,7 @@ export default function VideoStudio() {
     queryKey: ["/api/subscription/status"],
   });
 
-  const isPaid = subscriptionData?.tier && subscriptionData.tier !== 'free';
+  const isResearch = ['research', 'enterprise'].includes(subscriptionData?.tier || '');
 
   useEffect(() => {
     return () => {
@@ -130,10 +130,6 @@ export default function VideoStudio() {
 
   const handleGenerate = async () => {
     if (!prompt.trim() || isGenerating) return;
-    if (!isPaid) {
-      toast({ title: "Upgrade required", description: "Video generation requires a Pro, Research, or Enterprise plan.", variant: "destructive" });
-      return;
-    }
 
     setIsGenerating(true);
     setCurrentVideo(null);
@@ -204,7 +200,65 @@ export default function VideoStudio() {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 py-6 grid grid-cols-1 lg:grid-cols-[420px_1fr] gap-6">
+      {/* Loading state while subscription is being fetched */}
+      {!subscriptionData && (
+        <div className="flex items-center justify-center py-32">
+          <Loader2 className={`h-8 w-8 animate-spin ${isDark ? 'text-indigo-400' : 'text-indigo-600'}`} />
+        </div>
+      )}
+
+      {/* Upgrade gate — shown for non-Research/Enterprise users */}
+      {subscriptionData && !isResearch && (
+        <div className="max-w-2xl mx-auto px-4 py-16 text-center">
+          <div className={`rounded-3xl border-2 p-10 ${isDark ? 'border-indigo-500/30 bg-gradient-to-b from-indigo-950/40 to-slate-950/60' : 'border-indigo-300 bg-gradient-to-b from-indigo-50 to-white shadow-2xl shadow-indigo-100'}`}>
+            <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-600 to-violet-600 flex items-center justify-center mx-auto mb-6 shadow-xl shadow-indigo-500/30">
+              <Lock className="h-8 w-8 text-white" />
+            </div>
+            <h2 className={`text-2xl font-black mb-3 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+              Video Studio is a<br />
+              <span className="bg-gradient-to-r from-indigo-400 to-violet-400 bg-clip-text text-transparent">Research Plan</span> Feature
+            </h2>
+            <p className={`text-sm mb-8 leading-relaxed ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+              AI video generation with Google Veo is exclusive to Research and Enterprise subscribers. Upgrade to unlock the Video Studio and generate stunning AI videos from text prompts.
+            </p>
+
+            <div className="space-y-3 mb-8 text-left">
+              {[
+                "Generate videos up to 8 seconds with Google Veo",
+                "Landscape (16:9) & portrait (9:16) aspect ratios",
+                "Style presets: cinematic, nature, sci-fi, fantasy & more",
+                "Download generated videos as MP4",
+                "Plus all Research plan features — Gemini 3.1 Pro on every message",
+              ].map((f, i) => (
+                <div key={i} className="flex items-start gap-3">
+                  <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 ${isDark ? 'bg-indigo-500/25' : 'bg-indigo-100'}`}>
+                    <Check className="h-3 w-3 text-indigo-400" />
+                  </div>
+                  <span className={`text-sm ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{f}</span>
+                </div>
+              ))}
+            </div>
+
+            <div className="space-y-3">
+              <Link href="/subscribe">
+                <Button className="w-full h-12 rounded-xl font-bold text-base bg-gradient-to-r from-indigo-600 via-violet-600 to-cyan-600 hover:from-indigo-500 hover:via-violet-500 hover:to-cyan-500 shadow-xl shadow-indigo-500/30">
+                  <Sparkles className="h-4 w-4 mr-2" />
+                  Upgrade to Research — $15/mo
+                </Button>
+              </Link>
+              <p className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>7-day free trial · Cancel anytime · No charge during trial</p>
+              <Link href="/chat">
+                <Button variant="ghost" size="sm" className={`w-full h-9 rounded-xl text-xs ${isDark ? 'text-gray-500 hover:text-gray-300' : 'text-gray-400 hover:text-gray-600'}`}>
+                  Back to Chat
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Main studio — only shown for Research/Enterprise users */}
+      {isResearch && <div className="max-w-7xl mx-auto px-4 py-6 grid grid-cols-1 lg:grid-cols-[420px_1fr] gap-6">
 
         {/* Left: controls */}
         <div className="space-y-4">
@@ -318,11 +372,6 @@ export default function VideoStudio() {
             )}
           </Button>
 
-          {!isPaid && (
-            <div className={`rounded-xl p-3 border text-xs text-center ${isDark ? 'bg-amber-500/10 border-amber-500/20 text-amber-400' : 'bg-amber-50 border-amber-200 text-amber-700'}`}>
-              Video generation requires a <Link href="/subscribe"><span className="underline font-semibold">Pro or Research plan</span></Link>.
-            </div>
-          )}
 
           {isGenerating && (
             <div className={`rounded-xl p-3 border text-xs ${isDark ? 'bg-violet-500/10 border-violet-500/20 text-violet-300' : 'bg-violet-50 border-violet-200 text-violet-700'}`}>
@@ -439,7 +488,7 @@ export default function VideoStudio() {
             </div>
           )}
         </div>
-      </div>
+      </div>}
     </div>
   );
 }

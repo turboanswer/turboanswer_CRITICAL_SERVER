@@ -2182,8 +2182,8 @@ function downloadAAB(){
       const userId = req.user?.claims?.sub;
       const user   = await storage.getUser(userId);
       const tier   = user?.subscriptionTier || 'free';
-      if (tier === 'free') {
-        return res.status(403).json({ error: 'Video generation requires a Pro, Research, or Enterprise subscription.' });
+      if (!['research', 'enterprise'].includes(tier)) {
+        return res.status(403).json({ error: 'Video generation requires a Research or Enterprise subscription.' });
       }
 
       const { prompt, aspectRatio = '16:9', durationSeconds = 5 } = req.body;
