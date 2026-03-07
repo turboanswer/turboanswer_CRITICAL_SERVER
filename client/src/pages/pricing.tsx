@@ -23,7 +23,7 @@ const plans: PricingPlan[] = [
     period: 'forever',
     description: 'Get started with basic AI conversations',
     features: [
-      'Google Gemini 2.5 Flash',
+      'Google Gemini 3.1 Flash Lite',
       'Voice commands',
       'Unlimited conversations',
       'Community support',

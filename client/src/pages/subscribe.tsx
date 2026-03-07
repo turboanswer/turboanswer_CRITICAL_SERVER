@@ -55,7 +55,7 @@ export default function Subscribe() {
             <ul className="space-y-3 mb-6">
               <li className="flex items-center gap-3">
                 <CheckCircle className="w-5 h-5 text-green-500" />
-                <span className="text-zinc-300">Google Gemini 2.5 Flash</span>
+                <span className="text-zinc-300">Google Gemini 3.1 Flash Lite</span>
               </li>
               <li className="flex items-center gap-3">
                 <CheckCircle className="w-5 h-5 text-green-500" />

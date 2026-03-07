@@ -13,7 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 
 const AI_MODELS = {
   "gemini-flash": {
-    name: "Gemini 2.5 Flash",
+    name: "Gemini 3.1 Flash Lite",
     description: "Ultra-fast responses for everyday questions. Lightning speed with great quality.",
     tier: "Free",
     icon: Zap,

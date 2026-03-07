@@ -156,7 +156,7 @@ export default function LandingPage() {
   const appUrl = typeof window !== "undefined" ? window.location.origin : "";
 
   const features = [
-    { icon: <Brain className="h-6 w-6" />, title: "Multi-Model AI Chat", desc: "Powered by Gemini 2.5 Flash, Gemini 3.1 Flash, and Gemini 3.1 Pro for intelligent conversations on any topic.", color: "blue", glow: "rgba(59,130,246,0.3)" },
+    { icon: <Brain className="h-6 w-6" />, title: "Multi-Model AI Chat", desc: "Powered by Gemini 3.1 Flash Lite, Gemini 3.1 Flash, and Gemini 3.1 Pro for intelligent conversations on any topic.", color: "blue", glow: "rgba(59,130,246,0.3)" },
     { icon: <FileText className="h-6 w-6" />, title: "Document Analysis", desc: "Upload any document and get instant summaries, key insights, and detailed answers. Supports TXT, CSV, JSON, and more.", color: "green", glow: "rgba(34,197,94,0.3)" },
     { icon: <ImageIcon className="h-6 w-6" />, title: "AI Image Generation", desc: "Create stunning images from text descriptions using DALL-E 3. Generate art, designs, and visuals instantly.", color: "pink", glow: "rgba(236,72,153,0.3)" },
     { icon: <Globe className="h-6 w-6" />, title: "100+ Languages", desc: "Chat in any language with automatic detection and native-quality responses. Supports over 100 languages worldwide.", color: "purple", glow: "rgba(168,85,247,0.3)" },
@@ -498,7 +498,7 @@ export default function LandingPage() {
                   <span className={`text-sm ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>/month</span>
                 </div>
               </div>
-              <div className={`text-sm mb-5 font-medium ${isDark ? 'text-indigo-400' : 'text-indigo-600'}`}>Gemini 2.5 Flash</div>
+              <div className={`text-sm mb-5 font-medium ${isDark ? 'text-indigo-400' : 'text-indigo-600'}`}>Gemini 3.1 Flash Lite</div>
               <ul className="space-y-3 mb-7">
                 {["AI chat conversations", "Document analysis", "100+ languages", "Dark & light themes", "Mobile access"].map((item, i) => (
                   <li key={i} className={`flex items-center gap-2.5 text-sm ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>

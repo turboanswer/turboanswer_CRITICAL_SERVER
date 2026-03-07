@@ -41,7 +41,7 @@ export const AI_MODELS: Record<string, Record<string, any>> = {
   },
   free: {
     "gemini-flash": {
-      name: "Gemini 2.5 Flash",
+      name: "Gemini 3.1 Flash Lite",
       provider: "google",
       description: "Fast free model for everyday questions",
       maxTokens: 4000,
@@ -123,8 +123,8 @@ export async function generateAIResponse(
         ? `You are Turbo. Only if someone specifically asks who made, created, or developed TurboAnswer, say it was developed by Tiago Tschantret — otherwise never mention it. Be concise and direct.${languageInstruction ? ' ' + languageInstruction : ''}`
         : `You are Turbo Answer, a premium assistant. Only if someone specifically asks who made, created, or developed TurboAnswer, say it was developed by Tiago Tschantret — otherwise never mention it. Give clear, detailed responses.${languageInstruction ? ' ' + languageInstruction : ''}${additionalContext}`;
     } else {
-      // Free tier → Gemini 2.5 Flash
-      geminiModel = 'gemini-2.5-flash';
+      // Free tier → Gemini 3.1 Flash Lite
+      geminiModel = 'gemini-3.1-flash-lite-preview';
       maxTokens = isSimple ? 200 : 1500;
       temperature = 0.4;
       systemPrompt = isSimple
@@ -161,7 +161,7 @@ async function callGemini(prompt: string, preferredModel: string, maxTokens: num
       ? ['gemini-3.1-pro-preview', 'gemini-2.5-pro', 'gemini-2.0-flash']
       : preferredModel === 'gemini-3.1-flash-lite-preview'
         ? ['gemini-3.1-flash-lite-preview', 'gemini-2.5-flash', 'gemini-2.0-flash']
-        : ['gemini-2.5-flash', 'gemini-2.0-flash'];
+        : ['gemini-3.1-flash-lite-preview', 'gemini-2.5-flash', 'gemini-2.0-flash'];
 
   const requestBody = JSON.stringify({
     contents: [{ parts: [{ text: prompt }] }],
