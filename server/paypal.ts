@@ -98,10 +98,10 @@ export async function ensureSubscriptionPlans(): Promise<{ pro: string; research
         const hasTrial = details?.billing_cycles?.some((c: any) => c.tenure_type === "TRIAL");
         const regularCycle = details?.billing_cycles?.find((c: any) => c.tenure_type === "REGULAR");
         const price = regularCycle?.pricing_scheme?.fixed_price?.value;
-        if (hasTrial && price && parseFloat(price) === 25) {
+        if (hasTrial && price && parseFloat(price) === 30) {
           researchPlanId = plan.id;
         } else {
-          await deactivatePlan(plan.id, `missing trial or wrong price ($${price}, expected $25) — will recreate`);
+          await deactivatePlan(plan.id, `missing trial or wrong price ($${price}, expected $30) — will recreate`);
         }
       } catch { researchPlanId = plan.id; }
     }
@@ -112,10 +112,10 @@ export async function ensureSubscriptionPlans(): Promise<{ pro: string; research
         const hasTrial = details?.billing_cycles?.some((c: any) => c.tenure_type === "TRIAL");
         const regularCycle = details?.billing_cycles?.find((c: any) => c.tenure_type === "REGULAR");
         const price = regularCycle?.pricing_scheme?.fixed_price?.value;
-        if (hasTrial && price && parseFloat(price) === 70) {
+        if (hasTrial && price && parseFloat(price) === 100) {
           enterprisePlanId = plan.id;
         } else {
-          await deactivatePlan(plan.id, `missing trial or wrong price ($${price}, expected $70) — will recreate`);
+          await deactivatePlan(plan.id, `missing trial or wrong price ($${price}, expected $100) — will recreate`);
         }
       } catch { enterprisePlanId = plan.id; }
     }
@@ -190,7 +190,7 @@ export async function ensureSubscriptionPlans(): Promise<{ pro: string; research
             tenure_type: "REGULAR",
             sequence: 2,
             total_cycles: 0,
-            pricing_scheme: { fixed_price: { value: "25.00", currency_code: "USD" } },
+            pricing_scheme: { fixed_price: { value: "30.00", currency_code: "USD" } },
           },
         ],
         payment_preferences: {
@@ -217,7 +217,7 @@ export async function ensureSubscriptionPlans(): Promise<{ pro: string; research
             tenure_type: "REGULAR",
             sequence: 2,
             total_cycles: 0,
-            pricing_scheme: { fixed_price: { value: "70.00", currency_code: "USD" } },
+            pricing_scheme: { fixed_price: { value: "100.00", currency_code: "USD" } },
           },
         ],
         payment_preferences: {

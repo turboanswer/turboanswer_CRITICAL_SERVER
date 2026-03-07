@@ -50,7 +50,7 @@ const plans: PricingPlan[] = [
   {
     id: 'research',
     name: 'Research',
-    price: '$25',
+    price: '$30',
     period: 'per month',
     description: 'Antigravity + Gemini 3.1 Pro + AI Video Studio',
     features: [
@@ -66,7 +66,7 @@ const plans: PricingPlan[] = [
   {
     id: 'enterprise',
     name: 'Enterprise',
-    price: '$70',
+    price: '$100',
     period: 'per month',
     description: 'Antigravity + Research for up to 5 team members — save 44%',
     features: [

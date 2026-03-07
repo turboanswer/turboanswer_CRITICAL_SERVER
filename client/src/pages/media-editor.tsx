@@ -68,7 +68,7 @@ function EnterpriseLock() {
           <Lock className="h-10 w-10 text-pink-400" />
         </div>
         <h2 className="text-2xl font-black text-white mb-3">Enterprise Exclusive</h2>
-        <p className="text-gray-400 mb-6">Turbo Media Studio is available exclusively on the Enterprise plan ($70/month).</p>
+        <p className="text-gray-400 mb-6">Turbo Media Studio is available exclusively on the Enterprise plan ($100/month).</p>
         <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-5 mb-6 text-left space-y-2">
           {["CapCut-style photo & video editing","Real-time filter previews (10 presets + manual)","Text overlays with custom styles","Timeline-based clip management","Gemini AI: auto-captions & style suggestions","Export as high-quality PNG or WebM video"].map((f, i) => (
             <div key={i} className="flex items-center gap-2 text-sm text-gray-300">
@@ -81,7 +81,7 @@ function EnterpriseLock() {
         </div>
         <Link href="/pricing">
           <Button className="w-full h-12 font-bold bg-gradient-to-r from-pink-600 to-rose-600 hover:from-pink-500 hover:to-rose-500">
-            Upgrade to Enterprise — $70/mo
+            Upgrade to Enterprise — $100/mo
           </Button>
         </Link>
         <Link href="/chat">

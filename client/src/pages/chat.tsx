@@ -360,8 +360,8 @@ export default function Chat() {
               <SelectContent>
                 <SelectItem value="gemini-flash">Free</SelectItem>
                 <SelectItem value="gemini-pro">Pro $6.99</SelectItem>
-                <SelectItem value="claude-research">Research $25</SelectItem>
-                <SelectItem value="enterprise-research">Enterprise $70</SelectItem>
+                <SelectItem value="claude-research">Research $30</SelectItem>
+                <SelectItem value="enterprise-research">Enterprise $100</SelectItem>
               </SelectContent>
             </Select>
 
@@ -867,7 +867,7 @@ export default function Chat() {
               </div>
             </div>
             <div className="text-center mb-5">
-              <span className={`text-4xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>$25</span>
+              <span className={`text-4xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>$30</span>
               <span className={isDark ? 'text-zinc-400 text-base' : 'text-gray-500 text-base'}>/month</span>
               <p className={`text-xs mt-1 ${isDark ? 'text-zinc-500' : 'text-gray-400'}`}>after free trial</p>
             </div>
@@ -901,7 +901,7 @@ export default function Chat() {
               <Brain className="w-4 h-4 mr-2" />
               {checkoutLoading ? "Loading..." : "Start Free Trial"}
             </Button>
-            <p className={`text-center text-xs mt-3 ${isDark ? 'text-zinc-500' : 'text-gray-400'}`}>7 days free, then $25/mo. Cancel anytime.</p>
+            <p className={`text-center text-xs mt-3 ${isDark ? 'text-zinc-500' : 'text-gray-400'}`}>7 days free, then $30/mo. Cancel anytime.</p>
           </div>
         </div>
       )}
@@ -927,13 +927,13 @@ export default function Chat() {
             <div className="text-center mb-5">
               {entCouponApplied ? (
                 <>
-                  <span className={`text-lg line-through ${isDark ? 'text-zinc-500' : 'text-gray-400'}`}>$70</span>
+                  <span className={`text-lg line-through ${isDark ? 'text-zinc-500' : 'text-gray-400'}`}>$100</span>
                   <span className={`text-4xl font-bold ml-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>$0.99</span>
                   <span className={isDark ? 'text-zinc-400 text-base' : 'text-gray-500 text-base'}>/month</span>
                 </>
               ) : (
                 <>
-                  <span className={`text-4xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>$70</span>
+                  <span className={`text-4xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>$100</span>
                   <span className={isDark ? 'text-zinc-400 text-base' : 'text-gray-500 text-base'}>/month</span>
                   <p className={`text-xs mt-1 ${isDark ? 'text-zinc-500' : 'text-gray-400'}`}>after free trial</p>
                 </>
@@ -1005,7 +1005,7 @@ export default function Chat() {
               <Crown className="w-4 h-4 mr-2" />
               {checkoutLoading ? "Loading..." : entCouponApplied ? "Start Free Trial - $0.99/mo after" : "Start Free Trial"}
             </Button>
-            <p className={`text-center text-xs mt-3 ${isDark ? 'text-zinc-500' : 'text-gray-400'}`}>7 days free, then $70/mo. Cancel anytime.</p>
+            <p className={`text-center text-xs mt-3 ${isDark ? 'text-zinc-500' : 'text-gray-400'}`}>7 days free, then $100/mo. Cancel anytime.</p>
             <div className={`mt-4 pt-4 border-t ${isDark ? 'border-zinc-700' : 'border-gray-200'} text-center`}>
               <p className={`text-xs ${isDark ? 'text-zinc-500' : 'text-gray-400'}`}>
                 Need more than 5 members?{' '}

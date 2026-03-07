@@ -47,7 +47,7 @@ function EnterpriseLock() {
           <Lock className="h-10 w-10 text-amber-400" />
         </div>
         <h2 className="text-2xl font-black text-white mb-3">Research Plan Required</h2>
-        <p className="text-gray-400 mb-6">Photo Editor is available on the Research plan ($25/month) and Enterprise plan ($70/month).</p>
+        <p className="text-gray-400 mb-6">Photo Editor is available on the Research plan ($30/month) and Enterprise plan ($100/month).</p>
         <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-5 mb-6 text-left space-y-2">
           {["AI text-to-image generation","AI photo editing — remove/add anything","Place yourself anywhere in the world","Unlimited generations","Available on Research & Enterprise"].map((f, i) => (
             <div key={i} className="flex items-center gap-2 text-sm text-gray-300">
@@ -60,7 +60,7 @@ function EnterpriseLock() {
         </div>
         <Link href="/pricing">
           <Button className="w-full h-12 font-bold bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-black">
-            Upgrade to Research — $25/mo
+            Upgrade to Research — $30/mo
           </Button>
         </Link>
         <Link href="/chat">

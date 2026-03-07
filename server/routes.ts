@@ -1180,7 +1180,7 @@ function downloadAAB(){
           const transactions = await getSubscriptionTransactions(subscriptionId);
           const latestCompleted = transactions.find((txn: any) => txn.status === 'COMPLETED' && txn.id);
           if (latestCompleted) {
-            const amount = latestCompleted.amount_with_breakdown?.gross_amount?.value || (user.subscriptionTier === 'enterprise' ? '70.00' : user.subscriptionTier === 'research' ? '25.00' : '6.99');
+            const amount = latestCompleted.amount_with_breakdown?.gross_amount?.value || (user.subscriptionTier === 'enterprise' ? '100.00' : user.subscriptionTier === 'research' ? '30.00' : '6.99');
             const currency = latestCompleted.amount_with_breakdown?.gross_amount?.currency_code || 'USD';
             const refundResult = await refundCapture(latestCompleted.id, { value: amount, currency_code: currency });
             if (refundResult && (refundResult.status === 'COMPLETED' || refundResult.status === 'PENDING')) {

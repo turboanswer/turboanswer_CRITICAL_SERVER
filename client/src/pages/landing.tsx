@@ -493,7 +493,7 @@ export default function LandingPage() {
               <ArrowRight className="h-6 w-6 transition-transform group-hover:translate-x-1" />
             </button>
           </Link>
-          <p className="text-white/40 text-sm mt-4">Included with Research plan · $25/month · 7-day free trial</p>
+          <p className="text-white/40 text-sm mt-4">Included with Research plan · $30/month · 7-day free trial</p>
 
         </div>
       </section>
@@ -756,7 +756,7 @@ export default function LandingPage() {
                   <Microscope className="h-5 w-5 text-indigo-400" /> Research
                 </h3>
                 <div className="flex items-baseline gap-1 mt-2">
-                  <span className="text-5xl font-black bg-gradient-to-r from-indigo-400 to-cyan-400 bg-clip-text text-transparent">$25</span>
+                  <span className="text-5xl font-black bg-gradient-to-r from-indigo-400 to-cyan-400 bg-clip-text text-transparent">$30</span>
                   <span className={`text-sm ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>/month</span>
                 </div>
                 <div className="inline-flex items-center gap-1 mt-2 bg-green-500/15 text-green-400 text-xs font-semibold px-2.5 py-0.5 rounded-full">
