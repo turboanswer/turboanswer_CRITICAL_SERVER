@@ -2215,6 +2215,22 @@ function downloadAAB(){
     }
   });
 
+  // Stream a completed video file by its file ID
+  app.get('/api/video/file/:fileId', isAuthenticated, async (req: any, res) => {
+    try {
+      const { videoFiles } = await import('./services/veo-video-generation');
+      const file = videoFiles.get(req.params.fileId);
+      if (!file) return res.status(404).json({ error: 'Video not found or expired' });
+      res.setHeader('Content-Type', 'video/mp4');
+      res.setHeader('Content-Length', file.buffer.length);
+      res.setHeader('Accept-Ranges', 'bytes');
+      res.setHeader('Cache-Control', 'private, max-age=7200');
+      res.end(file.buffer);
+    } catch (e: any) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
   // Alternative video generation endpoint (legacy stub)
   app.post("/api/generate-video", isAuthenticated, async (req: any, res) => {
     try {

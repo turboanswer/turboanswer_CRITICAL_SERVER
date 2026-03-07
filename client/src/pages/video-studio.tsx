@@ -44,7 +44,7 @@ const STYLE_PRESETS = [
 interface HistoryItem {
   id: number;
   prompt: string;
-  videoDataUrl: string;
+  videoFileId: string;   // server-side file ID — stream via /api/video/file/:id
   aspectRatio: string;
   duration: number;
   model: string;
@@ -98,14 +98,14 @@ export default function VideoStudio() {
       const resp = await fetch(`/api/video/status/${id}`, { credentials: 'include' });
       const data = await resp.json();
 
-      if (data.status === 'completed' && data.videoDataUrl) {
+      if (data.status === 'completed' && data.videoFileId) {
         stopTimer();
         setIsGenerating(false);
         setJobId(null);
         const item: HistoryItem = {
           id: ++histCounter,
           prompt,
-          videoDataUrl: data.videoDataUrl,
+          videoFileId: data.videoFileId,
           aspectRatio,
           duration,
           model: data.model || pollModel,
@@ -169,11 +169,24 @@ export default function VideoStudio() {
 
   const handleIdea = (idea: string) => setPrompt(idea);
 
-  const downloadVideo = (item: HistoryItem) => {
-    const a = document.createElement('a');
-    a.href = item.videoDataUrl;
-    a.download = `turbo-video-${item.id}.mp4`;
-    a.click();
+  const videoUrl = (item: HistoryItem) => `/api/video/file/${item.videoFileId}`;
+
+  const downloadVideo = async (item: HistoryItem) => {
+    try {
+      const resp = await fetch(videoUrl(item), { credentials: 'include' });
+      if (!resp.ok) throw new Error(`Server returned ${resp.status}`);
+      const blob = await resp.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = blobUrl;
+      a.download = `turbo-video-${item.id}.mp4`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 10000);
+    } catch (e: any) {
+      toast({ title: "Download failed", description: e.message || "Could not save video", variant: "destructive" });
+    }
   };
 
   const formatTime = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
@@ -404,7 +417,7 @@ export default function VideoStudio() {
             <div className={`flex items-center justify-center ${aspectRatio === '9:16' ? 'min-h-[480px]' : 'min-h-[320px]'} p-6`}>
               {currentVideo ? (
                 <video
-                  src={currentVideo.videoDataUrl}
+                  src={videoUrl(currentVideo)}
                   controls
                   autoPlay
                   loop
@@ -468,7 +481,7 @@ export default function VideoStudio() {
                     }`}
                   >
                     <video
-                      src={item.videoDataUrl}
+                      src={videoUrl(item)}
                       muted
                       loop
                       className="w-full h-20 object-cover"

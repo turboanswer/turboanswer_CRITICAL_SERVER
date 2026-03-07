@@ -6,13 +6,24 @@ const VEO_MODELS = ['veo-3.0-generate-preview', 'veo-2.0-generate-001'];
 
 export interface VeoJobResult {
   status: 'pending' | 'processing' | 'completed' | 'failed';
-  videoDataUrl?: string;
+  videoFileId?: string;   // use /api/video/file/:id to stream
+  videoDataUrl?: string;  // kept for compatibility but prefer fileId
   model?: string;
   error?: string;
 }
 
 // In-memory job store (TTL 30 minutes)
 const jobs = new Map<string, { operationName: string; model: string; createdAt: number }>();
+
+// Completed video file store — maps fileId → base64 buffer (TTL 2 hours)
+export const videoFiles = new Map<string, { buffer: Buffer; model: string; createdAt: number }>();
+
+function cleanOldVideoFiles() {
+  const cutoff = Date.now() - 2 * 60 * 60 * 1000;
+  for (const [id, file] of videoFiles.entries()) {
+    if (file.createdAt < cutoff) videoFiles.delete(id);
+  }
+}
 
 function makeJobId(): string {
   return Math.random().toString(36).slice(2) + Date.now().toString(36);
@@ -102,31 +113,69 @@ export async function pollVeoStatus(jobId: string): Promise<VeoJobResult> {
       return { status: 'failed', error: data.error.message || 'Generation failed', model: job.model };
     }
 
-    // Extract video URI — can be base64 data URI or raw bytes
+    // Extract video from response — Veo returns base64 in bytesBase64Encoded or a URI
     const samples =
       data.response?.generateVideoResponse?.generatedSamples ||
       data.response?.generatedSamples ||
       [];
+
+    console.log('[Veo] Response keys:', JSON.stringify(Object.keys(data.response || {})));
+    console.log('[Veo] Sample count:', samples.length);
+    if (samples.length > 0) {
+      console.log('[Veo] Sample video keys:', JSON.stringify(Object.keys(samples[0]?.video || {})));
+    }
 
     if (!samples.length) {
       jobs.delete(jobId);
       return { status: 'failed', error: 'No video samples in response', model: job.model };
     }
 
-    const videoUri: string = samples[0]?.video?.uri || '';
+    const videoObj = samples[0]?.video || {};
 
-    if (!videoUri) {
-      jobs.delete(jobId);
-      return { status: 'failed', error: 'Empty video URI in response', model: job.model };
+    // Priority: bytesBase64Encoded > uri (fetch if HTTPS) > fail
+    let videoDataUrl: string | null = null;
+
+    if (videoObj.bytesBase64Encoded) {
+      // Direct base64 MP4 data from the API
+      videoDataUrl = `data:video/mp4;base64,${videoObj.bytesBase64Encoded}`;
+    } else if (videoObj.uri) {
+      const uri: string = videoObj.uri;
+      if (uri.startsWith('data:')) {
+        videoDataUrl = uri;
+      } else if (uri.startsWith('https://')) {
+        // Fetch the video bytes from the HTTPS URI
+        console.log('[Veo] Fetching video from HTTPS URI...');
+        const apiKey = process.env.GEMINI_API_KEY!;
+        const videoResp = await fetch(`${uri}${uri.includes('?') ? '&' : '?'}key=${apiKey}`, {
+          signal: AbortSignal.timeout(60000),
+        });
+        if (!videoResp.ok) {
+          jobs.delete(jobId);
+          return { status: 'failed', error: `Failed to fetch video bytes: ${videoResp.status}`, model: job.model };
+        }
+        const buffer = await videoResp.arrayBuffer();
+        const base64 = Buffer.from(buffer).toString('base64');
+        videoDataUrl = `data:video/mp4;base64,${base64}`;
+      } else {
+        jobs.delete(jobId);
+        return { status: 'failed', error: `Unsupported video URI format: ${uri.slice(0, 60)}`, model: job.model };
+      }
     }
 
-    // If already a data URL, use directly; otherwise assume base64 and wrap it
-    const videoDataUrl = videoUri.startsWith('data:')
-      ? videoUri
-      : `data:video/mp4;base64,${videoUri}`;
+    if (!videoDataUrl) {
+      jobs.delete(jobId);
+      return { status: 'failed', error: 'No video data found in response', model: job.model };
+    }
+
+    // Store video buffer server-side — return a file ID so the frontend can stream it
+    const base64Data = videoDataUrl.split(',')[1];
+    const buffer = Buffer.from(base64Data, 'base64');
+    const videoFileId = makeJobId();
+    videoFiles.set(videoFileId, { buffer, model: job.model, createdAt: Date.now() });
+    cleanOldVideoFiles();
 
     jobs.delete(jobId);
-    return { status: 'completed', videoDataUrl, model: job.model };
+    return { status: 'completed', videoFileId, model: job.model };
   } catch (e: any) {
     return { status: 'failed', error: e.message, model: job.model };
   }
