@@ -2176,7 +2176,46 @@ function downloadAAB(){
   });
 
 
-  // Alternative video generation endpoint
+  // ── Veo Video Generation ─────────────────────────────────────────────────
+  app.post('/api/video/generate', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user?.claims?.sub;
+      const user   = await storage.getUser(userId);
+      const tier   = user?.subscriptionTier || 'free';
+      if (tier === 'free') {
+        return res.status(403).json({ error: 'Video generation requires a Pro, Research, or Enterprise subscription.' });
+      }
+
+      const { prompt, aspectRatio = '16:9', durationSeconds = 5 } = req.body;
+      if (!prompt || typeof prompt !== 'string' || prompt.trim().length < 5) {
+        return res.status(400).json({ error: 'A descriptive prompt is required.' });
+      }
+
+      const { startVeoGeneration } = await import('./services/veo-video-generation');
+      const result = await startVeoGeneration({
+        prompt: prompt.trim(),
+        aspectRatio: ['16:9', '9:16'].includes(aspectRatio) ? aspectRatio : '16:9',
+        durationSeconds: [5, 8].includes(durationSeconds) ? durationSeconds : 5,
+      });
+
+      res.json({ jobId: result.jobId, model: result.model });
+    } catch (e: any) {
+      console.error('[Veo] start error:', e.message);
+      res.status(502).json({ error: e.message });
+    }
+  });
+
+  app.get('/api/video/status/:jobId', isAuthenticated, async (req: any, res) => {
+    try {
+      const { pollVeoStatus } = await import('./services/veo-video-generation');
+      const result = await pollVeoStatus(req.params.jobId);
+      res.json(result);
+    } catch (e: any) {
+      res.status(500).json({ status: 'failed', error: e.message });
+    }
+  });
+
+  // Alternative video generation endpoint (legacy stub)
   app.post("/api/generate-video", isAuthenticated, async (req: any, res) => {
     try {
       const { prompt, duration = 5, resolution = "1080p", style = "realistic" } = req.body;

@@ -28,6 +28,7 @@ import CrisisInfo from "@/pages/crisis-info";
 import EmailTemplates from "@/pages/email-templates";
 import ForgotPassword from "@/pages/forgot-password";
 import ImageStudio from "@/pages/image-studio";
+import VideoStudio from "@/pages/video-studio";
 import BetaApply from "@/pages/beta-apply";
 import LockdownScreen from "@/components/lockdown-screen";
 import { primeAudioContext } from "@/lib/audio-manager";
@@ -53,6 +54,7 @@ function AuthenticatedRouter() {
       <Route path="/crisis-info" component={CrisisInfo} />
       <Route path="/email-templates" component={EmailTemplates} />
       <Route path="/image-studio" component={ImageStudio} />
+      <Route path="/video-studio" component={VideoStudio} />
       <Route path="/beta" component={BetaApply} />
       <Route component={NotFound} />
     </Switch>
