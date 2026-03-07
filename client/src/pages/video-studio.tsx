@@ -8,7 +8,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useQuery } from "@tanstack/react-query";
 import {
   Video, Download, Loader2, Sparkles, ArrowLeft,
-  Play, Wand2, Clock, Zap, Film, Monitor, Smartphone, Lock, Check
+  Play, Wand2, Clock, Zap, Film, Monitor, Smartphone, Lock, Check, Volume2, VolumeX
 } from "lucide-react";
 
 const ASPECT_OPTIONS = [
@@ -48,6 +48,7 @@ interface HistoryItem {
   aspectRatio: string;
   duration: number;
   model: string;
+  hasAudio: boolean;
   timestamp: Date;
 }
 
@@ -63,6 +64,7 @@ export default function VideoStudio() {
   const [pollModel, setPollModel] = useState<string>("");
   const [currentVideo, setCurrentVideo] = useState<HistoryItem | null>(null);
   const [history, setHistory] = useState<HistoryItem[]>([]);
+  const [generateAudio, setGenerateAudio] = useState(true);
   const [elapsed, setElapsed] = useState(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const pollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -109,6 +111,7 @@ export default function VideoStudio() {
           aspectRatio,
           duration,
           model: data.model || pollModel,
+          hasAudio: !!data.hasAudio,
           timestamp: new Date(),
         };
         setCurrentVideo(item);
@@ -140,7 +143,7 @@ export default function VideoStudio() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ prompt: prompt.trim(), aspectRatio, durationSeconds: duration }),
+        body: JSON.stringify({ prompt: prompt.trim(), aspectRatio, durationSeconds: duration, generateAudio }),
       });
       const data = await resp.json();
 
@@ -207,7 +210,7 @@ export default function VideoStudio() {
             </div>
             <span className="font-bold text-sm">Video Studio</span>
             <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${isDark ? 'bg-violet-500/20 text-violet-400' : 'bg-violet-100 text-violet-700'}`}>
-              Powered by Veo
+              Veo 3.1 + Audio
             </span>
           </div>
         </div>
@@ -366,6 +369,36 @@ export default function VideoStudio() {
             </div>
           </div>
 
+          {/* Audio toggle */}
+          <div>
+            <button
+              onClick={() => setGenerateAudio(v => !v)}
+              className={`w-full flex items-center justify-between px-4 py-3 rounded-xl border transition-all ${
+                generateAudio
+                  ? isDark ? 'bg-green-500/10 border-green-500/30' : 'bg-green-50 border-green-300'
+                  : isDark ? 'bg-white/[0.03] border-white/10' : 'bg-gray-50 border-gray-200'
+              }`}
+            >
+              <div className="flex items-center gap-2.5">
+                {generateAudio
+                  ? <Volume2 className="h-4 w-4 text-green-400" />
+                  : <VolumeX className={`h-4 w-4 ${isDark ? 'text-gray-500' : 'text-gray-400'}`} />
+                }
+                <div className="text-left">
+                  <div className={`text-xs font-semibold ${generateAudio ? isDark ? 'text-green-300' : 'text-green-700' : isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                    {generateAudio ? 'Audio generation ON' : 'Audio generation OFF'}
+                  </div>
+                  <div className={`text-[10px] ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+                    {generateAudio ? 'Uses Veo 3.1 — dialogue, sound effects & ambience' : 'Uses Veo 2.0 — silent video'}
+                  </div>
+                </div>
+              </div>
+              <div className={`w-8 h-4.5 rounded-full transition-colors flex items-center px-0.5 ${generateAudio ? 'bg-green-500' : isDark ? 'bg-white/20' : 'bg-gray-300'}`}>
+                <div className={`w-3.5 h-3.5 rounded-full bg-white shadow transition-transform ${generateAudio ? 'translate-x-3.5' : ''}`} />
+              </div>
+            </button>
+          </div>
+
           {/* Generate button */}
           <Button
             onClick={handleGenerate}
@@ -416,14 +449,27 @@ export default function VideoStudio() {
 
             <div className={`flex items-center justify-center ${aspectRatio === '9:16' ? 'min-h-[480px]' : 'min-h-[320px]'} p-6`}>
               {currentVideo ? (
-                <video
-                  src={videoUrl(currentVideo)}
-                  controls
-                  autoPlay
-                  loop
-                  className={`rounded-xl shadow-2xl max-h-[460px] max-w-full ${aspectRatio === '9:16' ? 'w-auto' : 'w-full'}`}
-                  style={{ aspectRatio: currentVideo.aspectRatio }}
-                />
+                <div className="w-full">
+                  <video
+                    src={videoUrl(currentVideo)}
+                    controls
+                    autoPlay
+                    loop
+                    className={`rounded-xl shadow-2xl max-h-[460px] max-w-full ${aspectRatio === '9:16' ? 'w-auto mx-auto' : 'w-full'}`}
+                    style={{ aspectRatio: currentVideo.aspectRatio }}
+                  />
+                  <div className="flex items-center gap-2 mt-2 justify-center flex-wrap">
+                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${isDark ? 'bg-violet-500/20 text-violet-400' : 'bg-violet-100 text-violet-700'}`}>
+                      {currentVideo.model}
+                    </span>
+                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold flex items-center gap-1 ${currentVideo.hasAudio ? isDark ? 'bg-green-500/20 text-green-400' : 'bg-green-100 text-green-700' : isDark ? 'bg-white/10 text-gray-500' : 'bg-gray-100 text-gray-500'}`}>
+                      {currentVideo.hasAudio ? <><Volume2 className="h-3 w-3" /> With Audio</> : <><VolumeX className="h-3 w-3" /> Silent</>}
+                    </span>
+                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${isDark ? 'bg-white/10 text-gray-400' : 'bg-gray-100 text-gray-600'}`}>
+                      {currentVideo.duration}s · {currentVideo.aspectRatio}
+                    </span>
+                  </div>
+                </div>
               ) : isGenerating ? (
                 <div className="text-center">
                   <div className="relative w-20 h-20 mx-auto mb-4">

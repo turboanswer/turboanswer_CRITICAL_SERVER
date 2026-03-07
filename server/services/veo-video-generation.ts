@@ -1,8 +1,9 @@
 // Veo video generation via Google Generative AI REST API
-// Tries veo-3.0-generate-preview first, falls back to veo-2.0-generate-001
+// Tries veo-3.1-generate-preview (with audio) first, then veo-3.1-fast, then veo-2.0 (no audio)
 
 const VEO_BASE = 'https://generativelanguage.googleapis.com/v1beta';
-const VEO_MODELS = ['veo-3.0-generate-preview', 'veo-2.0-generate-001'];
+const VEO_MODELS_WITH_AUDIO = ['veo-3.1-generate-preview', 'veo-3.1-fast-generate-preview'];
+const VEO_FALLBACK_NO_AUDIO = 'veo-2.0-generate-001';
 
 export interface VeoJobResult {
   status: 'pending' | 'processing' | 'completed' | 'failed';
@@ -13,7 +14,7 @@ export interface VeoJobResult {
 }
 
 // In-memory job store (TTL 30 minutes)
-const jobs = new Map<string, { operationName: string; model: string; createdAt: number }>();
+const jobs = new Map<string, { operationName: string; model: string; hasAudio: boolean; createdAt: number }>();
 
 // Completed video file store — maps fileId → base64 buffer (TTL 2 hours)
 export const videoFiles = new Map<string, { buffer: Buffer; model: string; createdAt: number }>();
@@ -33,54 +34,100 @@ export async function startVeoGeneration(params: {
   prompt: string;
   aspectRatio: '16:9' | '9:16';
   durationSeconds: 5 | 8;
-}): Promise<{ jobId: string; model: string }> {
+  generateAudio?: boolean;
+}): Promise<{ jobId: string; model: string; hasAudio: boolean }> {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) throw new Error('GEMINI_API_KEY not configured');
 
+  const wantAudio = params.generateAudio !== false;
   let lastError: string = 'All Veo models failed';
 
-  for (const model of VEO_MODELS) {
-    try {
-      const url = `${VEO_BASE}/models/${model}:predictLongRunning?key=${apiKey}`;
-      const body = {
-        instances: [{ prompt: params.prompt }],
-        parameters: {
-          aspectRatio: params.aspectRatio,
-          durationSeconds: params.durationSeconds,
-          sampleCount: 1,
-          personGeneration: 'allow_adult',
-        },
-      };
+  // First try Veo 3.1 models (support audio)
+  if (wantAudio) {
+    for (const model of VEO_MODELS_WITH_AUDIO) {
+      try {
+        const url = `${VEO_BASE}/models/${model}:predictLongRunning?key=${apiKey}`;
+        const body = {
+          instances: [{ prompt: params.prompt }],
+          parameters: {
+            aspectRatio: params.aspectRatio,
+            durationSeconds: params.durationSeconds,
+            sampleCount: 1,
+            personGeneration: 'allow_adult',
+            generateAudio: true,
+          },
+        };
 
-      const resp = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-        signal: AbortSignal.timeout(30000),
-      });
+        const resp = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+          signal: AbortSignal.timeout(30000),
+        });
 
-      if (!resp.ok) {
-        const text = await resp.text();
-        lastError = `${model}: ${text}`;
-        console.warn(`[Veo] ${model} failed (${resp.status}):`, text.slice(0, 200));
-        continue;
+        if (!resp.ok) {
+          const text = await resp.text();
+          lastError = `${model}: ${text}`;
+          console.warn(`[Veo] ${model} failed (${resp.status}):`, text.slice(0, 200));
+          continue;
+        }
+
+        const data: any = await resp.json();
+        const operationName: string = data.name;
+        if (!operationName) {
+          lastError = `${model}: no operation name in response`;
+          continue;
+        }
+
+        const jobId = makeJobId();
+        jobs.set(jobId, { operationName, model, hasAudio: true, createdAt: Date.now() });
+        cleanOldJobs();
+        console.log(`[Veo] Started job ${jobId} with ${model} (audio: true)`);
+        return { jobId, model, hasAudio: true };
+      } catch (e: any) {
+        lastError = `${model}: ${e.message}`;
+        console.warn(`[Veo] ${model} exception:`, e.message);
       }
-
-      const data: any = await resp.json();
-      const operationName: string = data.name;
-      if (!operationName) {
-        lastError = `${model}: no operation name in response`;
-        continue;
-      }
-
-      const jobId = makeJobId();
-      jobs.set(jobId, { operationName, model, createdAt: Date.now() });
-      cleanOldJobs();
-      return { jobId, model };
-    } catch (e: any) {
-      lastError = `${model}: ${e.message}`;
-      console.warn(`[Veo] ${model} exception:`, e.message);
     }
+  }
+
+  // Fallback: Veo 2.0 without audio
+  try {
+    const model = VEO_FALLBACK_NO_AUDIO;
+    const url = `${VEO_BASE}/models/${model}:predictLongRunning?key=${apiKey}`;
+    const body = {
+      instances: [{ prompt: params.prompt }],
+      parameters: {
+        aspectRatio: params.aspectRatio,
+        durationSeconds: params.durationSeconds,
+        sampleCount: 1,
+        personGeneration: 'allow_adult',
+      },
+    };
+
+    const resp = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+      signal: AbortSignal.timeout(30000),
+    });
+
+    if (!resp.ok) {
+      const text = await resp.text();
+      throw new Error(`${model}: ${text}`);
+    }
+
+    const data: any = await resp.json();
+    const operationName: string = data.name;
+    if (!operationName) throw new Error(`${model}: no operation name in response`);
+
+    const jobId = makeJobId();
+    jobs.set(jobId, { operationName, model, hasAudio: false, createdAt: Date.now() });
+    cleanOldJobs();
+    console.log(`[Veo] Started job ${jobId} with ${model} (audio: false, fallback)`);
+    return { jobId, model, hasAudio: false };
+  } catch (e: any) {
+    lastError = e.message;
   }
 
   throw new Error(lastError);
@@ -175,7 +222,7 @@ export async function pollVeoStatus(jobId: string): Promise<VeoJobResult> {
     cleanOldVideoFiles();
 
     jobs.delete(jobId);
-    return { status: 'completed', videoFileId, model: job.model };
+    return { status: 'completed', videoFileId, model: job.model, hasAudio: job.hasAudio };
   } catch (e: any) {
     return { status: 'failed', error: e.message, model: job.model };
   }
