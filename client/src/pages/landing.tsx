@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { Zap, Brain, FileText, Globe, Shield, MessageSquare, Menu, X, QrCode, ImageIcon, Camera, Sparkles, ArrowRight, Check, Lock, Palette, Search, Code, BookOpen, Lightbulb, HeartPulse, Scale, TrendingUp, Wrench, Crown, Rocket } from "lucide-react";
+import { Zap, Brain, FileText, Globe, Shield, MessageSquare, Menu, X, QrCode, ImageIcon, Camera, Sparkles, ArrowRight, Check, Lock, Palette, Search, Code, BookOpen, Lightbulb, HeartPulse, Scale, TrendingUp, Wrench, Crown, Rocket, Star, ChevronRight, FlaskConical, Microscope, Cpu, Layers, BarChart3 } from "lucide-react";
 import { Link } from "wouter";
 import { QRCodeSVG } from "qrcode.react";
 import { useTheme } from "@/hooks/use-theme";
@@ -464,6 +464,89 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* Gemini 3.1 Pro Spotlight Banner */}
+      <section className="py-16 sm:py-24 px-4 relative z-10 overflow-hidden">
+        {isDark && (
+          <div className="absolute inset-0 pointer-events-none">
+            <GlowOrb className="top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" color="rgba(99,102,241,0.12)" size={900} />
+          </div>
+        )}
+        <div className="max-w-6xl mx-auto relative z-10">
+          <div className={`rounded-3xl border-2 overflow-hidden relative ${isDark ? 'border-indigo-500/30 bg-gradient-to-br from-indigo-950/60 via-slate-950/80 to-violet-950/60' : 'border-indigo-300 bg-gradient-to-br from-indigo-50 via-white to-violet-50 shadow-2xl shadow-indigo-100'}`}>
+            {/* Top shimmer line */}
+            <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-indigo-400 to-transparent" />
+            {/* Subtle grid pattern overlay */}
+            {isDark && <div className="absolute inset-0 opacity-[0.03]" style={{backgroundImage: 'linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)', backgroundSize: '40px 40px'}} />}
+
+            <div className="p-8 sm:p-12 lg:p-16">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+                {/* Left: text */}
+                <div>
+                  <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-indigo-500/15 border border-indigo-500/30 text-indigo-400 text-xs font-bold tracking-widest uppercase mb-6">
+                    <Cpu className="h-3.5 w-3.5" /> Google's Most Advanced Model
+                  </div>
+                  <h2 className="text-3xl sm:text-5xl font-black mb-5 leading-tight">
+                    <span className="bg-gradient-to-r from-indigo-400 via-violet-400 to-cyan-400 bg-clip-text text-transparent">Gemini 3.1 Pro</span>
+                    <br />
+                    <span className={isDark ? 'text-white' : 'text-gray-900'}>is here.</span>
+                  </h2>
+                  <p className={`text-lg mb-8 leading-relaxed ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
+                    The most capable AI model available on TurboAnswer. Powered by Google's flagship Gemini 3.1 Pro, the Research plan gives you access to the same intelligence used by professionals, researchers, and enterprises worldwide.
+                  </p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-8">
+                    {[
+                      { icon: <Microscope className="h-4 w-4 text-indigo-400" />, label: "Deep Research Agent", desc: "Autonomous multi-step web research" },
+                      { icon: <Brain className="h-4 w-4 text-violet-400" />, label: "Advanced Reasoning", desc: "Solves complex, multi-step problems" },
+                      { icon: <Layers className="h-4 w-4 text-cyan-400" />, label: "1M Token Context", desc: "Analyze entire books & codebases" },
+                      { icon: <BarChart3 className="h-4 w-4 text-indigo-400" />, label: "Expert Analysis", desc: "Research-grade depth on any topic" },
+                    ].map((f, i) => (
+                      <div key={i} className={`flex items-start gap-3 rounded-xl p-3.5 border ${isDark ? 'bg-white/[0.04] border-white/[0.06]' : 'bg-white/80 border-indigo-100 shadow-sm'}`}>
+                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${isDark ? 'bg-indigo-500/15' : 'bg-indigo-50'}`}>{f.icon}</div>
+                        <div>
+                          <div className={`text-sm font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>{f.label}</div>
+                          <div className={`text-xs mt-0.5 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{f.desc}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <Link href={ctaHref}>
+                    <Button className="rounded-xl h-13 px-8 font-bold text-base bg-gradient-to-r from-indigo-600 via-violet-600 to-cyan-600 hover:from-indigo-500 hover:via-violet-500 hover:to-cyan-500 shadow-xl shadow-indigo-500/30 transition-all duration-200 hover:shadow-indigo-500/50 hover:scale-[1.02]">
+                      <Sparkles className="h-4 w-4 mr-2" />
+                      Try Research Free for 7 Days
+                      <ChevronRight className="h-4 w-4 ml-1" />
+                    </Button>
+                  </Link>
+                  <p className={`text-xs mt-3 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>No credit card charged during trial · Cancel anytime</p>
+                </div>
+
+                {/* Right: capability cards */}
+                <div className="space-y-3">
+                  {[
+                    { title: "Autonomous Deep Research", body: "Activate Deep Research mode and watch Gemini 3.1 Pro autonomously browse, read, and synthesize sources — delivering a structured report with citations.", badge: "Research Only", color: "indigo" },
+                    { title: "Superior Coding & Math", body: "Tackles complex algorithms, debugging, architecture design, and advanced mathematics with near-human accuracy and clear explanations.", badge: "Pro-Level", color: "violet" },
+                    { title: "Long Document Mastery", body: "Upload entire PDFs, legal contracts, or research papers and get precise, detailed analysis. 1 million token context means nothing gets missed.", badge: "Unmatched", color: "cyan" },
+                    { title: "Creative & Strategic Thinking", body: "From business strategy to creative writing, Gemini 3.1 Pro produces work that's nuanced, structured, and remarkably human.", badge: "All Domains", color: "blue" },
+                  ].map((c, i) => (
+                    <div key={i} className={`rounded-2xl p-5 border transition-all hover:scale-[1.01] ${isDark ? 'bg-white/[0.03] border-white/[0.07] hover:border-indigo-500/30' : 'bg-white border-gray-200 shadow-sm hover:border-indigo-300 hover:shadow-md'}`}>
+                      <div className="flex items-start justify-between gap-3 mb-1.5">
+                        <span className={`font-semibold text-sm ${isDark ? 'text-white' : 'text-gray-900'}`}>{c.title}</span>
+                        <span className={`text-xs px-2 py-0.5 rounded-full font-semibold shrink-0 ${
+                          c.color === 'indigo' ? 'bg-indigo-500/15 text-indigo-400' :
+                          c.color === 'violet' ? 'bg-violet-500/15 text-violet-400' :
+                          c.color === 'cyan' ? 'bg-cyan-500/15 text-cyan-400' :
+                          'bg-blue-500/15 text-blue-400'
+                        }`}>{c.badge}</span>
+                      </div>
+                      <p className={`text-xs leading-relaxed ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{c.body}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <section id="pricing" className="py-20 sm:py-32 px-4 relative z-10">
         {isDark && (
           <div className="absolute inset-0 pointer-events-none">
@@ -489,7 +572,10 @@ export default function LandingPage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+          {/* Pricing cards — Research is the centrepiece */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 items-start">
+
+            {/* Free */}
             <div className={`card-hologram rounded-2xl p-7 border ${isDark ? 'bg-white/[0.02] border-white/10' : 'bg-white border-gray-200 shadow-sm'}`}>
               <div className="mb-5">
                 <h3 className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>Free</h3>
@@ -498,7 +584,7 @@ export default function LandingPage() {
                   <span className={`text-sm ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>/month</span>
                 </div>
               </div>
-              <div className={`text-sm mb-5 font-medium ${isDark ? 'text-indigo-400' : 'text-indigo-600'}`}>Gemini 3.1 Flash Lite</div>
+              <div className={`text-sm mb-5 font-medium ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Gemini 3.1 Flash Lite</div>
               <ul className="space-y-3 mb-7">
                 {["AI chat conversations", "Document analysis", "100+ languages", "Dark & light themes", "Mobile access"].map((item, i) => (
                   <li key={i} className={`flex items-center gap-2.5 text-sm ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
@@ -516,8 +602,67 @@ export default function LandingPage() {
               </Link>
             </div>
 
+            {/* Research — FEATURED */}
+            <div className={`card-hologram rounded-2xl border-2 relative overflow-hidden md:-mt-4 md:-mb-4 ${isDark ? 'border-indigo-500/60 bg-gradient-to-b from-indigo-950/40 to-slate-950/60 shadow-2xl shadow-indigo-500/20' : 'border-indigo-400 bg-gradient-to-b from-indigo-50/60 to-white shadow-2xl shadow-indigo-200'}`}>
+              {/* Animated shimmer top border */}
+              <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-indigo-500 via-cyan-400 to-violet-500" />
+              {/* Badge */}
+              <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-4 py-1.5 bg-gradient-to-r from-indigo-600 via-violet-600 to-cyan-600 rounded-full text-xs font-black text-white tracking-wide shadow-lg shadow-indigo-500/40 flex items-center gap-1.5">
+                <Star className="h-3 w-3 fill-white" /> MOST POWERFUL
+              </div>
+              {/* Glow behind card in dark mode */}
+              {isDark && <div className="absolute -inset-px rounded-2xl pointer-events-none" style={{boxShadow: '0 0 60px rgba(99,102,241,0.15) inset'}} />}
+              <div className="p-8 pt-10">
+                <h3 className={`text-xl font-bold flex items-center gap-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                  <Microscope className="h-5 w-5 text-indigo-400" /> Research
+                </h3>
+                <div className="flex items-baseline gap-1 mt-2">
+                  <span className="text-5xl font-black bg-gradient-to-r from-indigo-400 to-cyan-400 bg-clip-text text-transparent">$15</span>
+                  <span className={`text-sm ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>/month</span>
+                </div>
+                <div className="inline-flex items-center gap-1 mt-2 bg-green-500/15 text-green-400 text-xs font-semibold px-2.5 py-0.5 rounded-full">
+                  <Check className="h-3 w-3" /> 7-day free trial
+                </div>
+
+                <div className="mt-4 mb-5 inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-indigo-500/15 border border-indigo-500/30">
+                  <Cpu className="h-3.5 w-3.5 text-indigo-400" />
+                  <span className="text-xs font-bold text-indigo-400 tracking-wide">GEMINI 3.1 PRO — FLAGSHIP MODEL</span>
+                </div>
+
+                <ul className="space-y-3 mb-7">
+                  {[
+                    { text: "Everything in Pro", sub: null },
+                    { text: "Gemini 3.1 Pro model", sub: "Google's most capable AI" },
+                    { text: "Deep Research Agent", sub: "Autonomous multi-source research" },
+                    { text: "1M token context window", sub: "Analyze entire books & codebases" },
+                    { text: "Advanced reasoning & math", sub: "Solves complex multi-step problems" },
+                    { text: "Priority queue access", sub: "Always fast, never throttled" },
+                    { text: "Extended long-form responses", sub: "Full-depth answers, no truncation" },
+                  ].map((item, i) => (
+                    <li key={i} className="flex items-start gap-2.5">
+                      <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 ${isDark ? 'bg-indigo-500/25' : 'bg-indigo-100'}`}>
+                        <Check className="h-3 w-3 text-indigo-400" />
+                      </div>
+                      <div>
+                        <span className={`text-sm font-medium ${isDark ? 'text-white' : 'text-gray-800'}`}>{item.text}</span>
+                        {item.sub && <div className={`text-xs mt-0.5 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>{item.sub}</div>}
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+                <Link href={ctaHref}>
+                  <Button className="w-full rounded-xl h-13 font-black text-base bg-gradient-to-r from-indigo-600 via-violet-600 to-cyan-600 hover:from-indigo-500 hover:via-violet-500 hover:to-cyan-500 shadow-xl shadow-indigo-500/30 transition-all duration-200 hover:shadow-indigo-500/50">
+                    <Sparkles className="h-4 w-4 mr-2" />
+                    {isAuthenticated ? "Unlock Research" : "Start Free Trial"}
+                  </Button>
+                </Link>
+                <p className={`text-center text-xs mt-3 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>Cancel anytime · No charge for 7 days</p>
+              </div>
+            </div>
+
+            {/* Pro */}
             <div className={`card-hologram rounded-2xl p-7 border-2 relative overflow-hidden ${isDark ? 'border-purple-500/40 bg-purple-500/[0.03]' : 'border-purple-400 bg-purple-50/30 shadow-lg shadow-purple-100'}`}>
-              <div className="absolute -top-px left-0 right-0 h-1 bg-gradient-to-r from-purple-500 via-pink-500 to-purple-500" />
+              <div className="absolute -top-px left-0 right-0 h-0.5 bg-gradient-to-r from-purple-500 via-pink-500 to-purple-500" />
               <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 bg-gradient-to-r from-purple-600 to-pink-600 rounded-full text-xs font-bold text-white tracking-wide shadow-lg shadow-purple-500/30">
                 POPULAR
               </div>
@@ -547,38 +692,6 @@ export default function LandingPage() {
               <Link href={ctaHref}>
                 <Button className="w-full rounded-xl h-12 font-bold bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 shadow-lg shadow-purple-500/20">
                   {isAuthenticated ? "Go to Chat" : "Upgrade to Pro"}
-                </Button>
-              </Link>
-            </div>
-
-            <div className={`card-hologram rounded-2xl p-7 border-2 relative overflow-hidden ${isDark ? 'border-indigo-500/40 bg-indigo-500/[0.03]' : 'border-indigo-400 bg-indigo-50/30 shadow-lg shadow-indigo-100'}`}>
-              <div className="absolute -top-px left-0 right-0 h-1 bg-gradient-to-r from-indigo-500 via-cyan-500 to-indigo-500" />
-              <div className="mb-5">
-                <h3 className={`text-xl font-bold flex items-center gap-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                  <Brain className="h-5 w-5 text-indigo-400" /> Research
-                </h3>
-                <div className="flex items-baseline gap-1 mt-2">
-                  <span className="text-4xl font-black">$15</span>
-                  <span className={`text-sm ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>/month</span>
-                </div>
-                <div className="inline-flex items-center gap-1 mt-1.5 bg-green-500/15 text-green-400 text-xs font-semibold px-2.5 py-0.5 rounded-full">
-                  <Check className="h-3 w-3" /> 7-day free trial
-                </div>
-              </div>
-              <div className={`text-sm mb-5 font-medium ${isDark ? 'text-indigo-400' : 'text-indigo-600'}`}>Gemini 3.1 Pro</div>
-              <ul className="space-y-3 mb-7">
-                {["Everything in Pro", "Gemini 3.1 Pro model", "Deep research analysis", "Extended responses", "Comprehensive coverage", "Top-tier intelligence"].map((item, i) => (
-                  <li key={i} className={`flex items-center gap-2.5 text-sm ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
-                    <div className="w-5 h-5 rounded-full bg-indigo-500/20 flex items-center justify-center flex-shrink-0">
-                      <Check className="h-3 w-3 text-indigo-400" />
-                    </div>
-                    {item}
-                  </li>
-                ))}
-              </ul>
-              <Link href={ctaHref}>
-                <Button className="w-full rounded-xl h-12 font-bold bg-gradient-to-r from-indigo-600 to-cyan-600 hover:from-indigo-500 hover:to-cyan-500 shadow-lg shadow-indigo-500/20">
-                  {isAuthenticated ? "Go to Chat" : "Upgrade to Research"}
                 </Button>
               </Link>
             </div>
