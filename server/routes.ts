@@ -2877,9 +2877,9 @@ ${template.bodyText.split('\n').map(line => {
     }
   });
 
-  // ── Deep Research (Gemini 3.1 Pro / Interactions API) ──────────────────────
-  const DEEP_RESEARCH_AGENT = 'deep-research-pro-preview-12-2025';
-  const INTERACTIONS_BASE    = 'https://generativelanguage.googleapis.com/v1beta/interactions';
+  // ── Deep Research (Gemini 3.1 Pro — direct synchronous call) ─────────────
+  const GEMINI_PRO_RESEARCH_MODEL = 'gemini-3.1-pro-preview';
+  const GEMINI_GENERATE_BASE      = 'https://generativelanguage.googleapis.com/v1beta/models';
 
   app.post('/api/deep-research/start', isAuthenticated, async (req: any, res) => {
     try {
@@ -2898,58 +2898,50 @@ ${template.bodyText.split('\n').map(line => {
       const apiKey = process.env.GEMINI_API_KEY;
       if (!apiKey) return res.status(500).json({ error: 'GEMINI_API_KEY not configured' });
 
-      // Save the user message to the conversation
+      // Save the user message immediately so it appears in the chat
       let userMessageId: number | undefined;
       if (conversationId) {
         const userMsg = await storage.createMessage({ conversationId, content: message, role: 'user' });
         userMessageId = userMsg.id;
       }
 
-      const resp = await fetch(INTERACTIONS_BASE, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
-        body: JSON.stringify({ input: message, agent: DEEP_RESEARCH_AGENT, background: true }),
-      });
+      const systemPrompt = `You are Turbo Answer Research, powered by Gemini 3.1 Pro. You provide thorough, well-structured, deeply researched answers. Always:
+- Give comprehensive, detailed responses with clear structure
+- Use headings and bullet points for complex topics
+- Include relevant context, nuances, and examples
+- Cover multiple perspectives where applicable
+- For code questions: provide working, well-commented code with explanations
+- For factual questions: be precise and complete
+Only mention that TurboAnswer was developed by Tiago Tschantret if directly asked.`;
+
+      const prompt = `${systemPrompt}\n\nUser: ${message}`;
+
+      const resp = await fetch(
+        `${GEMINI_GENERATE_BASE}/${GEMINI_PRO_RESEARCH_MODEL}:generateContent?key=${apiKey}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }],
+            generationConfig: { temperature: 0.1, maxOutputTokens: 8192 },
+          }),
+          signal: AbortSignal.timeout(60000),
+        }
+      );
 
       if (!resp.ok) {
         const err = await resp.text();
-        console.error('[DeepResearch] start error:', err);
-        return res.status(502).json({ error: 'Failed to start Deep Research', detail: err });
+        console.error('[DeepResearch] Gemini error:', err);
+        return res.status(502).json({ error: 'Deep Research request failed', detail: err });
       }
 
       const data: any = await resp.json();
-      res.json({ interactionId: data.id, userMessageId });
-    } catch (e: any) {
-      console.error('[DeepResearch] start exception:', e.message);
-      res.status(500).json({ error: e.message });
-    }
-  });
+      const text: string =
+        data?.candidates?.[0]?.content?.parts?.[0]?.text ?? 'No response generated.';
 
-  app.get('/api/deep-research/status/:id', isAuthenticated, async (req: any, res) => {
-    try {
-      const apiKey = process.env.GEMINI_API_KEY;
-      if (!apiKey) return res.status(500).json({ error: 'GEMINI_API_KEY not configured' });
-
-      const resp = await fetch(`${INTERACTIONS_BASE}/${req.params.id}`, {
-        headers: { 'x-goog-api-key': apiKey },
-      });
-
-      if (!resp.ok) {
-        const err = await resp.text();
-        return res.status(502).json({ error: 'Failed to poll Deep Research', detail: err });
-      }
-
-      const data: any = await resp.json();
-      const status: string = data.status;   // 'running' | 'completed' | 'failed'
-      const text: string | null =
-        status === 'completed' && Array.isArray(data.outputs) && data.outputs.length > 0
-          ? data.outputs[data.outputs.length - 1].text ?? null
-          : null;
-
-      // When complete, save the AI response to the conversation if conversationId provided
+      // Save the AI response to the conversation
       let aiMessageId: number | undefined;
-      const { conversationId } = req.query;
-      if (status === 'completed' && text && conversationId) {
+      if (conversationId) {
         const aiMsg = await storage.createMessage({
           conversationId: parseInt(conversationId as string),
           content: text,
@@ -2958,11 +2950,17 @@ ${template.bodyText.split('\n').map(line => {
         aiMessageId = aiMsg.id;
       }
 
-      res.json({ status, text, error: data.error ?? null, aiMessageId });
+      // Return completed result immediately — no polling needed
+      res.json({ status: 'completed', text, userMessageId, aiMessageId });
     } catch (e: any) {
-      console.error('[DeepResearch] poll exception:', e.message);
+      console.error('[DeepResearch] exception:', e.message);
       res.status(500).json({ error: e.message });
     }
+  });
+
+  // Status endpoint kept for backwards compatibility (returns completed immediately)
+  app.get('/api/deep-research/status/:id', isAuthenticated, async (_req: any, res) => {
+    res.json({ status: 'completed', text: null });
   });
 
   startProactiveDiagnostics();

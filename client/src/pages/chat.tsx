@@ -255,16 +255,13 @@ export default function Chat() {
 
       if (!resp.ok) {
         setIsDeepResearching(false);
-        toast({ title: 'Error', description: data.error || 'Failed to start Deep Research', variant: 'destructive' });
+        toast({ title: 'Error', description: data.error || 'Deep Research failed', variant: 'destructive' });
         return;
       }
 
-      deepResearchInteractionId.current = data.interactionId;
-      deepResearchConvId.current        = convId;
-      // Show the user message immediately
+      // Backend now returns the completed result immediately — no polling needed
+      setIsDeepResearching(false);
       queryClient.invalidateQueries({ queryKey: ['/api/conversations', convId, 'messages'] });
-      // Start polling
-      deepResearchPollTimer.current = setTimeout(pollDeepResearch, 5000);
     } catch (e: any) {
       setIsDeepResearching(false);
       toast({ title: 'Error', description: e.message || 'Network error', variant: 'destructive' });
@@ -286,30 +283,12 @@ export default function Chat() {
     }
   };
 
-  // Only send to the Deep Research agent if the query actually needs it.
-  // Short/simple queries (code snippets, quick facts, greetings, single-line tasks)
-  // get routed through the fast Gemini path even when Deep Research mode is on.
-  const needsDeepResearch = (text: string): boolean => {
-    const words = text.trim().split(/\s+/);
-    if (words.length < 12) return false; // very short → always fast
-    const researchKeywords = [
-      'research', 'analyze', 'analyse', 'investigate', 'compare', 'contrast',
-      'summarize', 'summarise', 'overview', 'deep dive', 'in depth', 'in-depth',
-      'comprehensive', 'detailed report', 'find out', 'what are the latest',
-      'latest news', 'recent', 'history of', 'evolution of', 'trends in',
-      'survey', 'review all', 'gather information', 'cite', 'sources',
-      'literature', 'academic', 'study', 'findings', 'data on',
-    ];
-    const lower = text.toLowerCase();
-    return researchKeywords.some(kw => lower.includes(kw));
-  };
-
   const handleSendMessage = async () => {
     if (!messageContent.trim() || sendMessageMutation.isPending || isDeepResearching) return;
     const convId = await getOrCreateConversationId();
     if (!convId) return;
     const content = messageContent.trim();
-    if (deepResearchMode && needsDeepResearch(content)) {
+    if (deepResearchMode) {
       await startDeepResearch(content, convId);
     } else {
       setIsTyping(true);
@@ -415,7 +394,7 @@ export default function Chat() {
     const convId = await getOrCreateConversationId();
     if (!convId) return;
     const content = messageContent.trim();
-    if (deepResearchMode && needsDeepResearch(content)) {
+    if (deepResearchMode) {
       await startDeepResearch(content, convId);
     } else {
       setIsTyping(true);
@@ -469,7 +448,7 @@ export default function Chat() {
               <button
                 onClick={() => setDeepResearchMode(v => !v)}
                 disabled={isDeepResearching}
-                title={deepResearchMode ? 'Deep Research ON — simple questions use fast mode automatically' : 'Switch to Deep Research (Gemini 3.1 Pro · auto-detects complex queries)'}
+                title={deepResearchMode ? 'Deep Research ON — Gemini 3.1 Pro with extended depth' : 'Switch to Deep Research (Gemini 3.1 Pro · thorough responses)'}
                 className={`h-8 px-2 flex items-center gap-1 rounded-lg text-[10px] sm:text-xs font-medium border transition-colors
                   ${deepResearchMode
                     ? 'bg-violet-600 border-violet-500 text-white'
@@ -813,7 +792,7 @@ export default function Chat() {
                     <div className="w-1.5 h-1.5 bg-violet-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
                     <div className="w-1.5 h-1.5 bg-violet-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
                   </div>
-                  <span className={`text-[11px] ${isDark ? 'text-zinc-400' : 'text-gray-500'}`}>Researching — this may take a few minutes…</span>
+                  <span className={`text-[11px] ${isDark ? 'text-zinc-400' : 'text-gray-500'}`}>Gemini 3.1 Pro is thinking deeply…</span>
                 </div>
               </div>
             </div>
