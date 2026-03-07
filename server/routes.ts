@@ -3023,98 +3023,110 @@ Only mention that TurboAnswer was developed by Tiago Tschantret if directly aske
 
   // AI-generate a complete project from a single prompt
   app.post('/api/code/ai-generate', isAuthenticated, async (req: any, res) => {
+    // Extend timeout for this heavy AI endpoint
+    res.setTimeout(115000);
     try {
       const userId = req.user.claims.sub;
-      const { prompt } = req.body;
+      const { prompt, projectId } = req.body;
       if (!prompt?.trim()) return res.status(400).json({ error: 'Prompt required' });
 
       const apiKey = process.env.GEMINI_API_KEY;
       if (!apiKey) return res.status(500).json({ error: 'AI not configured' });
 
-      const systemPrompt = `You are Turbo Code, an expert full-stack developer. Given a user's idea, you generate a complete, fully working, beautiful app.
+      const systemPrompt = `You are Turbo Code, an expert full-stack developer. Given a user's idea, generate a complete, fully working, beautiful app.
 
-CRITICAL: You must respond with ONLY valid JSON. No markdown, no explanation, just the JSON object.
+CRITICAL: You MUST respond with ONLY a valid JSON object. No markdown fences, no explanation text outside the JSON.
 
-Decide the best technology:
-- Use "html" (mainLanguage) for visual apps, games, UI tools, dashboards, calculators, clocks, timers, etc. → produce index.html + style.css + script.js
-- Use "python" for data processing, algorithms, scripts, math tools
-- Use "javascript" for Node.js CLIs or utility scripts
+Technology decision:
+- Use "html" for visual apps, games, UI tools, dashboards, calculators, clocks, timers, drawing tools, etc.
+- Use "python" for data processing, algorithms, scripts, math
+- Use "javascript" for Node.js utilities/CLIs
 
-JSON format:
-{
-  "projectName": "Short descriptive name",
-  "mainLanguage": "html",
-  "description": "One-line description",
-  "files": [
-    { "name": "index.html", "language": "html", "content": "full file content" },
-    { "name": "style.css", "language": "css", "content": "full file content" },
-    { "name": "script.js", "language": "javascript", "content": "full file content" }
-  ]
-}
+Return this exact JSON structure:
+{"projectName":"Short name","mainLanguage":"html","description":"One line","files":[{"name":"index.html","language":"html","content":"..."},{"name":"style.css","language":"css","content":"..."},{"name":"script.js","language":"javascript","content":"..."}]}
 
-Requirements for HTML/CSS/JS apps:
-- Use a stunning dark theme by default with gradients, glassmorphism, and smooth animations
-- Make the app fully functional — every button/feature must work
-- Write clean, well-commented JavaScript
-- CSS: use CSS custom properties, flexbox/grid, keyframe animations, hover effects
-- HTML: proper semantic structure, link style.css and script.js as separate files
-- Do NOT inline CSS or JS in the HTML — keep them as separate files and use <link> and <script src=""> tags
+HTML/CSS/JS requirements:
+- Stunning dark theme: deep navy/purple background, neon accents, glassmorphism cards
+- Every button and feature must be fully functional
+- CSS: variables, grid/flex, keyframe animations, smooth transitions, hover effects
+- Keep CSS and JS in separate files — link via <link href="style.css"> and <script src="script.js">
+- Do NOT inline styles or scripts in the HTML file
 
-Make the code production-quality and impressive. The user is building a real app.`;
+Write production-quality, impressive code.`;
 
-      const userPrompt = `Build this app: ${prompt.trim()}`;
-
-      const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-pro-preview:generateContent?key=${apiKey}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: `${systemPrompt}\n\nUser request: ${userPrompt}` }] }],
-          generationConfig: { temperature: 0.4, maxOutputTokens: 8192, responseMimeType: 'application/json' },
-        }),
-        signal: AbortSignal.timeout(60000),
-      });
-
-      let rawText = '';
-      if (!resp.ok) {
-        // Fallback to flash
-        const fr = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-preview:generateContent?key=${apiKey}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: `${systemPrompt}\n\nUser request: ${userPrompt}` }] }],
-            generationConfig: { temperature: 0.4, maxOutputTokens: 4096 },
-          }),
-          signal: AbortSignal.timeout(30000),
-        });
-        const fd: any = await fr.json();
-        rawText = fd.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
-      } else {
-        const d: any = await resp.json();
-        rawText = d.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
+      async function callGemini(model: string, maxTokens: number, timeoutMs: number): Promise<string | null> {
+        try {
+          const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: `${systemPrompt}\n\nBuild: ${prompt.trim()}` }] }],
+              generationConfig: { temperature: 0.35, maxOutputTokens: maxTokens },
+            }),
+            signal: AbortSignal.timeout(timeoutMs),
+          });
+          if (!r.ok) return null;
+          const d: any = await r.json();
+          return d.candidates?.[0]?.content?.parts?.[0]?.text || null;
+        } catch { return null; }
       }
 
-      // Clean and parse JSON (strip markdown code fences if present)
-      const cleaned = rawText.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
+      // Try fastest first, escalate to higher quality
+      let rawText = await callGemini('gemini-2.0-flash', 8192, 45000)
+        ?? await callGemini('gemini-2.0-flash-lite', 4096, 30000)
+        ?? await callGemini('gemini-3.1-flash-lite-preview', 4096, 45000)
+        ?? '';
+
+      if (!rawText) return res.status(502).json({ error: 'AI timed out. Please try a shorter description.' });
+
+      // Strip any markdown fences Gemini might add
+      const cleaned = rawText
+        .replace(/^```(?:json)?\s*/im, '')
+        .replace(/\s*```\s*$/im, '')
+        .trim();
+
+      // Extract JSON object from text in case there's leading/trailing prose
+      const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) return res.status(502).json({ error: 'AI returned unreadable output. Please try again.' });
+
       let generated: any;
       try {
-        generated = JSON.parse(cleaned);
+        generated = JSON.parse(jsonMatch[0]);
       } catch {
-        return res.status(502).json({ error: 'AI returned invalid JSON. Please try again.' });
+        return res.status(502).json({ error: 'AI returned malformed JSON. Please try again.' });
       }
 
       if (!generated.files?.length) return res.status(502).json({ error: 'AI did not return any files. Please try again.' });
 
-      // Save as new project
       const { db } = await import('./db');
       const { codeProjects } = await import('../shared/schema');
-      const [project] = await db.insert(codeProjects).values({
-        userId,
-        name: generated.projectName || prompt.slice(0, 40),
-        description: generated.description || '',
-        files: generated.files,
-        mainLanguage: generated.mainLanguage || 'html',
-        isPublished: false,
-      }).returning();
+
+      let project: any;
+
+      // If projectId supplied → update existing project (rebuild)
+      if (projectId) {
+        const [updated] = await db.update(codeProjects)
+          .set({
+            name: generated.projectName || project?.name || prompt.slice(0, 40),
+            description: generated.description || '',
+            files: generated.files,
+            mainLanguage: generated.mainLanguage || 'html',
+            updatedAt: new Date(),
+          })
+          .where(eq(codeProjects.id, parseInt(projectId)))
+          .returning();
+        project = updated;
+      } else {
+        const [inserted] = await db.insert(codeProjects).values({
+          userId,
+          name: generated.projectName || prompt.slice(0, 40),
+          description: generated.description || '',
+          files: generated.files,
+          mainLanguage: generated.mainLanguage || 'html',
+          isPublished: false,
+        }).returning();
+        project = inserted;
+      }
 
       res.json({ project, files: generated.files });
     } catch (e: any) {

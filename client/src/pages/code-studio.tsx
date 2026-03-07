@@ -174,7 +174,7 @@ export default function CodeStudio() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ prompt: prompt.trim() }),
+        body: JSON.stringify({ prompt: prompt.trim(), projectId: currentProject?.id }),
       });
       const data = await res.json();
 
@@ -514,9 +514,17 @@ export default function CodeStudio() {
           {isRunning ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Play className="h-3.5 w-3.5" />} Run
         </Button>
 
+        {deployUrl && (
+          <a href={deployUrl} target="_blank" rel="noopener noreferrer"
+            className={`flex items-center gap-1 text-xs px-2 py-1 rounded-lg border transition-colors ${isDark ? "border-green-500/30 text-green-400 hover:bg-green-500/10" : "border-green-300 text-green-600 hover:bg-green-50"}`}>
+            <div className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+            Live
+            <ExternalLink className="h-3 w-3" />
+          </a>
+        )}
         <Button size="sm" onClick={() => setShowDeploy(true)} disabled={!hasProject}
           className="h-8 gap-1.5 text-xs bg-violet-600 hover:bg-violet-500 text-white">
-          <Rocket className="h-3.5 w-3.5" /> Deploy
+          <Rocket className="h-3.5 w-3.5" /> {deployUrl ? "Redeploy" : "Deploy"}
         </Button>
       </div>
 
@@ -818,50 +826,79 @@ export default function CodeStudio() {
 
       {/* ── Deploy Modal ── */}
       {showDeploy && (
-        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={() => setShowDeploy(false)}>
-          <div onClick={e => e.stopPropagation()} className={`w-full max-w-lg rounded-2xl border p-6 shadow-2xl ${isDark ? "bg-[#13131f] border-white/10" : "bg-white border-gray-200"}`}>
-            <div className="flex items-center gap-3 mb-5">
-              <div className="p-2 rounded-xl bg-violet-500/20"><Rocket className="h-6 w-6 text-violet-400" /></div>
-              <div>
-                <h2 className={`text-lg font-bold ${text}`}>Deploy Project</h2>
-                <p className={`text-xs ${muted}`}>Publish and get a shareable link</p>
+        <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" onClick={() => setShowDeploy(false)}>
+          <div onClick={e => e.stopPropagation()} className={`w-full max-w-lg rounded-2xl border shadow-2xl overflow-hidden ${isDark ? "bg-[#13131f] border-white/10" : "bg-white border-gray-200"}`}>
+            {/* Header */}
+            <div className={`px-6 py-4 border-b ${border} ${isDark ? "bg-gradient-to-r from-violet-900/30 to-cyan-900/20" : "bg-gradient-to-r from-violet-50 to-cyan-50"}`}>
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-xl bg-violet-500/20"><Rocket className="h-6 w-6 text-violet-400" /></div>
+                <div>
+                  <h2 className={`text-lg font-bold ${text}`}>Deploy "{currentProject?.name}"</h2>
+                  <p className={`text-xs ${muted}`}>Get a public URL you can share with anyone</p>
+                </div>
+                <button onClick={() => setShowDeploy(false)} className={`ml-auto ${muted} hover:text-white`}><X className="h-5 w-5" /></button>
               </div>
             </div>
-            {deployUrl && (
-              <div className={`rounded-xl border p-4 mb-4 ${isDark ? "bg-green-500/10 border-green-500/30" : "bg-green-50 border-green-200"}`}>
-                <div className="flex items-center gap-2 mb-1">
-                  <Globe className="h-4 w-4 text-green-400" />
-                  <span className={`text-sm font-semibold ${isDark ? "text-green-300" : "text-green-700"}`}>Live at:</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <code className={`flex-1 text-xs px-2 py-1 rounded ${isDark ? "bg-black/30 text-green-300" : "bg-white text-green-700 border border-green-200"}`}>
+
+            <div className="p-6 space-y-5">
+              {/* Live URL — shown after deploy */}
+              {deployUrl ? (
+                <div className={`rounded-2xl border p-4 ${isDark ? "bg-green-500/8 border-green-500/25" : "bg-green-50 border-green-200"}`}>
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+                    <span className={`text-sm font-semibold ${isDark ? "text-green-300" : "text-green-700"}`}>Your app is live!</span>
+                  </div>
+                  <div className={`rounded-xl px-3 py-2.5 mb-3 font-mono text-sm break-all ${isDark ? "bg-black/40 text-green-300" : "bg-white text-green-800 border border-green-200"}`}>
                     {window.location.origin}{deployUrl}
-                  </code>
-                  <button onClick={copyDeployUrl} className="text-green-400 hover:text-green-300">
-                    {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                  </button>
-                  <a href={deployUrl} target="_blank" rel="noopener noreferrer" className="text-green-400 hover:text-green-300">
-                    <ExternalLink className="h-4 w-4" />
-                  </a>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button onClick={copyDeployUrl} variant="outline" size="sm" className={`flex-1 gap-2 ${isDark ? "border-green-500/30 text-green-300 hover:bg-green-500/10" : "border-green-300 text-green-700"}`}>
+                      {copied ? <><Check className="h-3.5 w-3.5" /> Copied!</> : <><Copy className="h-3.5 w-3.5" /> Copy URL</>}
+                    </Button>
+                    <a href={deployUrl} target="_blank" rel="noopener noreferrer" className="flex-1">
+                      <Button size="sm" className="w-full gap-2 bg-green-600 hover:bg-green-500 text-white">
+                        <ExternalLink className="h-3.5 w-3.5" /> Open App
+                      </Button>
+                    </a>
+                  </div>
                 </div>
-              </div>
-            )}
-            <div className="mb-4">
-              <label className={`text-xs font-medium ${muted} mb-1.5 block`}>Custom Domain (optional)</label>
-              <Input value={customDomain} onChange={e => setCustomDomain(e.target.value)} placeholder="myapp.com"
-                className={isDark ? "bg-black/20 border-white/10" : ""} />
-              {customDomain && (
-                <div className={`mt-2 text-xs rounded-lg p-3 ${isDark ? "bg-blue-500/10 border border-blue-500/20 text-blue-300" : "bg-blue-50 border border-blue-200 text-blue-700"}`}>
-                  Add a CNAME record pointing <code>{customDomain}</code> to your TurboAnswer domain, then redeploy.
+              ) : (
+                <div className={`rounded-xl border border-dashed p-4 text-center ${isDark ? "border-white/15 text-gray-500" : "border-gray-300 text-gray-400"}`}>
+                  <Globe className="h-8 w-8 mx-auto mb-2 opacity-30" />
+                  <p className="text-sm">Your app will be live at:</p>
+                  <p className={`text-xs mt-1 font-mono ${isDark ? "text-violet-400" : "text-violet-600"}`}>{window.location.origin}/p/your-app-name</p>
                 </div>
               )}
-            </div>
-            <div className="flex gap-2">
-              <Button variant="outline" onClick={() => setShowDeploy(false)} className="flex-1">Cancel</Button>
-              <Button onClick={deployProject} disabled={isDeploying} className="flex-1 bg-violet-600 hover:bg-violet-500 gap-2">
-                {isDeploying ? <Loader2 className="h-4 w-4 animate-spin" /> : <Rocket className="h-4 w-4" />}
-                {deployUrl ? "Redeploy" : "Deploy Now"}
-              </Button>
+
+              {/* Custom Domain */}
+              <div>
+                <label className={`text-xs font-semibold uppercase tracking-wider ${muted} mb-2 block`}>Custom Domain</label>
+                <div className="flex gap-2">
+                  <Input value={customDomain} onChange={e => setCustomDomain(e.target.value)} placeholder="myapp.com or app.mysite.com"
+                    className={`text-sm ${isDark ? "bg-black/20 border-white/10" : ""}`} />
+                </div>
+                {customDomain && (
+                  <div className={`mt-2 rounded-xl border p-3 text-xs space-y-1.5 ${isDark ? "bg-blue-500/8 border-blue-500/20 text-blue-300" : "bg-blue-50 border-blue-200 text-blue-800"}`}>
+                    <p className="font-semibold">DNS Setup Instructions:</p>
+                    <p>Add one of these records at your domain registrar:</p>
+                    <div className={`rounded-lg p-2 font-mono text-[11px] space-y-1 ${isDark ? "bg-black/30" : "bg-white border border-blue-200"}`}>
+                      <div><span className="opacity-60">Type:</span> CNAME</div>
+                      <div><span className="opacity-60">Name:</span> {customDomain.includes('.') && customDomain.split('.').length > 2 ? customDomain.split('.')[0] : '@'}</div>
+                      <div><span className="opacity-60">Value:</span> {window.location.host}</div>
+                    </div>
+                    <p className="opacity-70">DNS changes can take up to 24–48 hours to propagate worldwide.</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Actions */}
+              <div className="flex gap-3 pt-1">
+                <Button variant="outline" onClick={() => setShowDeploy(false)} className="flex-1">Cancel</Button>
+                <Button onClick={deployProject} disabled={isDeploying} className="flex-1 bg-gradient-to-r from-violet-600 to-cyan-600 hover:from-violet-500 hover:to-cyan-500 text-white gap-2">
+                  {isDeploying ? <Loader2 className="h-4 w-4 animate-spin" /> : <Rocket className="h-4 w-4" />}
+                  {deployUrl ? "Redeploy" : "Deploy & Get URL"}
+                </Button>
+              </div>
             </div>
           </div>
         </div>
