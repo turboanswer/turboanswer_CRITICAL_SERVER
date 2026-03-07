@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import lockdownRobotImg from '@assets/lockdown-robot.png';
 
 // ── Scenario definitions ────────────────────────────────────────────────────
 export type LockdownScenario = 'system_failure' | 'security_breach' | 'public_safety' | 'malfunction';
@@ -216,6 +217,14 @@ export default function LockdownScreen({ scenario = 'system_failure' }: Props) {
     } catch {}
   }
 
+  function restartAudio() {
+    // Stop any existing audio, reset flag, restart immediately
+    try { stopRef.current?.(); } catch {}
+    stopRef.current = null;
+    playingRef.current = false;
+    attemptPlay();
+  }
+
   useEffect(() => {
     // Attempt immediately — voice often works without gesture, audio needs it
     const tryVoice = () => {
@@ -228,8 +237,8 @@ export default function LockdownScreen({ scenario = 'system_failure' }: Props) {
     tryVoice();
     attemptPlay();
 
-    const t1 = setTimeout(() => { if (!playingRef.current) attemptPlay(); }, 600);
-    const t2 = setTimeout(() => { if (!playingRef.current) attemptPlay(); }, 1500);
+    const t1 = setTimeout(() => { if (!playingRef.current) attemptPlay(); }, 300);
+    const t2 = setTimeout(() => { if (!playingRef.current) attemptPlay(); }, 800);
 
     const onInteract = () => handleUserGesture();
     document.addEventListener('mousedown',   onInteract);
@@ -237,12 +246,23 @@ export default function LockdownScreen({ scenario = 'system_failure' }: Props) {
     document.addEventListener('touchstart',  onInteract);
     document.addEventListener('keydown',     onInteract);
 
+    // Re-sound alarm immediately when user returns to the tab/page
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        restartAudio();
+        voiceActive.current = false;
+        doSpeak();
+      }
+    };
+    document.addEventListener('visibilitychange', onVisibilityChange);
+
     return () => {
       clearTimeout(t1); clearTimeout(t2);
       document.removeEventListener('mousedown',   onInteract);
       document.removeEventListener('pointerdown', onInteract);
       document.removeEventListener('touchstart',  onInteract);
       document.removeEventListener('keydown',     onInteract);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
       stopRef.current?.();
       window.speechSynthesis?.cancel();
     };
@@ -255,71 +275,25 @@ export default function LockdownScreen({ scenario = 'system_failure' }: Props) {
       onClick={handleUserGesture}
     >
       {/* Fallen robot illustration */}
-      <svg
-        viewBox="0 0 420 340"
-        style={{ width: 'min(420px, 80vw)', marginBottom: '2rem', overflow: 'visible' }}
-        aria-hidden="true"
-      >
-        <ellipse cx="210" cy="330" rx="130" ry="10" fill="rgba(255,0,0,0.08)" />
-        <g transform="rotate(28, 210, 200)">
-          <rect x="148" y="258" width="30" height="72" rx="7" fill="#1e1e1e" stroke="#3a3a3a" strokeWidth="1.5" transform="rotate(-18, 163, 294)" />
-          <rect x="148" y="322" width="30" height="14" rx="4" fill="#252525" stroke="#444" strokeWidth="1.5" transform="rotate(-18, 163, 329)" />
-          <rect x="182" y="260" width="30" height="72" rx="7" fill="#1e1e1e" stroke="#3a3a3a" strokeWidth="1.5" transform="rotate(22, 197, 296)" />
-          <rect x="182" y="324" width="30" height="14" rx="4" fill="#252525" stroke="#444" strokeWidth="1.5" transform="rotate(22, 197, 331)" />
-          <circle cx="162" cy="262" r="9" fill="#141414" stroke="#3a3a3a" strokeWidth="1.5" />
-          <circle cx="198" cy="264" r="9" fill="#141414" stroke="#3a3a3a" strokeWidth="1.5" />
-          <rect x="130" y="155" width="100" height="108" rx="12" fill="#1a1a1a" stroke="#3d3d3d" strokeWidth="2" />
-          <rect x="85" y="158" width="44" height="52" rx="5" fill="#111" stroke="#555" strokeWidth="1.5" transform="rotate(-50, 131, 175)" />
-          <circle cx="131" cy="162" r="3" fill="#555" />
-          <rect x="136" y="165" width="82" height="86" rx="5" fill="#040c04" stroke="#1a3a1a" strokeWidth="1" />
-          <line x1="146" y1="178" x2="208" y2="178" stroke="#00cc55" strokeWidth="1.2" opacity="0.7" />
-          <line x1="146" y1="188" x2="190" y2="188" stroke="#00cc55" strokeWidth="1" opacity="0.5" />
-          <line x1="158" y1="178" x2="158" y2="238" stroke="#00cc55" strokeWidth="1" opacity="0.6" />
-          <line x1="178" y1="188" x2="178" y2="235" stroke="#00cc55" strokeWidth="1" opacity="0.4" />
-          <line x1="195" y1="178" x2="195" y2="220" stroke="#00cc55" strokeWidth="1" opacity="0.5" />
-          <rect x="165" y="198" width="22" height="14" rx="2" fill="#001a00" stroke="#00cc55" strokeWidth="1" opacity="0.7" />
-          <circle cx="158" cy="178" r="3.5" fill="#00cc55" opacity="0.9" />
-          <circle cx="178" cy="188" r="3.5" fill="#00cc55" opacity="0.7" />
-          <circle cx="195" cy="178" r="3" fill="#00cc55" opacity="0.8" />
-          <circle cx="200" cy="215" r="5" fill="#cc0000" opacity="0.85" />
-          <rect x="52" y="148" width="78" height="24" rx="9" fill="#1e1e1e" stroke="#3a3a3a" strokeWidth="1.5" transform="rotate(-30, 130, 160)" />
-          <rect x="40" y="138" width="18" height="24" rx="6" fill="#252525" stroke="#444" strokeWidth="1.5" transform="rotate(-30, 49, 150)" />
-          <rect x="230" y="158" width="78" height="24" rx="9" fill="#1e1e1e" stroke="#3a3a3a" strokeWidth="1.5" transform="rotate(18, 230, 170)" />
-          <rect x="304" y="160" width="18" height="24" rx="6" fill="#252525" stroke="#444" strokeWidth="1.5" transform="rotate(18, 313, 172)" />
-          <circle cx="130" cy="162" r="11" fill="#141414" stroke="#444" strokeWidth="1.5" />
-          <circle cx="230" cy="170" r="11" fill="#141414" stroke="#444" strokeWidth="1.5" />
-          <rect x="153" y="144" width="28" height="14" rx="5" fill="#191919" stroke="#3a3a3a" strokeWidth="1.5" />
-          <rect x="133" y="80" width="94" height="68" rx="12" fill="#1a1a1a" stroke="#3d3d3d" strokeWidth="2" />
-          <rect x="142" y="98" width="76" height="22" rx="6" fill="#180000" stroke="#3a3a3a" strokeWidth="1" />
-          <rect x="146" y="101" width="22" height="16" rx="4" fill="#220000" opacity="0.5" />
-          <rect x="192" y="101" width="22" height="16" rx="4" fill="#6b0000" opacity="0.8" />
-          <rect x="196" y="104" width="14" height="10" rx="2" fill="#cc0000" opacity="0.5" />
-          <polyline points="172,96 176,108 170,120" stroke="#0a0a0a" strokeWidth="2.5" fill="none" strokeLinecap="round" />
-          <rect x="155" y="130" width="50" height="8" rx="3" fill="#111" stroke="#333" strokeWidth="1" />
-          <line x1="165" y1="130" x2="165" y2="138" stroke="#1a1a1a" strokeWidth="1.5" />
-          <line x1="175" y1="130" x2="175" y2="138" stroke="#1a1a1a" strokeWidth="1.5" />
-          <line x1="185" y1="130" x2="185" y2="138" stroke="#1a1a1a" strokeWidth="1.5" />
-          <line x1="195" y1="130" x2="195" y2="138" stroke="#1a1a1a" strokeWidth="1.5" />
-          <line x1="180" y1="80" x2="176" y2="58" stroke="#3a3a3a" strokeWidth="3.5" strokeLinecap="round" />
-          <line x1="176" y1="58" x2="160" y2="44" stroke="#333" strokeWidth="2.5" strokeLinecap="round" />
-          <circle cx="160" cy="43" r="5" fill="#252525" stroke="#444" strokeWidth="1.5" />
-        </g>
-        {/* Electric bolt */}
-        <g>
-          <polyline points="108,188 88,205 112,216 85,238 114,234 92,262" stroke="#FFD700" strokeWidth="14" strokeLinecap="round" strokeLinejoin="round" fill="none" opacity="0.15" />
-          <polyline points="108,188 88,205 112,216 85,238 114,234 92,262" stroke="#FFD700" strokeWidth="8" strokeLinecap="round" strokeLinejoin="round" fill="none" opacity="0.35" />
-          <polyline points="108,188 88,205 112,216 85,238 114,234 92,262" stroke="#FFFFFF" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-          <polyline points="108,188 88,205 112,216 85,238 114,234 92,262" stroke="#FFD700" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round" fill="none" opacity="0.8" />
-          <line x1="88" y1="205" x2="72" y2="196" stroke="#FFD700" strokeWidth="2" strokeLinecap="round" opacity="0.9" />
-          <line x1="88" y1="205" x2="74" y2="218" stroke="#FFD700" strokeWidth="1.5" strokeLinecap="round" opacity="0.7" />
-          <line x1="85" y1="238" x2="66" y2="232" stroke="#FFD700" strokeWidth="2" strokeLinecap="round" opacity="0.9" />
-          <line x1="85" y1="238" x2="70" y2="250" stroke="#FFE066" strokeWidth="1.5" strokeLinecap="round" opacity="0.6" />
-          <line x1="92" y1="262" x2="76" y2="270" stroke="#FFD700" strokeWidth="2" strokeLinecap="round" opacity="0.8" />
-          <circle cx="70" cy="196" r="2.5" fill="#FFD700" opacity="0.9" />
-          <circle cx="63" cy="233" r="2" fill="#FFE066" opacity="0.8" />
-          <circle cx="74" cy="271" r="2.5" fill="#FFD700" opacity="0.7" />
-        </g>
-      </svg>
+      <div style={{ position: 'relative', marginBottom: '2rem' }}>
+        <img
+          src={lockdownRobotImg}
+          alt="System failure"
+          style={{
+            width: 'min(320px, 70vw)',
+            borderRadius: '12px',
+            boxShadow: '0 0 60px rgba(200,0,0,0.4), 0 0 120px rgba(180,0,0,0.2)',
+            filter: 'brightness(0.9) contrast(1.1)',
+          }}
+        />
+        {/* Red pulsing glow overlay */}
+        <div style={{
+          position: 'absolute', inset: 0, borderRadius: '12px',
+          background: 'radial-gradient(ellipse at center, rgba(200,0,0,0.15) 0%, transparent 70%)',
+          animation: 'pulse 2s ease-in-out infinite',
+        }} />
+      </div>
+      <style>{`@keyframes pulse { 0%,100%{opacity:0.4} 50%{opacity:1} }`}</style>
 
       {/* Text */}
       <div className="flex flex-col items-center text-center px-8 max-w-lg mx-auto gap-5">
