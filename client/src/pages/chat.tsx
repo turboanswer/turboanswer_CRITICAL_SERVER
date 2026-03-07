@@ -360,8 +360,8 @@ export default function Chat() {
               <SelectContent>
                 <SelectItem value="gemini-flash">Free</SelectItem>
                 <SelectItem value="gemini-pro">Pro $6.99</SelectItem>
-                <SelectItem value="claude-research">Research $15</SelectItem>
-                <SelectItem value="enterprise-research">Enterprise $50</SelectItem>
+                <SelectItem value="claude-research">Research $25</SelectItem>
+                <SelectItem value="enterprise-research">Enterprise $70</SelectItem>
               </SelectContent>
             </Select>
 
@@ -850,7 +850,11 @@ export default function Chat() {
                 <Brain className="text-white h-7 w-7" />
               </div>
               <h2 className={`text-xl font-bold mb-1 ${isDark ? 'text-white' : 'text-gray-900'}`}>Upgrade to Research</h2>
-              <p className={isDark ? 'text-zinc-400 text-sm' : 'text-gray-500 text-sm'}>Gemini 3.1 Pro — maximum intelligence on every question</p>
+              <p className={isDark ? 'text-zinc-400 text-sm' : 'text-gray-500 text-sm'}>Antigravity · Gemini 3.1 Pro · AI Video Studio</p>
+            </div>
+            {/* Google color bar */}
+            <div className="flex h-1 rounded-full overflow-hidden mb-4">
+              {["#4285F4","#EA4335","#FBBC05","#34A853"].map((c,i) => <div key={i} className="flex-1" style={{background:c}} />)}
             </div>
             <div className="text-center mb-1">
               <div className="inline-flex items-center gap-1.5 bg-green-500/15 border border-green-500/30 text-green-400 text-xs font-semibold px-3 py-1 rounded-full mb-3">
@@ -858,12 +862,12 @@ export default function Chat() {
               </div>
             </div>
             <div className="text-center mb-5">
-              <span className={`text-4xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>$15</span>
+              <span className={`text-4xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>$25</span>
               <span className={isDark ? 'text-zinc-400 text-base' : 'text-gray-500 text-base'}>/month</span>
               <p className={`text-xs mt-1 ${isDark ? 'text-zinc-500' : 'text-gray-400'}`}>after free trial</p>
             </div>
             <ul className="space-y-3 mb-6">
-              {["7 days free — cancel anytime", "Gemini 3.1 Pro - most powerful model", "Deep research analysis", "Comprehensive, in-depth answers", "Everything in Pro + Free included"].map((text, i) => (
+              {["7 days free — cancel anytime", "🔬 Antigravity — build apps with one prompt", "🎬 AI Video Studio (Google Veo 3.1)", "Gemini 3.1 Pro — maximum intelligence", "Everything in Pro + Free included"].map((text, i) => (
                 <li key={i} className="flex items-center gap-3">
                   <CheckCircle className="w-4 h-4 text-green-400 flex-shrink-0" />
                   <span className={`text-sm ${i === 0 ? 'font-semibold text-green-400' : isDark ? 'text-zinc-200' : 'text-gray-700'}`}>{text}</span>
@@ -892,7 +896,7 @@ export default function Chat() {
               <Brain className="w-4 h-4 mr-2" />
               {checkoutLoading ? "Loading..." : "Start Free Trial"}
             </Button>
-            <p className={`text-center text-xs mt-3 ${isDark ? 'text-zinc-500' : 'text-gray-400'}`}>7 days free, then $15/mo. Cancel anytime.</p>
+            <p className={`text-center text-xs mt-3 ${isDark ? 'text-zinc-500' : 'text-gray-400'}`}>7 days free, then $25/mo. Cancel anytime.</p>
           </div>
         </div>
       )}
@@ -908,7 +912,7 @@ export default function Chat() {
                 <Crown className="text-white h-7 w-7" />
               </div>
               <h2 className={`text-xl font-bold mb-1 ${isDark ? 'text-white' : 'text-gray-900'}`}>Upgrade to Enterprise</h2>
-              <p className={isDark ? 'text-zinc-400 text-sm' : 'text-gray-500 text-sm'}>Team access with 33% savings</p>
+              <p className={isDark ? 'text-zinc-400 text-sm' : 'text-gray-500 text-sm'}>Antigravity + Research for up to 5 team members</p>
             </div>
             <div className="text-center mb-1">
               <div className="inline-flex items-center gap-1.5 bg-green-500/15 border border-green-500/30 text-green-400 text-xs font-semibold px-3 py-1 rounded-full mb-3">
@@ -918,13 +922,13 @@ export default function Chat() {
             <div className="text-center mb-5">
               {entCouponApplied ? (
                 <>
-                  <span className={`text-lg line-through ${isDark ? 'text-zinc-500' : 'text-gray-400'}`}>$50</span>
+                  <span className={`text-lg line-through ${isDark ? 'text-zinc-500' : 'text-gray-400'}`}>$70</span>
                   <span className={`text-4xl font-bold ml-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>$0.99</span>
                   <span className={isDark ? 'text-zinc-400 text-base' : 'text-gray-500 text-base'}>/month</span>
                 </>
               ) : (
                 <>
-                  <span className={`text-4xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>$50</span>
+                  <span className={`text-4xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>$70</span>
                   <span className={isDark ? 'text-zinc-400 text-base' : 'text-gray-500 text-base'}>/month</span>
                   <p className={`text-xs mt-1 ${isDark ? 'text-zinc-500' : 'text-gray-400'}`}>after free trial</p>
                 </>
@@ -965,7 +969,7 @@ export default function Chat() {
               </div>
             </div>
             <ul className="space-y-3 mb-6">
-              {["7 days free — cancel anytime", "All Research features included", "Shareable 6-digit team code", "Up to 5 team members", "Save 33% vs individual Research plans", "Priority enterprise support"].map((text, i) => (
+              {["7 days free — cancel anytime", "🔬 Antigravity — build apps with one prompt", "🎬 AI Video Studio (Google Veo 3.1)", "All Research features included", "Shareable 6-digit team code (up to 5 members)", "Save 44% vs 5 individual Research plans"].map((text, i) => (
                 <li key={i} className="flex items-center gap-3">
                   <CheckCircle className="w-4 h-4 text-green-400 flex-shrink-0" />
                   <span className={`text-sm ${i === 0 ? 'font-semibold text-green-400' : isDark ? 'text-zinc-200' : 'text-gray-700'}`}>{text}</span>
@@ -996,7 +1000,7 @@ export default function Chat() {
               <Crown className="w-4 h-4 mr-2" />
               {checkoutLoading ? "Loading..." : entCouponApplied ? "Start Free Trial - $0.99/mo after" : "Start Free Trial"}
             </Button>
-            <p className={`text-center text-xs mt-3 ${isDark ? 'text-zinc-500' : 'text-gray-400'}`}>7 days free, then $50/mo. Cancel anytime.</p>
+            <p className={`text-center text-xs mt-3 ${isDark ? 'text-zinc-500' : 'text-gray-400'}`}>7 days free, then $70/mo. Cancel anytime.</p>
             <div className={`mt-4 pt-4 border-t ${isDark ? 'border-zinc-700' : 'border-gray-200'} text-center`}>
               <p className={`text-xs ${isDark ? 'text-zinc-500' : 'text-gray-400'}`}>
                 Need more than 5 members?{' '}

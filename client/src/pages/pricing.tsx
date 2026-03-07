@@ -50,15 +50,15 @@ const plans: PricingPlan[] = [
   {
     id: 'research',
     name: 'Research',
-    price: '$15',
+    price: '$25',
     period: 'per month',
-    description: 'Maximum depth on every question — always on',
+    description: 'Antigravity + Gemini 3.1 Pro + AI Video Studio',
     features: [
-      'Google Gemini 3.1 Pro',
-      'Deep research & analysis',
-      'Comprehensive reasoning',
+      '🔬 Antigravity — build full apps from one prompt',
+      '🎬 AI Video Studio (Google Veo 3.1)',
+      'Google Gemini 3.1 Pro — flagship model',
+      'Always-on maximum depth on every question',
       'All Pro features included',
-      'Maximum AI intelligence',
       'Priority support'
     ],
     apiPlan: 'research'
@@ -66,16 +66,16 @@ const plans: PricingPlan[] = [
   {
     id: 'enterprise',
     name: 'Enterprise',
-    price: '$50',
+    price: '$70',
     period: 'per month',
-    description: 'Team access with shareable code — save 33% vs individual plans',
+    description: 'Antigravity + Research for up to 5 team members — save 44%',
     features: [
+      '🔬 Antigravity — build full apps from one prompt',
+      '🎬 AI Video Studio (Google Veo 3.1)',
       'All Research features included',
       'Shareable 6-digit team code',
       'Up to 5 team members',
-      'Research-level access for all members',
-      'Save 33% compared to 5 individual Research plans',
-      'Priority enterprise support'
+      'Save 44% vs 5 individual Research plans'
     ],
     apiPlan: 'enterprise'
   }
