@@ -434,7 +434,7 @@ export default function LandingPage() {
           </div>
 
           {/* Giant ANTIGRAVITY title — each letter floats independently */}
-          <h2 className="text-6xl sm:text-8xl lg:text-[10rem] font-black leading-none tracking-tight mb-6 select-none flex items-end justify-center flex-wrap gap-0">
+          <h2 className="text-4xl sm:text-5xl lg:text-7xl font-black leading-none tracking-tight mb-6 select-none flex items-end justify-center flex-wrap gap-0">
             {[
               {l:'A',c:'#4285F4',a:'letter-float-1',d:'0s'},
               {l:'N',c:'#EA4335',a:'letter-float-3',d:'0.15s'},

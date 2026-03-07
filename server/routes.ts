@@ -3457,6 +3457,137 @@ console.log(\`Welcome, \${user.name}!\`);` },
     return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   }
 
+  // ─── Photo Editor — Enterprise exclusive ─────────────────────────────────
+  app.post('/api/photo-editor/generate', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      if (!['enterprise'].includes(user?.subscriptionTier || '')) {
+        return res.status(403).json({ error: 'Enterprise plan required for Photo Editor.' });
+      }
+      const { prompt, aspectRatio = '1:1' } = req.body;
+      if (!prompt) return res.status(400).json({ error: 'prompt required' });
+      const apiKey = process.env.GEMINI_API_KEY;
+      if (!apiKey) return res.status(500).json({ error: 'AI not configured' });
+
+      const imgRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-001:predict?key=${apiKey}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          instances: [{ prompt }],
+          parameters: { sampleCount: 1, aspectRatio },
+        }),
+      });
+      const imgData = await imgRes.json();
+      if (imgData.error) return res.status(500).json({ error: imgData.error.message || 'Image generation failed' });
+      const b64 = imgData.predictions?.[0]?.bytesBase64Encoded;
+      if (!b64) return res.status(500).json({ error: 'No image returned from Imagen 3' });
+      res.json({ imageData: b64, mimeType: 'image/png' });
+    } catch (e: any) { res.status(500).json({ error: e.message }); }
+  });
+
+  app.post('/api/photo-editor/edit', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      if (!['enterprise'].includes(user?.subscriptionTier || '')) {
+        return res.status(403).json({ error: 'Enterprise plan required for Photo Editor.' });
+      }
+      const { instruction, imageData, mimeType = 'image/jpeg' } = req.body;
+      if (!instruction || !imageData) return res.status(400).json({ error: 'instruction and imageData required' });
+      const apiKey = process.env.GEMINI_API_KEY;
+      if (!apiKey) return res.status(500).json({ error: 'AI not configured' });
+
+      const editRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${apiKey}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{
+            role: 'user',
+            parts: [
+              { text: `Edit this image as requested: ${instruction}. Return the modified image.` },
+              { inlineData: { mimeType, data: imageData } },
+            ],
+          }],
+          generationConfig: { responseModalities: ['IMAGE', 'TEXT'] },
+        }),
+      });
+      const editData = await editRes.json();
+      const parts = editData.candidates?.[0]?.content?.parts || [];
+      const imagePart = parts.find((p: any) => p.inlineData?.mimeType?.startsWith('image/'));
+      if (!imagePart) {
+        const textPart = parts.find((p: any) => p.text);
+        return res.status(500).json({ error: textPart?.text || 'No edited image returned' });
+      }
+      res.json({ imageData: imagePart.inlineData.data, mimeType: imagePart.inlineData.mimeType });
+    } catch (e: any) { res.status(500).json({ error: e.message }); }
+  });
+
+  // ─── Music Studio — Enterprise exclusive ─────────────────────────────────
+  app.post('/api/music/generate', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      if (!['enterprise'].includes(user?.subscriptionTier || '')) {
+        return res.status(403).json({ error: 'Enterprise plan required for Music Studio.' });
+      }
+      const { idea, genre = 'pop', mood = 'upbeat' } = req.body;
+      if (!idea) return res.status(400).json({ error: 'idea required' });
+      const apiKey = process.env.GEMINI_API_KEY;
+      if (!apiKey) return res.status(500).json({ error: 'AI not configured' });
+
+      const systemPrompt = `You are Lyria, Google's advanced music AI. Generate a complete original song based on the user's idea.
+Return ONLY valid JSON (no markdown, no code fences) in this exact structure:
+{
+  "title": "Song Title",
+  "artist": "Turbo x Lyria",
+  "bpm": 120,
+  "key": "C major",
+  "timeSignature": "4/4",
+  "genre": "${genre}",
+  "mood": "${mood}",
+  "description": "Brief evocative description of the song's feel",
+  "chordProgression": ["C", "Am", "F", "G"],
+  "sections": [
+    {"type": "intro", "chords": ["C","G"], "bars": 4},
+    {"type": "verse", "chords": ["C","Am","F","G"], "lyrics": "Line 1 of verse 1\\nLine 2 of verse 1\\nLine 3 of verse 1\\nLine 4 of verse 1"},
+    {"type": "pre-chorus", "chords": ["F","G"], "lyrics": "Pre-chorus line 1\\nPre-chorus line 2"},
+    {"type": "chorus", "chords": ["F","G","Am","C"], "lyrics": "Chorus line 1 (hook)\\nChorus line 2\\nChorus line 3\\nChorus line 4 (hook repeat)"},
+    {"type": "verse", "chords": ["C","Am","F","G"], "lyrics": "Line 1 of verse 2\\nLine 2 of verse 2\\nLine 3 of verse 2\\nLine 4 of verse 2"},
+    {"type": "chorus", "chords": ["F","G","Am","C"], "lyrics": "Chorus line 1 (hook)\\nChorus line 2\\nChorus line 3\\nChorus line 4 (hook repeat)"},
+    {"type": "bridge", "chords": ["Am","F","C","G"], "lyrics": "Bridge line 1\\nBridge line 2\\nBridge line 3"},
+    {"type": "outro", "chords": ["C","G"], "bars": 4}
+  ],
+  "melody": [
+    {"note": "C4", "duration": 0.5},{"note": "E4", "duration": 0.5},{"note": "G4", "duration": 1.0},
+    {"note": "A4", "duration": 0.5},{"note": "G4", "duration": 0.5},{"note": "F4", "duration": 1.0},
+    {"note": "E4", "duration": 0.5},{"note": "D4", "duration": 0.5},{"note": "C4", "duration": 1.0},
+    {"note": "G3", "duration": 0.5},{"note": "A3", "duration": 0.5},{"note": "C4", "duration": 1.0},
+    {"note": "D4", "duration": 0.5},{"note": "E4", "duration": 0.5},{"note": "G4", "duration": 0.5},{"note": "A4", "duration": 0.5}
+  ]
+}`;
+
+      const musicRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [
+            { role: 'user', parts: [{ text: systemPrompt }] },
+            { role: 'model', parts: [{ text: 'I\'ll generate the song now. Here is the JSON:' }] },
+            { role: 'user', parts: [{ text: `Song idea: ${idea}\nGenre: ${genre}\nMood: ${mood}\n\nGenerate the complete song JSON now.` }] },
+          ],
+          generationConfig: { temperature: 1.0, maxOutputTokens: 2048 },
+        }),
+      });
+      const musicData = await musicRes.json();
+      const rawText = musicData.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      const jsonMatch = rawText.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) return res.status(500).json({ error: 'Could not generate song data' });
+      const songData = JSON.parse(jsonMatch[0]);
+      res.json(songData);
+    } catch (e: any) { res.status(500).json({ error: e.message }); }
+  });
+
   startProactiveDiagnostics();
 
   // Auto-lockdown on critical infrastructure failure (DB or AI down — not memory pressure)
