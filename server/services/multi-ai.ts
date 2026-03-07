@@ -97,9 +97,6 @@ export async function generateAIResponse(
       enhancedMessage = `${userMessage}\n\n[Time zone reference provided]`;
     }
 
-    // Code/build requests must never be treated as "simple" — they always need full responses
-    const isCodeRequest = /\b(code|program|function|app|build|create|write|make|implement|script|html|css|javascript|typescript|python|java|swift|kotlin|sql|api|component|class|algorithm|snippet|example|demo|template|stopwatch|timer|clock|counter|calculator|form|button|navbar|sidebar|modal|animation|loop|array|object|method|hook|endpoint|route|database|query|sort|search|fetch|async|promise)\b/i.test(userMessage);
-    const isSimple = !isCodeRequest && (userMessage.length < 50 || /\b(hi|hello|hey|thanks|ok|yes|no|turbo)\b/i.test(userMessage));
     const languageInstruction = userLanguage !== "en" ? 
       `CRITICAL: Respond in ${userLanguage} language. ALL responses must be in ${userLanguage}.` : "";
 
@@ -111,11 +108,9 @@ export async function generateAIResponse(
     if (selectedModel === 'claude-research' || selectedModel === 'enterprise-research') {
       // Research / Enterprise tier → Gemini 3.1 Pro, always maximum depth
       geminiModel = 'gemini-3.1-pro-preview';
-      maxTokens = isSimple ? 500 : 8192;
+      maxTokens = 8192;
       temperature = 0.1;
-      systemPrompt = isSimple
-        ? `You are Turbo, powered by Gemini 3.1 Pro. Only mention TurboAnswer's developer (Tiago Tschantret) if directly asked. Be direct and conversational for simple exchanges.${languageInstruction ? ' ' + languageInstruction : ''}`
-        : `You are Turbo Answer Research, powered by Gemini 3.1 Pro — the most capable AI on this platform. Give thorough, expert-level responses on every topic. Always:
+      systemPrompt = `You are Turbo Answer Research, powered by Gemini 3.1 Pro — the most capable AI on this platform. Give thorough, expert-level responses on every topic. Always:
 - Answer the question directly and completely
 - Use clear structure (headings, bullets) for complex topics
 - For code: provide working, well-commented examples with explanations
@@ -126,19 +121,15 @@ Only mention that TurboAnswer was developed by Tiago Tschantret if directly aske
     } else if (selectedModel === 'gemini-pro') {
       // Pro tier ($6.99) → Gemini 3.1 Flash
       geminiModel = 'gemini-3.1-flash-lite-preview';
-      maxTokens = isSimple ? 500 : 4000;
+      maxTokens = 4000;
       temperature = 0.3;
-      systemPrompt = isSimple
-        ? `You are Turbo. Only if someone specifically asks who made, created, or developed TurboAnswer, say it was developed by Tiago Tschantret — otherwise never mention it. Be concise and direct.${languageInstruction ? ' ' + languageInstruction : ''}`
-        : `You are Turbo Answer, a premium assistant. Only if someone specifically asks who made, created, or developed TurboAnswer, say it was developed by Tiago Tschantret — otherwise never mention it. ${isCodeRequest ? 'For code requests: always provide complete, working code with a brief explanation. Never give partial snippets when a full working example is possible.' : 'Give clear, detailed responses.'}${languageInstruction ? ' ' + languageInstruction : ''}${additionalContext}`;
+      systemPrompt = `You are Turbo Answer, a premium assistant. Only if someone specifically asks who made, created, or developed TurboAnswer, say it was developed by Tiago Tschantret — otherwise never mention it. Give clear, complete, detailed responses to every question.${languageInstruction ? ' ' + languageInstruction : ''}${additionalContext}`;
     } else {
       // Free tier → Gemini 3.1 Flash Lite
       geminiModel = 'gemini-3.1-flash-lite-preview';
-      maxTokens = isSimple ? 200 : 2000;
+      maxTokens = 2000;
       temperature = 0.4;
-      systemPrompt = isSimple
-        ? `You are Turbo. Only if someone specifically asks who made, created, or developed TurboAnswer, say it was developed by Tiago Tschantret — otherwise never mention it. Answer in 1-2 sentences max.${languageInstruction ? ' ' + languageInstruction : ''}`
-        : `You are Turbo Answer. Only if someone specifically asks who made, created, or developed TurboAnswer, say it was developed by Tiago Tschantret — otherwise never mention it. ${isCodeRequest ? 'For code requests: always provide complete, working code with a brief explanation. Never give partial snippets when a full working example is possible.' : 'Give clear, helpful responses.'}${languageInstruction ? ' ' + languageInstruction : ''}${additionalContext}`;
+      systemPrompt = `You are Turbo Answer. Only if someone specifically asks who made, created, or developed TurboAnswer, say it was developed by Tiago Tschantret — otherwise never mention it. Give clear, complete, helpful responses to every question.${languageInstruction ? ' ' + languageInstruction : ''}${additionalContext}`;
     }
 
     const geminiApiKey = process.env.GEMINI_API_KEY;
