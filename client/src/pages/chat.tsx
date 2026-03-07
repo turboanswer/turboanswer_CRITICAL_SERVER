@@ -162,15 +162,14 @@ export default function Chat() {
   });
 
   const sendMessageMutation = useMutation({
-    mutationFn: async (content: string) => {
-      if (!currentConversationId) throw new Error("No conversation selected");
-      const response = await apiRequest("POST", `/api/conversations/${currentConversationId}/messages`, {
+    mutationFn: async ({ content, convId }: { content: string; convId: number }) => {
+      const response = await apiRequest("POST", `/api/conversations/${convId}/messages`, {
         content, selectedModel: selectedAIModel, language: currentLanguage,
       });
       return response.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/conversations", currentConversationId, "messages"] });
+    onSuccess: (_data, { convId }) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/conversations", convId, "messages"] });
       setMessageContent("");
       setIsTyping(false);
       if (isFreeTier) {
@@ -200,17 +199,38 @@ export default function Chat() {
     }
   }, [messageContent]);
 
+  // Returns the current conversation ID, creating one first if needed
+  const getOrCreateConversationId = async (): Promise<number | null> => {
+    if (currentConversationId) return currentConversationId;
+    try {
+      const response = await apiRequest("POST", "/api/conversations", { title: "New Conversation" });
+      const conversation: Conversation = await response.json();
+      setCurrentConversationId(conversation.id);
+      queryClient.invalidateQueries({ queryKey: ["/api/conversations"] });
+      return conversation.id;
+    } catch {
+      toast({ title: "Error", description: "Could not start a conversation", variant: "destructive" });
+      return null;
+    }
+  };
+
   const handleSendMessage = async () => {
     if (!messageContent.trim() || sendMessageMutation.isPending) return;
     setIsTyping(true);
-    sendMessageMutation.mutate(messageContent.trim());
+    const convId = await getOrCreateConversationId();
+    if (!convId) { setIsTyping(false); return; }
+    sendMessageMutation.mutate({ content: messageContent.trim(), convId });
   };
 
-  const handleDocumentAnalysis = (analysis: any) => {
-    if (currentConversationId && analysis) {
-      sendMessageMutation.mutate(`Document Analysis: ${analysis.filename}\n\nType: ${analysis.analysisType}\n\nResult:\n${analysis.analysis}`);
-      setShowDocumentUpload(false);
-    }
+  const handleDocumentAnalysis = async (analysis: any) => {
+    if (!analysis) return;
+    const convId = await getOrCreateConversationId();
+    if (!convId) return;
+    sendMessageMutation.mutate({
+      content: `Document Analysis: ${analysis.filename}\n\nType: ${analysis.analysisType}\n\nResult:\n${analysis.analysis}`,
+      convId,
+    });
+    setShowDocumentUpload(false);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -298,7 +318,9 @@ export default function Chat() {
   const handleSendWithPromo = async () => {
     if (!messageContent.trim() || sendMessageMutation.isPending) return;
     setIsTyping(true);
-    sendMessageMutation.mutate(messageContent.trim());
+    const convId = await getOrCreateConversationId();
+    if (!convId) { setIsTyping(false); return; }
+    sendMessageMutation.mutate({ content: messageContent.trim(), convId });
   };
 
   const handleModelChange = (value: string) => {
@@ -556,7 +578,7 @@ export default function Chat() {
         <div className={`${isDark ? 'bg-zinc-950 border-zinc-800' : 'bg-white border-gray-200'} border-b px-3 sm:px-6 py-3 sm:py-4 relative z-30 shrink-0`}>
           <ImageGenerator
             onImageGenerated={(imageUrl, prompt) => {
-              if (currentConversationId) sendMessageMutation.mutate(`Generated Image: "${prompt}"`);
+              if (currentConversationId) sendMessageMutation.mutate({ content: `Generated Image: "${prompt}"`, convId: currentConversationId });
               setShowImageGenerator(false);
             }}
             onClose={() => setShowImageGenerator(false)}
