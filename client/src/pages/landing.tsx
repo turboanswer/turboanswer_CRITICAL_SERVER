@@ -156,13 +156,13 @@ export default function LandingPage() {
   const appUrl = typeof window !== "undefined" ? window.location.origin : "";
 
   const features = [
-    { icon: <Brain className="h-6 w-6" />, title: "Multi-Model AI Chat", desc: "Powered by Gemini 2.5 Flash, Gemini Pro, and Gemini 2.5 Pro for intelligent conversations on any topic.", color: "blue", glow: "rgba(59,130,246,0.3)" },
+    { icon: <Brain className="h-6 w-6" />, title: "Multi-Model AI Chat", desc: "Powered by Gemini 2.5 Flash, Gemini 3.1 Flash, and Gemini 3.1 Pro for intelligent conversations on any topic.", color: "blue", glow: "rgba(59,130,246,0.3)" },
     { icon: <FileText className="h-6 w-6" />, title: "Document Analysis", desc: "Upload any document and get instant summaries, key insights, and detailed answers. Supports TXT, CSV, JSON, and more.", color: "green", glow: "rgba(34,197,94,0.3)" },
     { icon: <ImageIcon className="h-6 w-6" />, title: "AI Image Generation", desc: "Create stunning images from text descriptions using DALL-E 3. Generate art, designs, and visuals instantly.", color: "pink", glow: "rgba(236,72,153,0.3)" },
     { icon: <Globe className="h-6 w-6" />, title: "100+ Languages", desc: "Chat in any language with automatic detection and native-quality responses. Supports over 100 languages worldwide.", color: "purple", glow: "rgba(168,85,247,0.3)" },
     { icon: <Camera className="h-6 w-6" />, title: "Camera Vision", desc: "Point your camera at anything and get instant AI analysis. Identify objects, read text, solve problems visually.", color: "cyan", glow: "rgba(6,182,212,0.3)" },
     { icon: <Zap className="h-6 w-6" />, title: "Ultra-Fast Responses", desc: "Get answers in under a second with our optimized AI pipeline. No waiting, no lag, just instant intelligence.", color: "yellow", glow: "rgba(234,179,8,0.3)" },
-    { icon: <Search className="h-6 w-6" />, title: "Deep Research Mode", desc: "Research tier gives you Gemini 2.5 Pro for comprehensive, in-depth analysis with extended responses.", color: "indigo", glow: "rgba(99,102,241,0.3)" },
+    { icon: <Search className="h-6 w-6" />, title: "Deep Research Mode", desc: "Research tier gives you Gemini 3.1 Pro for comprehensive, in-depth analysis with extended responses.", color: "indigo", glow: "rgba(99,102,241,0.3)" },
     { icon: <Palette className="h-6 w-6" />, title: "Dark & Light Themes", desc: "Switch between dark and light themes instantly. Your preference is saved and remembered across sessions.", color: "rose", glow: "rgba(244,63,94,0.3)" },
     { icon: <Shield className="h-6 w-6" />, title: "Privacy & Security", desc: "Your conversations stay private. Secure authentication, encrypted data, and no data selling. Ever.", color: "emerald", glow: "rgba(16,185,129,0.3)" },
     { icon: <QrCode className="h-6 w-6" />, title: "Mobile Ready", desc: "Works perfectly on any device. Scan a QR code to instantly open TurboAnswer on your phone or tablet.", color: "violet", glow: "rgba(139,92,246,0.3)" },
@@ -533,9 +533,9 @@ export default function LandingPage() {
                   <Check className="h-3 w-3" /> 7-day free trial
                 </div>
               </div>
-              <div className={`text-sm mb-5 font-medium ${isDark ? 'text-purple-400' : 'text-purple-600'}`}>Gemini Pro</div>
+              <div className={`text-sm mb-5 font-medium ${isDark ? 'text-purple-400' : 'text-purple-600'}`}>Gemini 3.1 Flash</div>
               <ul className="space-y-3 mb-7">
-                {["Everything in Free", "Gemini Pro model", "Faster responses", "Priority processing", "AI image generation", "Advanced analysis"].map((item, i) => (
+                {["Everything in Free", "Gemini 3.1 Flash model", "Faster responses", "Priority processing", "AI image generation", "Advanced analysis"].map((item, i) => (
                   <li key={i} className={`flex items-center gap-2.5 text-sm ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
                     <div className="w-5 h-5 rounded-full bg-purple-500/20 flex items-center justify-center flex-shrink-0">
                       <Check className="h-3 w-3 text-purple-400" />
@@ -565,9 +565,9 @@ export default function LandingPage() {
                   <Check className="h-3 w-3" /> 7-day free trial
                 </div>
               </div>
-              <div className={`text-sm mb-5 font-medium ${isDark ? 'text-indigo-400' : 'text-indigo-600'}`}>Gemini 2.5 Pro</div>
+              <div className={`text-sm mb-5 font-medium ${isDark ? 'text-indigo-400' : 'text-indigo-600'}`}>Gemini 3.1 Pro</div>
               <ul className="space-y-3 mb-7">
-                {["Everything in Pro", "Gemini 2.5 Pro model", "Deep research analysis", "Extended responses", "Comprehensive coverage", "Top-tier intelligence"].map((item, i) => (
+                {["Everything in Pro", "Gemini 3.1 Pro model", "Deep research analysis", "Extended responses", "Comprehensive coverage", "Top-tier intelligence"].map((item, i) => (
                   <li key={i} className={`flex items-center gap-2.5 text-sm ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
                     <div className="w-5 h-5 rounded-full bg-indigo-500/20 flex items-center justify-center flex-shrink-0">
                       <Check className="h-3 w-3 text-indigo-400" />

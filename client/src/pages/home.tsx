@@ -120,7 +120,7 @@ export default function Home() {
             </CardHeader>
             <CardContent className="text-gray-300">
               <ul className="space-y-2">
-                <li>Ultra-fast responses with Gemini 2.0</li>
+                <li>Ultra-fast responses with Gemini 3.1</li>
                 <li>Emotional AI with empathy</li>
                 <li>Multi-model intelligence</li>
                 <li>Voice commands support</li>

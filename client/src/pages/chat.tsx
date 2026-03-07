@@ -873,7 +873,7 @@ export default function Chat() {
                 <Crown className="text-white h-7 w-7" />
               </div>
               <h2 className={`text-xl font-bold mb-1 ${isDark ? 'text-white' : 'text-gray-900'}`}>Upgrade to Pro</h2>
-              <p className={isDark ? 'text-zinc-400 text-sm' : 'text-gray-500 text-sm'}>Unlock Gemini Pro</p>
+              <p className={isDark ? 'text-zinc-400 text-sm' : 'text-gray-500 text-sm'}>Unlock Gemini 3.1 Flash</p>
             </div>
             <div className="text-center mb-1">
               <div className="inline-flex items-center gap-1.5 bg-green-500/15 border border-green-500/30 text-green-400 text-xs font-semibold px-3 py-1 rounded-full mb-3">
@@ -886,7 +886,7 @@ export default function Chat() {
               <p className={`text-xs mt-1 ${isDark ? 'text-zinc-500' : 'text-gray-400'}`}>after free trial</p>
             </div>
             <ul className="space-y-3 mb-6">
-              {["7 days free — cancel anytime", "Gemini Pro - advanced reasoning", "Priority response speed", "Everything in Free included"].map((text, i) => (
+              {["7 days free — cancel anytime", "Gemini 3.1 Flash - advanced reasoning", "Priority response speed", "Everything in Free included"].map((text, i) => (
                 <li key={i} className="flex items-center gap-3">
                   <CheckCircle className={`w-4 h-4 flex-shrink-0 ${i === 0 ? 'text-green-400' : 'text-green-400'}`} />
                   <span className={`text-sm ${i === 0 ? 'font-semibold text-green-400' : isDark ? 'text-zinc-200' : 'text-gray-700'}`}>{text}</span>
@@ -932,7 +932,7 @@ export default function Chat() {
                 <Brain className="text-white h-7 w-7" />
               </div>
               <h2 className={`text-xl font-bold mb-1 ${isDark ? 'text-white' : 'text-gray-900'}`}>Upgrade to Research</h2>
-              <p className={isDark ? 'text-zinc-400 text-sm' : 'text-gray-500 text-sm'}>Gemini 2.5 Pro for deep research</p>
+              <p className={isDark ? 'text-zinc-400 text-sm' : 'text-gray-500 text-sm'}>Gemini 3.1 Pro for deep research</p>
             </div>
             <div className="text-center mb-1">
               <div className="inline-flex items-center gap-1.5 bg-green-500/15 border border-green-500/30 text-green-400 text-xs font-semibold px-3 py-1 rounded-full mb-3">
@@ -945,7 +945,7 @@ export default function Chat() {
               <p className={`text-xs mt-1 ${isDark ? 'text-zinc-500' : 'text-gray-400'}`}>after free trial</p>
             </div>
             <ul className="space-y-3 mb-6">
-              {["7 days free — cancel anytime", "Gemini 2.5 Pro - most powerful model", "Deep research analysis", "Comprehensive, in-depth answers", "Everything in Pro + Free included"].map((text, i) => (
+              {["7 days free — cancel anytime", "Gemini 3.1 Pro - most powerful model", "Deep research analysis", "Comprehensive, in-depth answers", "Everything in Pro + Free included"].map((text, i) => (
                 <li key={i} className="flex items-center gap-3">
                   <CheckCircle className="w-4 h-4 text-green-400 flex-shrink-0" />
                   <span className={`text-sm ${i === 0 ? 'font-semibold text-green-400' : isDark ? 'text-zinc-200' : 'text-gray-700'}`}>{text}</span>
@@ -1158,8 +1158,8 @@ export default function Chat() {
                     <div className="flex items-start gap-3">
                       <div className="w-8 h-8 bg-purple-500/20 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5"><Zap className="w-4 h-4 text-purple-400" /></div>
                       <div>
-                        <p className={`font-medium text-sm ${isDark ? 'text-white' : 'text-gray-900'}`}>Gemini Pro Included</p>
-                        <p className={`text-xs mt-0.5 ${isDark ? 'text-zinc-400' : 'text-gray-500'}`}>You also get access to Gemini Pro for fast, detailed answers</p>
+                        <p className={`font-medium text-sm ${isDark ? 'text-white' : 'text-gray-900'}`}>Gemini 3.1 Flash Included</p>
+                        <p className={`text-xs mt-0.5 ${isDark ? 'text-zinc-400' : 'text-gray-500'}`}>You also get access to Gemini 3.1 Flash for fast, detailed answers</p>
                       </div>
                     </div>
                   </div>
@@ -1169,7 +1169,7 @@ export default function Chat() {
                   <div className="flex items-start gap-3">
                     <div className="w-8 h-8 bg-purple-500/20 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5"><Brain className="w-4 h-4 text-purple-400" /></div>
                     <div>
-                      <p className={`font-medium text-sm ${isDark ? 'text-white' : 'text-gray-900'}`}>Gemini Pro Model</p>
+                      <p className={`font-medium text-sm ${isDark ? 'text-white' : 'text-gray-900'}`}>Gemini 3.1 Flash Model</p>
                       <p className={`text-xs mt-0.5 ${isDark ? 'text-zinc-400' : 'text-gray-500'}`}>Select "Pro $6.99" from the model dropdown for smarter answers</p>
                     </div>
                   </div>
@@ -1215,7 +1215,7 @@ export default function Chat() {
             </div>
             <div className="relative space-y-3 mb-5">
               {[
-                { icon: <Zap className="w-4 h-4 text-yellow-400" />, title: "Faster Responses", desc: "Priority speed with Gemini Pro" },
+                { icon: <Zap className="w-4 h-4 text-yellow-400" />, title: "Faster Responses", desc: "Priority speed with Gemini 3.1 Flash" },
                 { icon: <Brain className="w-4 h-4 text-purple-400" />, title: "Advanced Reasoning", desc: "More accurate, detailed answers" },
                 { icon: <Sparkles className="w-4 h-4 text-pink-400" />, title: "Pro-Level Intelligence", desc: "Access our most powerful free model" },
               ].map((item, i) => (

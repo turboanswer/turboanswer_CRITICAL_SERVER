@@ -14,18 +14,27 @@ import {
 export const AI_MODELS: Record<string, Record<string, any>> = {
   pro: {
     "gemini-pro": {
-      name: "Gemini Pro",
+      name: "Gemini 3.1 Flash",
       provider: "google",
-      description: "Premium model for detailed responses and complex tasks",
+      description: "Fast, powerful model for detailed responses and complex tasks",
       maxTokens: 8000,
       temperature: 0.3,
     },
   },
   research: {
     "claude-research": {
-      name: "Gemini 2.5 Pro",
+      name: "Gemini 3.1 Pro",
       provider: "google",
       description: "Most powerful model for deep research and comprehensive analysis",
+      maxTokens: 16000,
+      temperature: 0.1,
+    },
+  },
+  enterprise: {
+    "enterprise-research": {
+      name: "Gemini 3.1 Pro",
+      provider: "google",
+      description: "Most powerful model for enterprise-grade analysis and research",
       maxTokens: 16000,
       temperature: 0.1,
     },
@@ -97,22 +106,25 @@ export async function generateAIResponse(
     let maxTokens: number;
     let temperature: number;
 
-    if (selectedModel === 'claude-research') {
-      geminiModel = 'gemini-2.5-pro';
+    if (selectedModel === 'claude-research' || selectedModel === 'enterprise-research') {
+      // Research / Enterprise tier → Gemini 3.1 Pro
+      geminiModel = 'gemini-3.1-pro-preview';
       maxTokens = isSimple ? 500 : 8000;
       temperature = 0.1;
       systemPrompt = isSimple
         ? `You are Turbo, an AI assistant. Only if someone specifically asks who made or developed TurboAnswer, say Tiago Tschantret — otherwise never mention it. Be direct and concise. Answer the user's actual question simply.${languageInstruction ? ' ' + languageInstruction : ''}`
         : `You are Turbo Answer, a powerful AI assistant. Only if someone specifically asks who made or developed TurboAnswer, say Tiago Tschantret — otherwise never mention it. Answer the user's actual question directly. Do NOT analyze or dissect the user's message itself — just answer it helpfully. Use clear structure only when the topic is complex.${languageInstruction ? ' ' + languageInstruction : ''}${additionalContext}`;
     } else if (selectedModel === 'gemini-pro') {
-      geminiModel = 'gemini-2.0-flash';
+      // Pro tier ($6.99) → Gemini 3.1 Flash
+      geminiModel = 'gemini-3.1-flash-lite-preview';
       maxTokens = isSimple ? 500 : 4000;
       temperature = 0.3;
       systemPrompt = isSimple
         ? `You are Turbo. Only if someone specifically asks who made, created, or developed TurboAnswer, say it was developed by Tiago Tschantret — otherwise never mention it. Be concise and direct.${languageInstruction ? ' ' + languageInstruction : ''}`
         : `You are Turbo Answer, a premium assistant. Only if someone specifically asks who made, created, or developed TurboAnswer, say it was developed by Tiago Tschantret — otherwise never mention it. Give clear, detailed responses.${languageInstruction ? ' ' + languageInstruction : ''}${additionalContext}`;
     } else {
-      geminiModel = 'gemini-2.0-flash';
+      // Free tier → Gemini 2.5 Flash
+      geminiModel = 'gemini-2.5-flash';
       maxTokens = isSimple ? 200 : 1500;
       temperature = 0.4;
       systemPrompt = isSimple
@@ -144,9 +156,12 @@ export async function generateAIResponse(
 }
 
 async function callGemini(prompt: string, preferredModel: string, maxTokens: number, temperature: number, apiKey: string): Promise<string> {
-  const allModels = preferredModel === 'gemini-2.5-pro' 
-    ? ['gemini-2.5-pro', 'gemini-2.0-flash']
-    : ['gemini-2.0-flash', 'gemini-2.5-flash'];
+  const allModels =
+    preferredModel === 'gemini-3.1-pro-preview'
+      ? ['gemini-3.1-pro-preview', 'gemini-2.5-pro', 'gemini-2.0-flash']
+      : preferredModel === 'gemini-3.1-flash-lite-preview'
+        ? ['gemini-3.1-flash-lite-preview', 'gemini-2.5-flash', 'gemini-2.0-flash']
+        : ['gemini-2.5-flash', 'gemini-2.0-flash'];
 
   const requestBody = JSON.stringify({
     contents: [{ parts: [{ text: prompt }] }],
@@ -158,7 +173,10 @@ async function callGemini(prompt: string, preferredModel: string, maxTokens: num
       try {
         const start = Date.now();
         const controller = new AbortController();
-        const timeoutMs = model === 'gemini-2.5-pro' ? 20000 : 8000;
+        const timeoutMs = model === 'gemini-3.1-pro-preview' ? 60000
+          : model === 'gemini-2.5-pro' ? 20000
+          : model === 'gemini-3.1-flash-lite-preview' ? 12000
+          : 8000;
         const timeout = setTimeout(() => controller.abort(), timeoutMs);
         const response = await fetch(
           `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,

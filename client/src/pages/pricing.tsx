@@ -35,7 +35,7 @@ const plans: PricingPlan[] = [
     name: 'Pro',
     price: '$6.99',
     period: 'per month',
-    description: 'Advanced AI with Gemini Pro power',
+    description: 'Advanced AI with Gemini 3.1 Flash power',
     features: [
       'Google Gemini Flash Pro',
       'Advanced AI reasoning',
@@ -54,7 +54,7 @@ const plans: PricingPlan[] = [
     period: 'per month',
     description: 'Advanced AI with deep research capabilities',
     features: [
-      'Google Gemini 2.5 Pro',
+      'Google Gemini 3.1 Pro',
       'Deep research & analysis',
       'Comprehensive reasoning',
       'All Pro features included',

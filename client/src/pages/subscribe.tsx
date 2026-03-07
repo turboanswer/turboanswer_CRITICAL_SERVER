@@ -41,7 +41,7 @@ export default function Subscribe() {
             Upgrade to Turbo Answer Pro
           </h1>
           <p className="text-xl text-zinc-400 max-w-2xl mx-auto">
-            Unlock the full power of Google Gemini 2.5 Pro for advanced AI assistance across all domains
+            Unlock the full power of Google Gemini 3.1 Pro for advanced AI assistance across all domains
           </p>
         </div>
 
@@ -86,7 +86,7 @@ export default function Subscribe() {
             <ul className="space-y-3 mb-6">
               <li className="flex items-center gap-3">
                 <Zap className="w-5 h-5 text-purple-400" />
-                <span className="text-white font-medium">Google Gemini 2.5 Pro</span>
+                <span className="text-white font-medium">Google Gemini 3.1 Pro</span>
               </li>
               <li className="flex items-center gap-3">
                 <CheckCircle className="w-5 h-5 text-green-400" />

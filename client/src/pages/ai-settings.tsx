@@ -23,7 +23,7 @@ const AI_MODELS = {
     checkColor: "text-green-400",
   },
   "gemini-pro": {
-    name: "Gemini 2.5 Flash Pro",
+    name: "Gemini 3.1 Flash",
     description: "Premium quality responses with detailed, thorough answers for complex topics.",
     tier: "Pro - $6.99/mo",
     icon: Star,
@@ -33,7 +33,7 @@ const AI_MODELS = {
     checkColor: "text-purple-400",
   },
   "claude-research": {
-    name: "Gemini 2.5 Pro Research",
+    name: "Gemini 3.1 Pro Research",
     description: "Most powerful model for deep research, comprehensive analysis, and expert-level detail.",
     tier: "Research - $15/mo",
     icon: FlaskConical,
