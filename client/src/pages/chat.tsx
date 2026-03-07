@@ -44,11 +44,6 @@ export default function Chat() {
   const [betaFeedbackMsg, setBetaFeedbackMsg] = useState("");
   const [betaFeedbackCategory, setBetaFeedbackCategory] = useState("general");
   const [betaFeedbackSent, setBetaFeedbackSent] = useState(false);
-  const [deepResearchMode, setDeepResearchMode] = useState(false);
-  const [isDeepResearching, setIsDeepResearching] = useState(false);
-  const deepResearchInteractionId = useRef<string | null>(null);
-  const deepResearchConvId        = useRef<number | null>(null);
-  const deepResearchPollTimer     = useRef<ReturnType<typeof setTimeout> | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const timedPromoShown = useRef(false);
@@ -195,13 +190,7 @@ export default function Chat() {
     }
   }, [conversations, currentConversationId]);
 
-  useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages, isTyping, isDeepResearching]);
-
-  useEffect(() => {
-    return () => {
-      if (deepResearchPollTimer.current) clearTimeout(deepResearchPollTimer.current);
-    };
-  }, []);
+  useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages, isTyping]);
 
   useEffect(() => {
     if (textareaRef.current) {
@@ -209,64 +198,6 @@ export default function Chat() {
       textareaRef.current.style.height = Math.min(textareaRef.current.scrollHeight, 120) + 'px';
     }
   }, [messageContent]);
-
-  // ── Deep Research polling ───────────────────────────────────────────────────
-  const pollDeepResearch = async () => {
-    const interactionId = deepResearchInteractionId.current;
-    const convId        = deepResearchConvId.current;
-    if (!interactionId) return;
-
-    try {
-      const url = `/api/deep-research/status/${interactionId}${convId ? `?conversationId=${convId}` : ''}`;
-      const resp = await fetch(url, { credentials: 'include' });
-      const data = await resp.json();
-
-      if (data.status === 'completed') {
-        setIsDeepResearching(false);
-        deepResearchInteractionId.current = null;
-        if (convId) {
-          queryClient.invalidateQueries({ queryKey: ['/api/conversations', convId, 'messages'] });
-        }
-      } else if (data.status === 'failed') {
-        setIsDeepResearching(false);
-        deepResearchInteractionId.current = null;
-        toast({ title: 'Deep Research failed', description: data.error || 'Research task failed', variant: 'destructive' });
-      } else {
-        // Still running — poll again in 5s
-        deepResearchPollTimer.current = setTimeout(pollDeepResearch, 5000);
-      }
-    } catch {
-      // Network hiccup — retry in 8s
-      deepResearchPollTimer.current = setTimeout(pollDeepResearch, 8000);
-    }
-  };
-
-  const startDeepResearch = async (content: string, convId: number) => {
-    setIsDeepResearching(true);
-    setMessageContent('');
-    try {
-      const resp = await fetch('/api/deep-research/start', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ message: content, conversationId: convId }),
-      });
-      const data = await resp.json();
-
-      if (!resp.ok) {
-        setIsDeepResearching(false);
-        toast({ title: 'Error', description: data.error || 'Deep Research failed', variant: 'destructive' });
-        return;
-      }
-
-      // Backend now returns the completed result immediately — no polling needed
-      setIsDeepResearching(false);
-      queryClient.invalidateQueries({ queryKey: ['/api/conversations', convId, 'messages'] });
-    } catch (e: any) {
-      setIsDeepResearching(false);
-      toast({ title: 'Error', description: e.message || 'Network error', variant: 'destructive' });
-    }
-  };
 
   // Returns the current conversation ID, creating one first if needed
   const getOrCreateConversationId = async (): Promise<number | null> => {
@@ -284,16 +215,11 @@ export default function Chat() {
   };
 
   const handleSendMessage = async () => {
-    if (!messageContent.trim() || sendMessageMutation.isPending || isDeepResearching) return;
+    if (!messageContent.trim() || sendMessageMutation.isPending) return;
     const convId = await getOrCreateConversationId();
     if (!convId) return;
-    const content = messageContent.trim();
-    if (deepResearchMode) {
-      await startDeepResearch(content, convId);
-    } else {
-      setIsTyping(true);
-      sendMessageMutation.mutate({ content, convId });
-    }
+    setIsTyping(true);
+    sendMessageMutation.mutate({ content: messageContent.trim(), convId });
   };
 
   const handleDocumentAnalysis = async (analysis: any) => {
@@ -390,16 +316,11 @@ export default function Chat() {
   };
 
   const handleSendWithPromo = async () => {
-    if (!messageContent.trim() || sendMessageMutation.isPending || isDeepResearching) return;
+    if (!messageContent.trim() || sendMessageMutation.isPending) return;
     const convId = await getOrCreateConversationId();
     if (!convId) return;
-    const content = messageContent.trim();
-    if (deepResearchMode) {
-      await startDeepResearch(content, convId);
-    } else {
-      setIsTyping(true);
-      sendMessageMutation.mutate({ content, convId });
-    }
+    setIsTyping(true);
+    sendMessageMutation.mutate({ content: messageContent.trim(), convId });
   };
 
   const handleModelChange = (value: string) => {
@@ -442,23 +363,6 @@ export default function Chat() {
                 <SelectItem value="enterprise-research">Enterprise $50</SelectItem>
               </SelectContent>
             </Select>
-
-            {/* Deep Research toggle — Research/Enterprise tier only */}
-            {['research', 'enterprise'].includes(subscriptionData?.tier || '') && (
-              <button
-                onClick={() => setDeepResearchMode(v => !v)}
-                disabled={isDeepResearching}
-                title={deepResearchMode ? 'Deep Research ON — Gemini 3.1 Pro with extended depth' : 'Switch to Deep Research (Gemini 3.1 Pro · thorough responses)'}
-                className={`h-8 px-2 flex items-center gap-1 rounded-lg text-[10px] sm:text-xs font-medium border transition-colors
-                  ${deepResearchMode
-                    ? 'bg-violet-600 border-violet-500 text-white'
-                    : isDark ? 'bg-zinc-900 border-zinc-700 text-zinc-400 hover:text-violet-300 hover:border-violet-600' : 'bg-gray-100 border-gray-300 text-gray-500 hover:text-violet-600 hover:border-violet-400'
-                  }`}
-              >
-                <Sparkles className="h-3 w-3" />
-                <span className="hidden sm:inline">{deepResearchMode ? 'Deep Research' : 'Deep'}</span>
-              </button>
-            )}
 
             <button onClick={toggleTheme} className={`h-8 w-8 flex items-center justify-center rounded-lg ${isDark ? 'text-yellow-400 hover:bg-zinc-800' : 'text-gray-600 hover:bg-gray-200'}`} title="Toggle theme">
               {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
@@ -777,27 +681,6 @@ export default function Chat() {
             </div>
           )}
 
-          {/* Deep Research progress indicator */}
-          {isDeepResearching && (
-            <div className="flex items-end gap-2 sm:gap-3 mb-4 sm:mb-5">
-              <img src={turboLogo} alt="AI" className="w-7 h-7 sm:w-8 sm:h-8 rounded-full object-cover flex-shrink-0" />
-              <div className={`px-4 py-3 rounded-2xl rounded-bl-md max-w-xs ${isDark ? 'bg-violet-900/30 border border-violet-700/40' : 'bg-violet-50 border border-violet-200 shadow-sm'}`}>
-                <div className="flex items-center gap-2 mb-1">
-                  <Sparkles className="h-3.5 w-3.5 text-violet-400 animate-spin" style={{ animationDuration: '2s' }} />
-                  <span className={`text-xs font-semibold ${isDark ? 'text-violet-300' : 'text-violet-700'}`}>Deep Research</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="flex space-x-1">
-                    <div className="w-1.5 h-1.5 bg-violet-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                    <div className="w-1.5 h-1.5 bg-violet-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                    <div className="w-1.5 h-1.5 bg-violet-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-                  </div>
-                  <span className={`text-[11px] ${isDark ? 'text-zinc-400' : 'text-gray-500'}`}>Gemini 3.1 Pro is thinking deeply…</span>
-                </div>
-              </div>
-            </div>
-          )}
-
           <div ref={messagesEndRef} />
         </div>
       </div>
@@ -818,32 +701,25 @@ export default function Chat() {
                 value={messageContent}
                 onChange={(e) => setMessageContent(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder={deepResearchMode ? "Ask anything — deep research activates automatically for complex queries..." : "Ask me anything across the universe..."}
-                disabled={isDeepResearching}
+                placeholder="Ask me anything across the universe..."
                 className={`w-full px-4 py-3 pr-12 rounded-2xl text-sm sm:text-base resize-none min-h-[44px] max-h-28 transition-all duration-300 ${
-                  deepResearchMode
-                    ? isDark
-                      ? 'bg-violet-950/20 border-violet-600/40 text-white placeholder-violet-300/40 focus:ring-2 focus:ring-violet-500/40 focus:border-violet-500/50'
-                      : 'bg-violet-50 border-violet-300 text-gray-900 placeholder-violet-400 focus:ring-2 focus:ring-violet-400 focus:border-transparent'
-                    : isDark
-                      ? 'bg-white/[0.04] border-indigo-500/20 text-white placeholder-indigo-300/30 focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500/30 focus:bg-white/[0.06]'
-                      : 'bg-gray-100 border-gray-300 text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent'
+                  isDark
+                    ? 'bg-white/[0.04] border-indigo-500/20 text-white placeholder-indigo-300/30 focus:ring-2 focus:ring-indigo-500/40 focus:border-indigo-500/30 focus:bg-white/[0.06]'
+                    : 'bg-gray-100 border-gray-300 text-gray-900 placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent'
                 }`}
                 rows={1}
               />
               <Button
                 onClick={handleSendWithPromo}
-                disabled={!messageContent.trim() || sendMessageMutation.isPending || isDeepResearching}
+                disabled={!messageContent.trim() || sendMessageMutation.isPending}
                 className={`absolute right-2 bottom-2 h-8 w-8 p-0 rounded-xl disabled:opacity-40 transition-all duration-300 ${
-                  deepResearchMode
-                    ? 'bg-gradient-to-r from-violet-600 to-purple-600 text-white hover:from-violet-500 hover:to-purple-500 shadow-lg shadow-violet-500/20'
-                    : isDark
-                      ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white hover:from-indigo-500 hover:to-purple-500 shadow-lg shadow-indigo-500/20'
-                      : 'bg-blue-500 text-white hover:bg-blue-600'
+                  isDark
+                    ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white hover:from-indigo-500 hover:to-purple-500 shadow-lg shadow-indigo-500/20'
+                    : 'bg-blue-500 text-white hover:bg-blue-600'
                 }`}
                 title="Send message"
               >
-                {deepResearchMode ? <Sparkles className="h-4 w-4" /> : <Send className="h-4 w-4" />}
+                <Send className="h-4 w-4" />
               </Button>
             </div>
           </div>
@@ -931,7 +807,7 @@ export default function Chat() {
                 <Brain className="text-white h-7 w-7" />
               </div>
               <h2 className={`text-xl font-bold mb-1 ${isDark ? 'text-white' : 'text-gray-900'}`}>Upgrade to Research</h2>
-              <p className={isDark ? 'text-zinc-400 text-sm' : 'text-gray-500 text-sm'}>Gemini 3.1 Pro for deep research</p>
+              <p className={isDark ? 'text-zinc-400 text-sm' : 'text-gray-500 text-sm'}>Gemini 3.1 Pro — maximum intelligence on every question</p>
             </div>
             <div className="text-center mb-1">
               <div className="inline-flex items-center gap-1.5 bg-green-500/15 border border-green-500/30 text-green-400 text-xs font-semibold px-3 py-1 rounded-full mb-3">
@@ -1148,8 +1024,8 @@ export default function Chat() {
                     <div className="flex items-start gap-3">
                       <div className="w-8 h-8 bg-blue-500/20 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5"><Brain className="w-4 h-4 text-blue-400" /></div>
                       <div>
-                        <p className={`font-medium text-sm ${isDark ? 'text-white' : 'text-gray-900'}`}>Deep Research</p>
-                        <p className={`text-xs mt-0.5 ${isDark ? 'text-zinc-400' : 'text-gray-500'}`}>Select "Research $15" for deep analysis with extended responses</p>
+                        <p className={`font-medium text-sm ${isDark ? 'text-white' : 'text-gray-900'}`}>Gemini 3.1 Pro Research</p>
+                        <p className={`text-xs mt-0.5 ${isDark ? 'text-zinc-400' : 'text-gray-500'}`}>Select "Research $15" to unlock maximum depth on every response</p>
                       </div>
                     </div>
                   </div>

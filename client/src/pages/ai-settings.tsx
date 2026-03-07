@@ -34,7 +34,7 @@ const AI_MODELS = {
   },
   "claude-research": {
     name: "Gemini 3.1 Pro Research",
-    description: "Most powerful model for deep research, comprehensive analysis, and expert-level detail.",
+    description: "Maximum intelligence on every response — Gemini 3.1 Pro at full power, always.",
     tier: "Research - $15/mo",
     icon: FlaskConical,
     color: "from-blue-500 to-cyan-600",

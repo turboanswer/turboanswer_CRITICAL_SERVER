@@ -52,7 +52,7 @@ const plans: PricingPlan[] = [
     name: 'Research',
     price: '$15',
     period: 'per month',
-    description: 'Advanced AI with deep research capabilities',
+    description: 'Maximum depth on every question — always on',
     features: [
       'Google Gemini 3.1 Pro',
       'Deep research & analysis',

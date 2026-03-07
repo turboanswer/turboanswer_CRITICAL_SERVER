@@ -107,13 +107,20 @@ export async function generateAIResponse(
     let temperature: number;
 
     if (selectedModel === 'claude-research' || selectedModel === 'enterprise-research') {
-      // Research / Enterprise tier → Gemini 3.1 Pro
+      // Research / Enterprise tier → Gemini 3.1 Pro, always maximum depth
       geminiModel = 'gemini-3.1-pro-preview';
-      maxTokens = isSimple ? 500 : 8000;
+      maxTokens = isSimple ? 500 : 8192;
       temperature = 0.1;
       systemPrompt = isSimple
-        ? `You are Turbo, an AI assistant. Only if someone specifically asks who made or developed TurboAnswer, say Tiago Tschantret — otherwise never mention it. Be direct and concise. Answer the user's actual question simply.${languageInstruction ? ' ' + languageInstruction : ''}`
-        : `You are Turbo Answer, a powerful AI assistant. Only if someone specifically asks who made or developed TurboAnswer, say Tiago Tschantret — otherwise never mention it. Answer the user's actual question directly. Do NOT analyze or dissect the user's message itself — just answer it helpfully. Use clear structure only when the topic is complex.${languageInstruction ? ' ' + languageInstruction : ''}${additionalContext}`;
+        ? `You are Turbo, powered by Gemini 3.1 Pro. Only mention TurboAnswer's developer (Tiago Tschantret) if directly asked. Be direct and conversational for simple exchanges.${languageInstruction ? ' ' + languageInstruction : ''}`
+        : `You are Turbo Answer Research, powered by Gemini 3.1 Pro — the most capable AI on this platform. Give thorough, expert-level responses on every topic. Always:
+- Answer the question directly and completely
+- Use clear structure (headings, bullets) for complex topics
+- For code: provide working, well-commented examples with explanations
+- For factual topics: include context, nuances, and multiple perspectives
+- For analysis: go in depth, cover edge cases, provide actionable insights
+- Calibrate response length to the question — detailed for complex topics, concise for simple ones
+Only mention that TurboAnswer was developed by Tiago Tschantret if directly asked.${languageInstruction ? ' ' + languageInstruction : ''}${additionalContext}`;
     } else if (selectedModel === 'gemini-pro') {
       // Pro tier ($6.99) → Gemini 3.1 Flash
       geminiModel = 'gemini-3.1-flash-lite-preview';

@@ -162,7 +162,7 @@ export default function LandingPage() {
     { icon: <Globe className="h-6 w-6" />, title: "100+ Languages", desc: "Chat in any language with automatic detection and native-quality responses. Supports over 100 languages worldwide.", color: "purple", glow: "rgba(168,85,247,0.3)" },
     { icon: <Camera className="h-6 w-6" />, title: "Camera Vision", desc: "Point your camera at anything and get instant AI analysis. Identify objects, read text, solve problems visually.", color: "cyan", glow: "rgba(6,182,212,0.3)" },
     { icon: <Zap className="h-6 w-6" />, title: "Ultra-Fast Responses", desc: "Get answers in under a second with our optimized AI pipeline. No waiting, no lag, just instant intelligence.", color: "yellow", glow: "rgba(234,179,8,0.3)" },
-    { icon: <Search className="h-6 w-6" />, title: "Deep Research Mode", desc: "Research tier gives you Gemini 3.1 Pro for comprehensive, in-depth analysis with extended responses.", color: "indigo", glow: "rgba(99,102,241,0.3)" },
+    { icon: <Search className="h-6 w-6" />, title: "Always-On Gemini 3.1 Pro", desc: "Research tier maxes out every response with Gemini 3.1 Pro — comprehensive, expert-level depth on every question, automatically.", color: "indigo", glow: "rgba(99,102,241,0.3)" },
     { icon: <Palette className="h-6 w-6" />, title: "Dark & Light Themes", desc: "Switch between dark and light themes instantly. Your preference is saved and remembered across sessions.", color: "rose", glow: "rgba(244,63,94,0.3)" },
     { icon: <Shield className="h-6 w-6" />, title: "Privacy & Security", desc: "Your conversations stay private. Secure authentication, encrypted data, and no data selling. Ever.", color: "emerald", glow: "rgba(16,185,129,0.3)" },
     { icon: <QrCode className="h-6 w-6" />, title: "Mobile Ready", desc: "Works perfectly on any device. Scan a QR code to instantly open TurboAnswer on your phone or tablet.", color: "violet", glow: "rgba(139,92,246,0.3)" },
@@ -495,7 +495,7 @@ export default function LandingPage() {
                   </p>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-8">
                     {[
-                      { icon: <Microscope className="h-4 w-4 text-indigo-400" />, label: "Deep Research Agent", desc: "Autonomous multi-step web research" },
+                      { icon: <Microscope className="h-4 w-4 text-indigo-400" />, label: "Always Maximum Depth", desc: "Every answer uses full Gemini 3.1 Pro power" },
                       { icon: <Brain className="h-4 w-4 text-violet-400" />, label: "Advanced Reasoning", desc: "Solves complex, multi-step problems" },
                       { icon: <Layers className="h-4 w-4 text-cyan-400" />, label: "1M Token Context", desc: "Analyze entire books & codebases" },
                       { icon: <BarChart3 className="h-4 w-4 text-indigo-400" />, label: "Expert Analysis", desc: "Research-grade depth on any topic" },
@@ -522,7 +522,7 @@ export default function LandingPage() {
                 {/* Right: capability cards */}
                 <div className="space-y-3">
                   {[
-                    { title: "Autonomous Deep Research", body: "Activate Deep Research mode and watch Gemini 3.1 Pro autonomously browse, read, and synthesize sources — delivering a structured report with citations.", badge: "Research Only", color: "indigo" },
+                    { title: "Expert Depth on Every Response", body: "No toggle needed. Every question on the Research plan automatically uses Gemini 3.1 Pro at full power — thorough, structured, expert-level answers every time.", badge: "Always On", color: "indigo" },
                     { title: "Superior Coding & Math", body: "Tackles complex algorithms, debugging, architecture design, and advanced mathematics with near-human accuracy and clear explanations.", badge: "Pro-Level", color: "violet" },
                     { title: "Long Document Mastery", body: "Upload entire PDFs, legal contracts, or research papers and get precise, detailed analysis. 1 million token context means nothing gets missed.", badge: "Unmatched", color: "cyan" },
                     { title: "Creative & Strategic Thinking", body: "From business strategy to creative writing, Gemini 3.1 Pro produces work that's nuanced, structured, and remarkably human.", badge: "All Domains", color: "blue" },
@@ -633,7 +633,7 @@ export default function LandingPage() {
                   {[
                     { text: "Everything in Pro", sub: null },
                     { text: "Gemini 3.1 Pro model", sub: "Google's most capable AI" },
-                    { text: "Deep Research Agent", sub: "Autonomous multi-source research" },
+                    { text: "Always-on maximum depth", sub: "No toggle — every reply at full power" },
                     { text: "1M token context window", sub: "Analyze entire books & codebases" },
                     { text: "Advanced reasoning & math", sub: "Solves complex multi-step problems" },
                     { text: "Priority queue access", sub: "Always fast, never throttled" },
