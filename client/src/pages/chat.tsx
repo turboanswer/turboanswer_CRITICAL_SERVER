@@ -37,6 +37,7 @@ export default function Chat() {
   const [enterpriseCode, setEnterpriseCode] = useState<string | null>(null);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [showUpgradeBanner, setShowUpgradeBanner] = useState(true);
+  const [showAntigravityBanner, setShowAntigravityBanner] = useState(() => localStorage.getItem('ag_banner_dismissed') !== '1');
   const [showPromoPopup, setShowPromoPopup] = useState(false);
   const [messageCountSinceLastPromo, setMessageCountSinceLastPromo] = useState(0);
   const [lastPromoDismissedAt, setLastPromoDismissedAt] = useState(0);
@@ -510,6 +511,38 @@ export default function Chat() {
           </div>
         )}
       </header>
+
+      {/* Antigravity Banner */}
+      {showAntigravityBanner && (
+        <div className="shrink-0 relative z-30 overflow-hidden" style={{ background: "linear-gradient(90deg, #0d1b3e 0%, #0a2018 50%, #1a1a0a 100%)", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+          {/* Subtle color glow */}
+          <div className="absolute inset-0 opacity-20" style={{ background: "linear-gradient(90deg, rgba(66,133,244,0.3) 0%, rgba(52,168,83,0.2) 50%, rgba(251,188,5,0.2) 100%)" }} />
+          <div className="relative flex items-center gap-3 px-4 py-2.5">
+            {/* Google G colored dots */}
+            <div className="hidden sm:flex items-center gap-1 shrink-0">
+              {["#4285F4","#EA4335","#FBBC05","#34A853"].map((c,i) => (
+                <div key={i} className="w-2 h-2 rounded-full" style={{ background: c }} />
+              ))}
+            </div>
+            <div className="flex-1 flex items-center gap-2 min-w-0">
+              <span className="text-xs font-bold shrink-0" style={{ background: "linear-gradient(90deg, #4285F4, #34A853)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>NEW</span>
+              <span className="text-white text-xs sm:text-sm font-semibold truncate">
+                Antigravity is here — build full apps from a single prompt
+              </span>
+              <span className="hidden md:inline text-xs text-gray-400 truncate">Powered by Google Gemini 3.1 Pro</span>
+            </div>
+            <Link href="/code-studio">
+              <button className="shrink-0 text-xs font-semibold px-3 py-1.5 rounded-lg transition-all" style={{ background: "linear-gradient(135deg, #4285F4, #34A853)", color: "white" }}>
+                Try Antigravity
+              </button>
+            </Link>
+            <button onClick={() => { setShowAntigravityBanner(false); localStorage.setItem('ag_banner_dismissed', '1'); }}
+              className="shrink-0 text-gray-500 hover:text-gray-300 ml-1">
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Free tier upgrade banner */}
       {isFreeTier && showUpgradeBanner && (
