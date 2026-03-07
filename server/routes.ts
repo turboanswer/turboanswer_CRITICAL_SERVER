@@ -3457,6 +3457,46 @@ console.log(\`Welcome, \${user.name}!\`);` },
     return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   }
 
+  // ─── Media Editor AI Analyze ─────────────────────────────────────────────
+  app.post('/api/media/ai-suggest', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      if (!['enterprise'].includes(user?.subscriptionTier || '')) {
+        return res.status(403).json({ error: 'Enterprise plan required.' });
+      }
+      const { imageData, mimeType = 'image/jpeg', context = '' } = req.body;
+      if (!imageData) return res.status(400).json({ error: 'imageData required' });
+      const apiKey = process.env.GEMINI_API_KEY;
+      if (!apiKey) return res.status(500).json({ error: 'AI not configured' });
+
+      const prompt = `You are a professional video/photo editor AI. Analyze this image and provide creative editing suggestions.${context ? ` Context: ${context}` : ''}
+
+Return ONLY valid JSON (no markdown):
+{
+  "captions": ["caption 1", "caption 2", "caption 3"],
+  "styles": ["Cinematic with deep shadows", "Warm golden hour vibe", "Cool moody blue tones"],
+  "filters": {"brightness": 1.1, "contrast": 1.2, "saturation": 0.9, "hue": 0, "sepia": 0},
+  "description": "Brief scene description in 1-2 sentences.",
+  "mood": "The overall mood/feel of this image."
+}`;
+
+      const aiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ role: 'user', parts: [{ text: prompt }, { inlineData: { mimeType, data: imageData } }] }],
+          generationConfig: { temperature: 0.8, maxOutputTokens: 512 },
+        }),
+      });
+      const aiData = await aiRes.json();
+      const rawText = aiData.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      const jsonMatch = rawText.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) return res.status(500).json({ error: 'Could not parse AI response' });
+      res.json(JSON.parse(jsonMatch[0]));
+    } catch (e: any) { res.status(500).json({ error: e.message }); }
+  });
+
   // ─── Photo Editor — Enterprise exclusive ─────────────────────────────────
   app.post('/api/photo-editor/generate', isAuthenticated, async (req: any, res) => {
     try {
