@@ -167,31 +167,50 @@ interface Props { scenario?: string; }
 export default function LockdownScreen({ scenario = 'system_failure' }: Props) {
   const sc = (SCENARIOS[scenario as LockdownScenario] ?? SCENARIOS.system_failure);
 
-  const playingRef  = useRef(false);
-  const stopRef     = useRef<(() => void) | null>(null);
-  const voiceActive = useRef(false);
+  const playingRef    = useRef(false);
+  const stopRef       = useRef<(() => void) | null>(null);
+  const voiceActive   = useRef(false);
+  const speakingText  = useRef(sc.voice);
   const [soundActive, setSoundActive] = useState(false);
 
+  // Keep speakingText in sync if scenario changes
+  speakingText.current = sc.voice;
+
   // ── Voice ─────────────────────────────────────────────────────────────
-  function doSpeak() {
-    if (!window.speechSynthesis || voiceActive.current) return;
-    // Chrome bug: cancel any stalled speech, then resume the synthesis engine
-    window.speechSynthesis.cancel();
-    window.speechSynthesis.resume();
+  // IMPORTANT: Do NOT call speechSynthesis.cancel() before speak() inside a
+  // gesture handler — Chrome breaks the gesture connection and silently drops
+  // the speak() call. Only cancel during an explicit restart (no gesture chain).
 
-    const utt = new SpeechSynthesisUtterance(sc.voice);
+  function buildUtterance() {
+    const utt = new SpeechSynthesisUtterance(speakingText.current);
     utt.rate   = 0.62;
-    utt.pitch  = 0.05;
+    utt.pitch  = 0.0;   // deepest possible
     utt.volume = 1.0;
-
     const voice = pickMaleVoice();
     if (voice) utt.voice = voice;
-
     utt.onstart = () => { voiceActive.current = true; };
-    utt.onend   = () => { voiceActive.current = false; setTimeout(doSpeak, 5000); };
-    utt.onerror = () => { voiceActive.current = false; setTimeout(doSpeak, 3000); };
+    utt.onend   = () => { voiceActive.current = false; setTimeout(speakNow, 5000); };
+    utt.onerror = (e: any) => {
+      voiceActive.current = false;
+      // "interrupted" = we cancelled it ourselves — don't retry immediately
+      if (e?.error !== 'interrupted') setTimeout(speakNow, 2000);
+    };
+    return utt;
+  }
 
-    window.speechSynthesis.speak(utt);
+  // speakNow: safe to call any time — resumes stalled engine then speaks
+  function speakNow() {
+    if (!window.speechSynthesis || voiceActive.current) return;
+    try { window.speechSynthesis.resume(); } catch {}
+    window.speechSynthesis.speak(buildUtterance());
+  }
+
+  // forceRestartVoice: cancel current then re-speak after a beat
+  // (NOT called inside a gesture handler — the delay breaks the gesture chain)
+  function forceRestartVoice() {
+    voiceActive.current = false;
+    try { window.speechSynthesis?.cancel(); } catch {}
+    setTimeout(speakNow, 200);
   }
 
   // ── Audio ──────────────────────────────────────────────────────────────
@@ -199,10 +218,7 @@ export default function LockdownScreen({ scenario = 'system_failure' }: Props) {
     if (playingRef.current) return;
     try {
       const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
-      // Try to resume — only works after a user gesture on Chrome
-      if (ctx.state === 'suspended') {
-        await ctx.resume().catch(() => {});
-      }
+      if (ctx.state === 'suspended') await ctx.resume().catch(() => {});
       if (ctx.state === 'running') {
         playingRef.current = true;
         stopRef.current = buildHorrorAlarm(ctx);
@@ -213,85 +229,88 @@ export default function LockdownScreen({ scenario = 'system_failure' }: Props) {
     } catch {}
   }
 
+  // handleUserGesture: called synchronously from within a real user event
+  // — both audio resume AND speak() must happen without any async/setTimeout
+  //   so Chrome recognises them as gesture-driven
   function handleUserGesture() {
-    // Try voice first (needs user gesture in Chrome)
-    if (!voiceActive.current) {
-      window.speechSynthesis?.resume();
-      doSpeak();
+    // ── Voice ────────────────────────────────────────────────────────────
+    if (!voiceActive.current && window.speechSynthesis) {
+      try { window.speechSynthesis.resume(); } catch {}
+      // Only speak if nothing is queued — avoid duplicates
+      if (!window.speechSynthesis.speaking && !window.speechSynthesis.pending) {
+        window.speechSynthesis.speak(buildUtterance());
+      }
     }
-    // Try audio
-    if (playingRef.current) return;
-    try {
-      const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
-      ctx.resume().then(() => {
-        if (!playingRef.current && ctx.state === 'running') {
-          playingRef.current = true;
-          stopRef.current = buildHorrorAlarm(ctx);
-          setSoundActive(true);
-        }
-      }).catch(() => {});
-    } catch {}
-  }
-
-  function restartAudio() {
-    try { stopRef.current?.(); } catch {}
-    stopRef.current = null;
-    playingRef.current = false;
-    setSoundActive(false);
-    attemptPlay();
+    // ── Audio ─────────────────────────────────────────────────────────────
+    if (!playingRef.current) {
+      try {
+        const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+        ctx.resume().then(() => {
+          if (!playingRef.current && ctx.state === 'running') {
+            playingRef.current = true;
+            stopRef.current = buildHorrorAlarm(ctx);
+            setSoundActive(true);
+          }
+        }).catch(() => {});
+      } catch {}
+    }
   }
 
   useEffect(() => {
-    // Voice: wait for voices to load, then speak
+    // Try speaking immediately (works on Firefox/Safari; Chrome needs gesture)
     const tryVoice = () => {
       if (!window.speechSynthesis) return;
       if (window.speechSynthesis.getVoices().length === 0) {
-        window.speechSynthesis.addEventListener('voiceschanged', doSpeak, { once: true });
+        window.speechSynthesis.addEventListener('voiceschanged', speakNow, { once: true });
       } else {
-        doSpeak();
+        speakNow();
       }
     };
     tryVoice();
 
-    // Audio: try immediately then retry — will silently fail until user clicks
+    // Try audio immediately — will silently fail until user clicks on Chrome
     attemptPlay();
-    const t1 = setTimeout(() => { if (!playingRef.current) attemptPlay(); }, 400);
-    const t2 = setTimeout(() => { if (!playingRef.current) attemptPlay(); }, 1200);
+    const t1 = setTimeout(() => { if (!playingRef.current) attemptPlay(); }, 500);
+    const t2 = setTimeout(() => { if (!playingRef.current) attemptPlay(); }, 1500);
 
     const onInteract = () => handleUserGesture();
-    document.addEventListener('mousedown',   onInteract, { passive: true });
-    document.addEventListener('pointerdown', onInteract, { passive: true });
-    document.addEventListener('touchstart',  onInteract, { passive: true });
-    document.addEventListener('keydown',     onInteract, { passive: true });
+    document.addEventListener('click',       onInteract);
+    document.addEventListener('mousedown',   onInteract);
+    document.addEventListener('touchend',    onInteract);
+    document.addEventListener('keydown',     onInteract);
 
-    // Re-trigger when returning to tab
+    // Re-trigger on tab return
     const onVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
-        restartAudio();
-        voiceActive.current = false;
-        window.speechSynthesis?.resume();
-        doSpeak();
+        // Restart audio
+        try { stopRef.current?.(); } catch {}
+        stopRef.current = null;
+        playingRef.current = false;
+        setSoundActive(false);
+        attemptPlay();
+        // Restart voice via forceRestart (no gesture chain needed here)
+        forceRestartVoice();
       }
     };
     document.addEventListener('visibilitychange', onVisibilityChange);
 
-    // Chrome speech synthesis keep-alive: Chrome pauses synth after ~15s
+    // Chrome TTS keep-alive: Chrome pauses synthesis engine after ~15 s
     const keepAlive = setInterval(() => {
-      if (window.speechSynthesis && !window.speechSynthesis.speaking) return;
-      window.speechSynthesis?.pause();
-      window.speechSynthesis?.resume();
-    }, 10000);
+      if (!window.speechSynthesis?.speaking) return;
+      window.speechSynthesis.pause();
+      window.speechSynthesis.resume();
+    }, 12000);
 
     return () => {
       clearTimeout(t1); clearTimeout(t2);
       clearInterval(keepAlive);
+      document.removeEventListener('click',       onInteract);
       document.removeEventListener('mousedown',   onInteract);
-      document.removeEventListener('pointerdown', onInteract);
-      document.removeEventListener('touchstart',  onInteract);
+      document.removeEventListener('touchend',    onInteract);
       document.removeEventListener('keydown',     onInteract);
       document.removeEventListener('visibilitychange', onVisibilityChange);
       try { stopRef.current?.(); } catch {}
-      window.speechSynthesis?.cancel();
+      try { window.speechSynthesis?.cancel(); } catch {}
     };
   }, [scenario]);
 
