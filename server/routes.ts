@@ -3558,18 +3558,38 @@ Return ONLY valid JSON (no markdown):
       const apiKey = process.env.GEMINI_API_KEY;
       if (!apiKey) return res.status(500).json({ error: 'AI not configured' });
 
+      const genreGuide: Record<string, string> = {
+        rock: 'BPM 130-160. Use power chord progressions: E, A, D, G, C, F, B (no 7ths or extensions). High energy, classic rock feel.',
+        metal: 'BPM 140-180. Heavy power chords: E, A, D, G. Dark keys like E minor or A minor.',
+        punk: 'BPM 150-180. Fast power chords: G, D, A, E. Short sections.',
+        pop: 'BPM 100-130. Classic I-IV-V-vi progressions using C, Am, F, G or G, Em, C, D.',
+        'r&b': 'BPM 80-105. Soulful chord progressions with Am7, Dm7, G7, Cmaj7.',
+        'hip-hop': 'BPM 75-100. Minor progressions: Am, Dm, Em, G. Dark and moody.',
+        rap: 'BPM 80-105. Minor progressions with Am, Dm, G, C.',
+        edm: 'BPM 128-140. Synth-friendly chords: Am, F, C, G or C, G, Am, F.',
+        jazz: 'BPM 100-140. Extended chords: Am7, Dm7, G7, Cmaj7, Fmaj7, E7.',
+        blues: 'BPM 80-120. Classic 12-bar blues: E, A, B7 or A, D, E7.',
+        country: 'BPM 100-130. Country progressions: G, C, D, Em.',
+        'lo-fi': 'BPM 70-90. Chill progressions: Cmaj7, Am7, Fmaj7, G7.',
+        soul: 'BPM 80-110. Soulful: Am7, Dm7, Cmaj7, G7.',
+        classical: 'BPM 60-120. Rich harmonic progressions without drums.',
+      };
+      const genreKey = genre.toLowerCase();
+      const genreInstructions = genreGuide[genreKey] || 'BPM 100-130. Use appropriate chords for the genre.';
+
       const systemPrompt = `You are Lyria, Google's advanced music AI. Generate a complete original song based on the user's idea.
+IMPORTANT: You MUST follow the genre-specific rules: ${genreInstructions}
 Return ONLY valid JSON (no markdown, no code fences) in this exact structure:
 {
   "title": "Song Title",
   "artist": "Turbo x Lyria",
-  "bpm": 120,
-  "key": "C major",
+  "bpm": 140,
+  "key": "E minor",
   "timeSignature": "4/4",
   "genre": "${genre}",
   "mood": "${mood}",
   "description": "Brief evocative description of the song's feel",
-  "chordProgression": ["C", "Am", "F", "G"],
+  "chordProgression": ["E", "A", "D", "G"],
   "sections": [
     {"type": "intro", "chords": ["C","G"], "bars": 4},
     {"type": "verse", "chords": ["C","Am","F","G"], "lyrics": "Line 1 of verse 1\\nLine 2 of verse 1\\nLine 3 of verse 1\\nLine 4 of verse 1"},

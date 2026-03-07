@@ -43,6 +43,71 @@ const chordNotes: Record<string, string[]> = {
   'C/G':['G2','C3','E3','G3'],'G/B':['B2','G3','B3','D4'],
 };
 
+const powerChordNotes: Record<string, string[]> = {
+  'E':['E2','B2','E3'],'Em':['E2','B2','E3'],
+  'A':['A2','E3','A3'],'Am':['A2','E3','A3'],
+  'D':['D2','A2','D3'],'Dm':['D2','A2','D3'],
+  'G':['G2','D3','G3'],'Gm':['G2','D3','G3'],
+  'C':['C2','G2','C3'],'Cm':['C2','G2','C3'],
+  'F':['F2','C3','F3'],'Fm':['F2','C3','F3'],
+  'B':['B2','F#3','B3'],'Bm':['B2','F#3','B3'],
+  'Bb':['Bb2','F3','Bb3'],
+};
+
+function makeDistortionCurve(amount = 200): Float32Array {
+  const curve = new Float32Array(256);
+  for (let i = 0; i < 256; i++) {
+    const x = (i * 2) / 256 - 1;
+    curve[i] = ((Math.PI + amount) * x) / (Math.PI + amount * Math.abs(x));
+  }
+  return curve;
+}
+
+function scheduleKick(ctx: AudioContext, dest: AudioNode, time: number, vol = 1.0) {
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.type = 'sine';
+  osc.frequency.setValueAtTime(160, time);
+  osc.frequency.exponentialRampToValueAtTime(0.001, time + 0.4);
+  gain.gain.setValueAtTime(vol * 1.4, time);
+  gain.gain.exponentialRampToValueAtTime(0.001, time + 0.4);
+  osc.connect(gain); gain.connect(dest);
+  osc.start(time); osc.stop(time + 0.4);
+}
+
+function scheduleSnare(ctx: AudioContext, dest: AudioNode, time: number, vol = 0.8) {
+  const bufSize = Math.floor(ctx.sampleRate * 0.15);
+  const buffer = ctx.createBuffer(1, bufSize, ctx.sampleRate);
+  const data = buffer.getChannelData(0);
+  for (let i = 0; i < bufSize; i++) data[i] = Math.random() * 2 - 1;
+  const src = ctx.createBufferSource();
+  src.buffer = buffer;
+  const filter = ctx.createBiquadFilter();
+  filter.type = 'bandpass'; filter.frequency.value = 2500; filter.Q.value = 0.8;
+  const gain = ctx.createGain();
+  gain.gain.setValueAtTime(vol, time);
+  gain.gain.exponentialRampToValueAtTime(0.001, time + 0.18);
+  src.connect(filter); filter.connect(gain); gain.connect(dest);
+  src.start(time);
+}
+
+function scheduleHihat(ctx: AudioContext, dest: AudioNode, time: number, vol = 0.2, open = false) {
+  const dur = open ? 0.18 : 0.035;
+  const bufSize = Math.floor(ctx.sampleRate * dur);
+  const buffer = ctx.createBuffer(1, bufSize, ctx.sampleRate);
+  const data = buffer.getChannelData(0);
+  for (let i = 0; i < bufSize; i++) data[i] = Math.random() * 2 - 1;
+  const src = ctx.createBufferSource();
+  src.buffer = buffer;
+  const filter = ctx.createBiquadFilter();
+  filter.type = 'highpass'; filter.frequency.value = open ? 5000 : 8000;
+  const gain = ctx.createGain();
+  gain.gain.setValueAtTime(vol, time);
+  gain.gain.exponentialRampToValueAtTime(0.001, time + dur);
+  src.connect(filter); filter.connect(gain); gain.connect(dest);
+  src.start(time);
+}
+
 interface SongData {
   title: string; artist: string; bpm: number; key: string;
   timeSignature: string; genre: string; mood: string; description: string;
@@ -150,7 +215,7 @@ export default function MusicStudio() {
     return { ctx: audioCtxRef.current, master: masterGainRef.current! };
   }, []);
 
-  const playNote = useCallback((ctx: AudioContext, master: GainNode, freq: number, start: number, dur: number, gain = 0.12, wave: OscillatorType = 'sine') => {
+  const playNote = useCallback((ctx: AudioContext, dest: AudioNode, freq: number, start: number, dur: number, gain = 0.12, wave: OscillatorType = 'sine') => {
     const osc = ctx.createOscillator();
     const env = ctx.createGain();
     osc.type = wave;
@@ -160,19 +225,11 @@ export default function MusicStudio() {
     env.gain.linearRampToValueAtTime(gain * 0.7, start + dur * 0.5);
     env.gain.linearRampToValueAtTime(0, start + dur - 0.05);
     osc.connect(env);
-    env.connect(master);
+    env.connect(dest);
     osc.start(start);
     osc.stop(start + dur);
     return osc;
   }, []);
-
-  const playChord = useCallback((ctx: AudioContext, master: GainNode, chordName: string, start: number, dur: number) => {
-    const notes = chordNotes[chordName] || chordNotes[chordName.replace(/[^A-Za-z]/g, '')] || ['C3','E3','G3'];
-    notes.forEach((note, i) => {
-      const freq = noteToHz[note];
-      if (freq) playNote(ctx, master, freq, start + i * 0.015, dur, 0.06, 'triangle');
-    });
-  }, [playNote]);
 
   const playSong = useCallback(() => {
     if (!song) return;
@@ -182,6 +239,79 @@ export default function MusicStudio() {
     const bps = song.bpm / 60;
     const beatDur = 1 / bps;
     const measureDur = 4 * beatDur;
+    const genreLower = (song.genre || '').toLowerCase();
+    const isRock   = /rock|metal|punk|grunge|hard/.test(genreLower);
+    const isEDM    = /edm|electronic|house|techno|trance|dubstep/.test(genreLower);
+    const isHipHop = /hip.?hop|rap|trap|r&b/.test(genreLower);
+    const isJazz   = /jazz|blues|soul/.test(genreLower);
+    const isClass  = /classical|orchestral/.test(genreLower);
+    const hasDrums = !isJazz && !isClass;
+
+    // Route chords through distortion for rock/EDM
+    let chordDest: AudioNode = master;
+    if (isRock) {
+      const waveShaper = ctx.createWaveShaper();
+      waveShaper.curve = makeDistortionCurve(350);
+      waveShaper.oversample = '4x';
+      const postGain = ctx.createGain();
+      postGain.gain.value = 0.45;
+      waveShaper.connect(postGain);
+      postGain.connect(master);
+      chordDest = waveShaper;
+    }
+
+    const chordWave: OscillatorType = isRock ? 'sawtooth' : isEDM ? 'square' : isHipHop ? 'square' : 'triangle';
+    const melodyWave: OscillatorType = isRock ? 'sawtooth' : isEDM ? 'square' : 'sine';
+
+    const scheduleChord = (chordName: string, start: number, dur: number) => {
+      const root = chordName.replace(/maj7?|7|m7|add9/g, '').replace(/[^A-Za-z#b]/g, '');
+      if (isRock) {
+        const pcNotes = powerChordNotes[chordName] || powerChordNotes[root] || ['E2','B2','E3'];
+        pcNotes.forEach((note, i) => {
+          const freq = noteToHz[note];
+          if (freq) {
+            playNote(ctx, chordDest, freq, start + i * 0.018, dur, 0.18, 'sawtooth');
+            if (i === 0) playNote(ctx, chordDest, freq * 2, start, dur * 0.8, 0.07, 'sawtooth');
+          }
+        });
+      } else {
+        const notes = chordNotes[chordName] || chordNotes[root] || ['C3','E3','G3'];
+        notes.forEach((note, i) => {
+          const freq = noteToHz[note];
+          if (freq) playNote(ctx, master, freq, start + i * 0.012, dur, 0.065, chordWave);
+        });
+      }
+    };
+
+    const scheduleDrums = (barStart: number) => {
+      if (!hasDrums) return;
+      for (let beat = 0; beat < 4; beat++) {
+        const bt = barStart + beat * beatDur;
+        if (isRock) {
+          scheduleHihat(ctx, master, bt, 0.22);
+          scheduleHihat(ctx, master, bt + beatDur * 0.5, 0.13);
+          if (beat === 0 || beat === 2) scheduleKick(ctx, master, bt, 1.0);
+          if (beat === 1 || beat === 3) scheduleSnare(ctx, master, bt, 0.9);
+          if (beat === 3) scheduleHihat(ctx, master, bt + beatDur * 0.75, 0.1);
+        } else if (isEDM) {
+          scheduleKick(ctx, master, bt, 1.0);
+          if (beat % 2 === 1) scheduleSnare(ctx, master, bt, 0.7);
+          for (let sub = 0; sub < 4; sub++) scheduleHihat(ctx, master, bt + sub * beatDur * 0.25, 0.12);
+        } else if (isHipHop) {
+          if (beat === 0) scheduleKick(ctx, master, bt, 1.0);
+          if (beat === 2) { scheduleKick(ctx, master, bt, 0.9); scheduleKick(ctx, master, bt + beatDur * 0.5, 0.6); }
+          if (beat === 1 || beat === 3) scheduleSnare(ctx, master, bt, 0.85);
+          for (let sub = 0; sub < 4; sub++) {
+            if (Math.random() > 0.45) scheduleHihat(ctx, master, bt + sub * beatDur * 0.25, 0.1);
+          }
+        } else {
+          if (beat === 0 || beat === 2) scheduleKick(ctx, master, bt, 0.9);
+          if (beat === 1 || beat === 3) scheduleSnare(ctx, master, bt, 0.7);
+          scheduleHihat(ctx, master, bt, 0.15);
+          scheduleHihat(ctx, master, bt + beatDur * 0.5, 0.08);
+        }
+      }
+    };
 
     let t = ctx.currentTime + 0.1;
     const sectionTimings: number[] = [];
@@ -189,13 +319,12 @@ export default function MusicStudio() {
     song.sections.forEach((section) => {
       sectionTimings.push(t);
       const chords = section.chords || song.chordProgression;
-      const bars = section.bars || 4;
-      const barsCount = section.lyrics ? Math.ceil(section.lyrics.split('\n').length) + 1 : bars;
-      const chordsPerBar = Math.max(1, Math.round(chords.length / barsCount));
+      const barsCount = section.lyrics ? Math.max(4, Math.ceil(section.lyrics.split('\n').length) + 1) : (section.bars || 4);
 
       for (let bar = 0; bar < barsCount; bar++) {
         const chord = chords[bar % chords.length];
-        playChord(ctx, master, chord, t, measureDur - 0.05);
+        scheduleChord(chord, t, measureDur - 0.04);
+        scheduleDrums(t);
         t += measureDur;
       }
     });
@@ -203,7 +332,7 @@ export default function MusicStudio() {
     song.melody.forEach((m, i) => {
       const melodyStart = ctx.currentTime + 0.1 + i * beatDur * 0.5;
       const freq = noteToHz[m.note];
-      if (freq) playNote(ctx, master, freq, melodyStart, m.duration * beatDur, 0.08, 'sine');
+      if (freq) playNote(ctx, master, freq, melodyStart, m.duration * beatDur, 0.09, melodyWave);
     });
 
     const timers: ReturnType<typeof setTimeout>[] = [];
@@ -223,7 +352,7 @@ export default function MusicStudio() {
     };
 
     setIsPlaying(true);
-  }, [song, muted, getOrCreateCtx, playChord, playNote]);
+  }, [song, muted, getOrCreateCtx, playNote]);
 
   const stopSong = useCallback(() => {
     stopFnRef.current?.();
