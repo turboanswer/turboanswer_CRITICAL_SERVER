@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { Zap, Brain, FileText, Globe, Shield, MessageSquare, Menu, X, QrCode, ImageIcon, Camera, Sparkles, ArrowRight, Check, Lock, Palette, Search, Code, BookOpen, Lightbulb, HeartPulse, Scale, TrendingUp, Wrench, Crown, Rocket, Star, ChevronRight, FlaskConical, Microscope, Cpu, Layers, BarChart3 } from "lucide-react";
+import { Zap, Brain, FileText, Globe, Shield, MessageSquare, Menu, X, QrCode, ImageIcon, Camera, Sparkles, ArrowRight, Check, Lock, Palette, Search, Code, BookOpen, Lightbulb, HeartPulse, Scale, TrendingUp, Wrench, Crown, Rocket, Star, ChevronRight, FlaskConical, Microscope, Cpu, Layers, BarChart3, Film } from "lucide-react";
 import { Link } from "wouter";
 import { QRCodeSVG } from "qrcode.react";
 import { useTheme } from "@/hooks/use-theme";
@@ -630,6 +630,17 @@ export default function LandingPage() {
                 </div>
 
                 <ul className="space-y-3 mb-7">
+                  {/* Video Studio highlight */}
+                  <li className={`flex items-start gap-2.5 rounded-xl p-2.5 -mx-1 ${isDark ? 'bg-violet-500/10 border border-violet-500/20' : 'bg-violet-50 border border-violet-200'}`}>
+                    <div className="w-5 h-5 rounded-full bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <Film className="h-3 w-3 text-white" />
+                    </div>
+                    <div>
+                      <span className={`text-sm font-bold ${isDark ? 'text-violet-300' : 'text-violet-700'}`}>AI Video Studio</span>
+                      <div className={`text-xs mt-0.5 ${isDark ? 'text-violet-400/70' : 'text-violet-500'}`}>Generate AI videos with Google Veo</div>
+                    </div>
+                  </li>
+
                   {[
                     { text: "Everything in Pro", sub: null },
                     { text: "Gemini 3.1 Pro model", sub: "Google's most capable AI" },

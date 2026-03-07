@@ -178,7 +178,7 @@ export default function ImageStudio() {
             </div>
             <div>
               <h1 className="font-bold text-sm text-white leading-none">Image Studio</h1>
-              <p className="text-[10px] text-gray-400 leading-none mt-0.5">Powered by OpenAI</p>
+              <p className="text-[10px] text-gray-400 leading-none mt-0.5">Powered by Google AI</p>
             </div>
           </div>
         </div>
