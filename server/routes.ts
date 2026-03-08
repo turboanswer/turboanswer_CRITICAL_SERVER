@@ -3180,8 +3180,12 @@ Only mention that TurboAnswer was developed by Tiago Tschantret if directly aske
 
   // Gate: all /api/code/* routes require the Code Studio add-on
   app.use('/api/code', async (req: any, res, next) => {
-    if (!req.user?.claims?.sub) return res.status(401).json({ error: 'Not authenticated' });
-    const u = await storage.getUser(req.user.claims.sub).catch(() => null);
+    // Read userId from session directly (req.user isn't set yet at this point)
+    const userId = (req.session as any)?.userId;
+    if (!userId) return res.status(401).json({ error: 'Not authenticated' });
+    // Populate req.user so downstream isAuthenticated handlers work normally
+    req.user = { claims: { sub: userId } };
+    const u = await storage.getUser(userId).catch(() => null);
     if (!u?.codeStudioAddon) return res.status(403).json({ error: 'Code Studio add-on required', requiresAddon: true });
     next();
   });
