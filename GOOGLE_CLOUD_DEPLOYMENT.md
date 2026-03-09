@@ -1,96 +1,129 @@
-# 🌐 Deploy Turbo Answer to Google Cloud
+# Turbo Answer — Google Cloud Run Deployment Guide
 
-## What I'm Setting Up
+## Overview
 
-Your Turbo Answer AI assistant is being configured for Google Cloud Platform deployment with:
-- **Google App Engine** for hosting
-- **Cloud Build** for automated deployment 
-- **Custom domain** support
-- **Automatic scaling** based on traffic
+This guide deploys Turbo Answer to **Google Cloud Run** using Docker.
+Cloud Run is serverless, scales automatically, and you only pay for actual usage.
 
-## Files Created
+## Files Included
 
-### `app.yaml` - App Engine Configuration
-- **Runtime**: Node.js 20
-- **Environment variables**: All your API keys and secrets
-- **Scaling**: 1-10 instances based on CPU usage
-- **HTTPS**: Force secure connections
+| File | Purpose |
+|------|---------|
+| `Dockerfile` | Multi-stage Docker build (builder + production) |
+| `cloudbuild.yaml` | Automated CI/CD via Google Cloud Build |
+| `.dockerignore` | Excludes unnecessary files from the image |
 
-### `cloudbuild.yaml` - Build Configuration  
-- **Frontend build**: React production build
-- **Backend build**: Node.js server bundle
-- **Deployment**: Automatic to App Engine
+---
 
-## Deployment Steps
+## Step 1 — Install & Set Up Google Cloud CLI
 
-### 1. Set Up Google Cloud Project
 ```bash
-# Install Google Cloud CLI
+# Install the CLI (if not already installed)
 curl https://sdk.cloud.google.com | bash
+exec -l $SHELL
 
-# Initialize and login
-gcloud init
+# Login and create/select your project
 gcloud auth login
+gcloud projects create turbo-answer-prod --name="Turbo Answer"
+gcloud config set project turbo-answer-prod
 
-# Create new project
-gcloud projects create turbo-answer-ai --name="Turbo Answer AI"
-gcloud config set project turbo-answer-ai
-```
-
-### 2. Enable Required APIs
-```bash
-gcloud services enable appengine.googleapis.com
+# Enable required services
+gcloud services enable run.googleapis.com
 gcloud services enable cloudbuild.googleapis.com
-gcloud services enable cloudresourcemanager.googleapis.com
+gcloud services enable containerregistry.googleapis.com
 ```
 
-### 3. Set Environment Variables
+---
+
+## Step 2 — Build & Push the Docker Image
+
 ```bash
-gcloud app create --region=us-central1
+# Build the image
+docker build -t gcr.io/turbo-answer-prod/turbo-answer .
 
-# Set your secrets
-echo "DATABASE_URL=your_database_url" > .env.yaml
-echo "GEMINI_API_KEY=your_gemini_key" >> .env.yaml
-echo "STRIPE_SECRET_KEY=your_stripe_key" >> .env.yaml
-echo "VITE_STRIPE_PUBLIC_KEY=your_stripe_public_key" >> .env.yaml
+# Authenticate Docker with Google Cloud
+gcloud auth configure-docker
+
+# Push to Google Container Registry
+docker push gcr.io/turbo-answer-prod/turbo-answer
 ```
 
-### 4. Deploy Your Website
+---
+
+## Step 3 — Deploy to Cloud Run
+
+Replace each `YOUR_*` value with your actual secrets:
+
 ```bash
-# Build your app
-npm run build
-
-# Deploy to Google Cloud
-gcloud app deploy
+gcloud run deploy turbo-answer \
+  --image gcr.io/turbo-answer-prod/turbo-answer \
+  --region us-central1 \
+  --platform managed \
+  --allow-unauthenticated \
+  --port 5000 \
+  --memory 512Mi \
+  --cpu 1 \
+  --min-instances 0 \
+  --max-instances 10 \
+  --set-env-vars NODE_ENV=production \
+  --set-env-vars DATABASE_URL=YOUR_DATABASE_URL \
+  --set-env-vars GEMINI_API_KEY=YOUR_GEMINI_API_KEY \
+  --set-env-vars OPENAI_API_KEY=YOUR_OPENAI_API_KEY \
+  --set-env-vars PAYPAL_CLIENT_ID=YOUR_PAYPAL_CLIENT_ID \
+  --set-env-vars PAYPAL_CLIENT_SECRET=YOUR_PAYPAL_CLIENT_SECRET \
+  --set-env-vars BREVO_API_KEY=YOUR_BREVO_API_KEY \
+  --set-env-vars STRIPE_SECRET_KEY=YOUR_STRIPE_SECRET_KEY \
+  --set-env-vars SESSION_SECRET=YOUR_RANDOM_SECRET_STRING
 ```
 
-## Expected Results
+> Tip: For secrets, use Google Secret Manager instead of `--set-env-vars` for better security.
 
-### Your Website Will Be Available At:
-- **URL**: `https://turbo-answer-ai.uc.r.appspot.com`
-- **Custom Domain**: Set up `turboanswer.ai` or your preferred domain
-- **SSL**: Automatic HTTPS certificates
-- **Global CDN**: Fast worldwide access
+---
 
-### Features Available:
-- ✅ **AI Chat Interface** with voice commands
-- ✅ **Multiple AI Models** (Gemini, GPT, Claude)  
-- ✅ **User Authentication** and sessions
-- ✅ **Premium Subscriptions** via Stripe
-- ✅ **Document Analysis** capabilities
-- ✅ **Employee Management** dashboard
-- ✅ **Real-time Weather** integration
+## Step 4 — Automated Deployments via Cloud Build (Optional)
+
+If you connect your GitHub repo to Cloud Build, every push automatically
+builds and deploys using `cloudbuild.yaml`:
+
+```bash
+# Connect your repo at:
+# https://console.cloud.google.com/cloud-build/triggers
+```
+
+---
+
+## Environment Variables Reference
+
+| Variable | Description |
+|----------|-------------|
+| `DATABASE_URL` | PostgreSQL connection string (Neon or any Postgres) |
+| `GEMINI_API_KEY` | Google Gemini AI key |
+| `OPENAI_API_KEY` | OpenAI key (for image generation) |
+| `PAYPAL_CLIENT_ID` | PayPal subscription payments |
+| `PAYPAL_CLIENT_SECRET` | PayPal secret |
+| `BREVO_API_KEY` | Email delivery (Brevo/Sendinblue) |
+| `STRIPE_SECRET_KEY` | Stripe payments (if used) |
+| `SESSION_SECRET` | Random string for session signing |
+
+---
+
+## Custom Domain
+
+After deploying, map your domain:
+
+```bash
+gcloud run domain-mappings create \
+  --service turbo-answer \
+  --domain yourdomain.com \
+  --region us-central1
+```
+
+Then add the DNS records shown in the output to your domain registrar.
+
+---
 
 ## Cost Estimate
-- **Free tier**: 28 instance hours per day
-- **Typical usage**: $5-20/month for moderate traffic
-- **High traffic**: Scales automatically with usage
 
-## Domain Setup
-Once deployed, you can:
-1. **Purchase domain** through Google Domains or any registrar
-2. **Add custom domain** in App Engine settings
-3. **Get automatic SSL** certificate
-4. **Set up CDN** for faster global access
-
-Your professional AI assistant will be live on Google Cloud with enterprise-grade infrastructure!
+- **Free tier**: 2 million requests/month, 360,000 vCPU-seconds, 180,000 GB-seconds
+- **Typical small app**: $0–5/month
+- **Growing app**: $10–30/month depending on traffic
