@@ -2,7 +2,8 @@ import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
-import { ArrowLeft, Brain, Zap, CheckCircle, Star, FlaskConical, XCircle, AlertTriangle, Gift, Building2, Trash2, Copy, Users, Code2 } from "lucide-react";
+import { ArrowLeft, Brain, Zap, CheckCircle, Star, FlaskConical, XCircle, AlertTriangle, Gift, Building2, Trash2, Copy, Users, Code2, History, MessageSquare } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -51,6 +52,8 @@ export default function AISettings() {
   });
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showHistoryDialog, setShowHistoryDialog] = useState(false);
+  const [showDeleteAllConfirm, setShowDeleteAllConfirm] = useState(false);
   const [, setLocation] = useLocation();
 
   const { theme } = useTheme();
@@ -172,6 +175,36 @@ export default function AISettings() {
         description: error.message || "Failed to delete account",
         variant: "destructive",
       });
+    },
+  });
+
+  const { data: conversations, refetch: refetchConversations } = useQuery<Array<{ id: number; title: string; createdAt: string }>>({
+    queryKey: ["/api/conversations"],
+    enabled: showHistoryDialog,
+  });
+
+  const deleteConversationMutation = useMutation({
+    mutationFn: async (id: number) => {
+      const res = await apiRequest("DELETE", `/api/conversations/${id}`);
+      return res.json();
+    },
+    onSuccess: () => {
+      refetchConversations();
+      queryClient.invalidateQueries({ queryKey: ["/api/conversations"] });
+      toast({ title: "Deleted", description: "Conversation deleted." });
+    },
+  });
+
+  const deleteAllMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("DELETE", "/api/conversations");
+      return res.json();
+    },
+    onSuccess: () => {
+      refetchConversations();
+      queryClient.invalidateQueries({ queryKey: ["/api/conversations"] });
+      setShowDeleteAllConfirm(false);
+      toast({ title: "Cleared", description: "All chat history has been deleted." });
     },
   });
 
@@ -437,6 +470,93 @@ export default function AISettings() {
             </div>
           </div>
         )}
+
+        {/* Chat History */}
+        <div className="mt-10">
+          <div className={`border-t ${isDark ? 'border-gray-800' : 'border-gray-200'} pt-8`}>
+            <h3 className="text-lg font-semibold mb-2 flex items-center gap-2">
+              <History className="h-5 w-5" />
+              Chat History
+            </h3>
+            <p className={`text-sm mb-4 ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+              View and manage your past conversations.
+            </p>
+            <div className="flex gap-3">
+              <Button
+                variant="outline"
+                onClick={() => { setShowHistoryDialog(true); refetchConversations(); }}
+                className={isDark ? 'border-gray-700 text-gray-300 hover:bg-gray-800' : ''}
+              >
+                <History className="h-4 w-4 mr-2" />
+                View Chat History
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => setShowDeleteAllConfirm(true)}
+                className={isDark ? 'border-red-800 text-red-400 hover:bg-red-950' : 'border-red-300 text-red-600 hover:bg-red-50'}
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Delete All History
+              </Button>
+            </div>
+
+            {showDeleteAllConfirm && (
+              <Card className={`mt-4 ${isDark ? 'bg-red-950/30 border-red-800' : 'bg-red-50 border-red-200'}`}>
+                <CardContent className="p-4">
+                  <p className={`text-sm mb-3 font-medium ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>
+                    Delete all conversations? This cannot be undone.
+                  </p>
+                  <div className="flex gap-2">
+                    <Button variant="destructive" size="sm" onClick={() => deleteAllMutation.mutate()} disabled={deleteAllMutation.isPending}>
+                      {deleteAllMutation.isPending ? "Deleting..." : "Yes, Delete All"}
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => setShowDeleteAllConfirm(false)}>Cancel</Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        </div>
+
+        {/* Chat History Dialog */}
+        <Dialog open={showHistoryDialog} onOpenChange={setShowHistoryDialog}>
+          <DialogContent className={`max-w-lg ${isDark ? 'bg-gray-900 border-gray-700 text-white' : 'bg-white'}`}>
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <History className="h-5 w-5" />
+                Chat History
+              </DialogTitle>
+            </DialogHeader>
+            <div className="max-h-96 overflow-y-auto">
+              {!conversations || conversations.length === 0 ? (
+                <div className={`text-center py-10 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+                  <MessageSquare className="h-10 w-10 mx-auto mb-3 opacity-40" />
+                  <p className="text-sm">No conversations yet.</p>
+                </div>
+              ) : (
+                <div className="space-y-2 pr-2">
+                  {conversations.map((conv) => (
+                    <div key={conv.id} className={`flex items-center justify-between p-3 rounded-lg ${isDark ? 'bg-gray-800 hover:bg-gray-750' : 'bg-gray-50 hover:bg-gray-100'}`}>
+                      <div className="flex items-center gap-2 min-w-0">
+                        <MessageSquare className="h-4 w-4 flex-shrink-0 opacity-50" />
+                        <span className="text-sm truncate">{conv.title || "New Conversation"}</span>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => deleteConversationMutation.mutate(conv.id)}
+                        disabled={deleteConversationMutation.isPending}
+                        className="flex-shrink-0 text-red-400 hover:text-red-300 hover:bg-red-950/30"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
 
         {/* Delete Account */}
         <div className="mt-10">

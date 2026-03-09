@@ -483,6 +483,29 @@ function downloadAAB(){
     }
   });
 
+  // Delete a single conversation
+  app.delete("/api/conversations/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const conversationId = parseInt(req.params.id);
+      await storage.deleteConversation(conversationId, userId);
+      res.json({ success: true });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Delete all conversations for current user
+  app.delete("/api/conversations", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      await storage.deleteAllConversations(userId);
+      res.json({ success: true });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   // Visual AI analysis endpoint
   app.post("/api/analyze-image", async (req: any, res) => {
     try {
