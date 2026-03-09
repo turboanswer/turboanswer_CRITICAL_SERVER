@@ -86,8 +86,23 @@ app.use((req, res, next) => {
   next();
 });
 
+process.on('uncaughtException', (err) => {
+  console.error('[Server] Uncaught exception:', err.message, err.stack);
+  process.exit(1);
+});
+
+process.on('unhandledRejection', (reason: any) => {
+  console.error('[Server] Unhandled rejection:', reason?.message || String(reason), reason?.stack);
+  process.exit(1);
+});
+
 (async () => {
+  console.log('[Server] Starting up...');
+
+  console.log('[Server] Registering routes...');
   const server = await registerRoutes(app);
+  console.log('[Server] Routes registered.');
+
   try { await storage.seedOwnerPromoCode(); } catch (e: any) { console.error('[PromoCode] Seed error:', e.message); }
 
   app.use((err: any, req: Request, res: Response, _next: NextFunction) => {
@@ -103,10 +118,13 @@ app.use((req, res, next) => {
   if (app.get("env") === "development") {
     await setupVite(app, server);
   } else {
+    console.log('[Server] Setting up static file serving...');
     serveStatic(app);
+    console.log('[Server] Static files ready.');
   }
 
   const port = parseInt(process.env.PORT || "5000", 10);
+  console.log(`[Server] Listening on port ${port}...`);
   server.listen({
     port,
     host: "0.0.0.0",
@@ -134,16 +152,4 @@ app.use((req, res, next) => {
 
   process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
   process.on('SIGINT', () => gracefulShutdown('SIGINT'));
-
-  process.on('uncaughtException', (err) => {
-    console.error('[Server] Uncaught exception:', err.message);
-    trackError('uncaughtException', err.message, { stack: err.stack });
-    gracefulShutdown('uncaughtException');
-  });
-
-  process.on('unhandledRejection', (reason: any) => {
-    const message = reason?.message || String(reason);
-    console.error('[Server] Unhandled rejection:', message);
-    trackError('unhandledRejection', message, { stack: reason?.stack });
-  });
 })();
