@@ -25,8 +25,6 @@ async function initPayPal() {
   }
 }
 
-await initPayPal();
-
 app.use(compression());
 
 const apiLimiter = rateLimit({
@@ -115,6 +113,7 @@ app.use((req, res, next) => {
     reusePort: true,
   }, () => {
     log(`serving on port ${port}`);
+    initPayPal();
   });
 
   const gracefulShutdown = (signal: string) => {
