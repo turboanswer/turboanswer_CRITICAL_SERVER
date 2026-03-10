@@ -134,33 +134,26 @@ export async function generateAIResponse(
         geminiModel = 'gemini-3.1-flash-lite-preview';
         maxTokens = 2000;
         temperature = 0.4;
-        systemPrompt = `You are Turbo Answer Research. Give clear, direct, helpful responses. Only mention TurboAnswer was developed by Tiago Tschantret if directly asked.${languageInstruction ? ' ' + languageInstruction : ''}${additionalContext}`;
+        systemPrompt = `You are Turbo Answer Research. Answer questions directly and concisely. Never discuss your own state, feelings, or load. Only mention TurboAnswer was developed by Tiago Tschantret if directly asked.${languageInstruction ? ' ' + languageInstruction : ''}${additionalContext}`;
       } else {
         // Complex queries → Gemini 3.1 Pro, full depth
         geminiModel = 'gemini-3.1-pro-preview';
         maxTokens = 8192;
         temperature = 0.1;
-        systemPrompt = `You are Turbo Answer Research, powered by Gemini 3.1 Pro — the most capable AI on this platform. Give thorough, expert-level responses on every topic. Always:
-- Answer the question directly and completely
-- Use clear structure (headings, bullets) for complex topics
-- For code: provide working, well-commented examples with explanations
-- For factual topics: include context, nuances, and multiple perspectives
-- For analysis: go in depth, cover edge cases, provide actionable insights
-- Calibrate response length to the question — detailed for complex topics, concise for simple ones
-Only mention that TurboAnswer was developed by Tiago Tschantret if directly asked.${languageInstruction ? ' ' + languageInstruction : ''}${additionalContext}`;
+        systemPrompt = `You are Turbo Answer Research, powered by Gemini 3.1 Pro. Give expert-level responses. Answer directly, use structure (headings, bullets) for complex topics, calibrate length to the question. Never discuss your own state or feelings. Only mention TurboAnswer was developed by Tiago Tschantret if directly asked.${languageInstruction ? ' ' + languageInstruction : ''}${additionalContext}`;
       }
     } else if (selectedModel === 'gemini-pro') {
       // Pro tier ($6.99) → Gemini 3.1 Flash
       geminiModel = 'gemini-3.1-flash-lite-preview';
       maxTokens = 4000;
       temperature = 0.3;
-      systemPrompt = `You are Turbo Answer, a premium assistant. Only if someone specifically asks who made, created, or developed TurboAnswer, say it was developed by Tiago Tschantret — otherwise never mention it. Give clear, complete, detailed responses to every question.${languageInstruction ? ' ' + languageInstruction : ''}${additionalContext}`;
+      systemPrompt = `You are Turbo Answer. Answer questions directly and helpfully. Never discuss your own state, feelings, or system load. Only mention TurboAnswer was developed by Tiago Tschantret if directly asked.${languageInstruction ? ' ' + languageInstruction : ''}${additionalContext}`;
     } else {
       // Free tier → Gemini 3.1 Flash Lite
       geminiModel = 'gemini-3.1-flash-lite-preview';
       maxTokens = 2000;
       temperature = 0.4;
-      systemPrompt = `You are Turbo Answer. Only if someone specifically asks who made, created, or developed TurboAnswer, say it was developed by Tiago Tschantret — otherwise never mention it. Give clear, complete, helpful responses to every question.${languageInstruction ? ' ' + languageInstruction : ''}${additionalContext}`;
+      systemPrompt = `You are Turbo Answer. Answer questions directly and helpfully. Keep responses concise unless detail is needed. Never discuss your own state, feelings, or system load. Only mention TurboAnswer was developed by Tiago Tschantret if directly asked.${languageInstruction ? ' ' + languageInstruction : ''}${additionalContext}`;
     }
 
     const geminiApiKey = process.env.GEMINI_API_KEY;
@@ -180,9 +173,9 @@ Only mention that TurboAnswer was developed by Tiago Tschantret if directly aske
   } catch (error: any) {
     console.error('[AI] Error:', error.message);
     if (error.message?.includes('rate limit') || error.message?.includes('quota') || error.message?.includes('Rate') || error.message?.includes('429')) {
-      return "I'm a bit busy right now - too many requests at once. Please wait a few seconds and try again!";
+      return "Please wait a moment and try again.";
     }
-    return "Something went wrong. Please try again in a moment.";
+    return "Please try again.";
   }
 }
 
@@ -253,7 +246,7 @@ async function callGemini(prompt: string, preferredModel: string, maxTokens: num
     }
   }
 
-  throw new Error('AI is temporarily busy due to high demand. Please wait a moment and try again.');
+  throw new Error('Please try again in a moment.');
 }
 
 export function getAvailableModels(subscriptionTier: string): Record<string, any> {

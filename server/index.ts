@@ -88,12 +88,16 @@ app.use((req, res, next) => {
 
 process.on('uncaughtException', (err) => {
   console.error('[Server] Uncaught exception:', err.message, err.stack);
+  // Allow EADDRINUSE to be handled by graceful shutdown rather than hard exit
+  if ((err as any).code === 'EADDRINUSE') {
+    console.error('[Server] Port already in use — exiting cleanly');
+    process.exit(0);
+  }
   process.exit(1);
 });
 
 process.on('unhandledRejection', (reason: any) => {
   console.error('[Server] Unhandled rejection:', reason?.message || String(reason), reason?.stack);
-  process.exit(1);
 });
 
 (async () => {
