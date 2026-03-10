@@ -193,15 +193,15 @@ export default function Home() {
           </Link>
 
           <Link href="/photo-editor">
-            <div className="group relative rounded-2xl border border-white/[0.08] p-5 cursor-pointer overflow-hidden transition-all hover:border-pink-500/40 hover:shadow-lg hover:shadow-pink-500/10" style={{ background: "linear-gradient(135deg, #1e0d2e 0%, #0a0a20 100%)" }}>
-              <div className="absolute top-0 right-0 w-24 h-24 rounded-full opacity-10 blur-2xl" style={{ background: "#EA4335" }} />
+            <div className="group relative rounded-2xl border border-white/[0.08] p-5 cursor-pointer overflow-hidden transition-all hover:border-blue-500/40 hover:shadow-lg hover:shadow-blue-500/10" style={{ background: "linear-gradient(135deg, #0d1b3e 0%, #0a0a20 100%)" }}>
+              <div className="absolute top-0 right-0 w-24 h-24 rounded-full opacity-10 blur-2xl" style={{ background: "#4285F4" }} />
               <div className="flex items-center gap-2 mb-3">
-                <Camera className="h-8 w-8 text-pink-400" />
-                <span className="text-xs px-2 py-0.5 rounded-full font-semibold" style={{ background: "rgba(234,67,53,0.15)", color: "#EA4335", border: "1px solid rgba(234,67,53,0.3)" }}>Imagen 3</span>
+                <Camera className="h-8 w-8 text-blue-400" />
+                <span className="text-xs px-2 py-0.5 rounded-full font-semibold" style={{ background: "rgba(66,133,244,0.15)", color: "#4285F4", border: "1px solid rgba(66,133,244,0.3)" }}>Gemini Vision</span>
               </div>
-              <h3 className="text-lg font-bold text-white mb-1">Photo Editor</h3>
-              <p className="text-sm text-gray-400">Generate, edit & place yourself anywhere with AI</p>
-              <ArrowRight className="h-4 w-4 mt-3 text-gray-600 group-hover:text-pink-400 transition-colors" />
+              <h3 className="text-lg font-bold text-white mb-1">AI Scanner</h3>
+              <p className="text-sm text-gray-400">Scan documents, receipts & photos — AI reads & summarizes them</p>
+              <ArrowRight className="h-4 w-4 mt-3 text-gray-600 group-hover:text-blue-400 transition-colors" />
             </div>
           </Link>
 

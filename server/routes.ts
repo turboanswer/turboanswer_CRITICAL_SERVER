@@ -3826,6 +3826,40 @@ Return ONLY valid JSON (no markdown):
     }
   });
 
+  // AI Camera Scanner — analyze any image/document
+  app.post('/api/camera/analyze', isAuthenticated, async (req: any, res) => {
+    try {
+      const { imageData, question } = req.body;
+      if (!imageData) return res.status(400).json({ error: 'imageData required' });
+
+      const { GoogleGenerativeAI } = await import('@google/generative-ai');
+      const geminiKey = process.env.GEMINI_API_KEY;
+      if (!geminiKey) return res.status(503).json({ error: 'AI service unavailable' });
+
+      const ai = new GoogleGenerativeAI(geminiKey);
+      const model = ai.getGenerativeModel({ model: 'gemini-2.5-flash' });
+
+      const base64Data = imageData.replace(/^data:image\/[a-z]+;base64,/, '');
+      const mimeMatch = imageData.match(/^data:(image\/[a-z]+);base64,/);
+      const mimeType = (mimeMatch?.[1] || 'image/jpeg') as any;
+
+      const prompt = question
+        ? `The user asks: "${question}"\n\nLook at this image carefully and answer the question directly and clearly. If the image contains text, read it exactly. Be thorough and helpful.`
+        : `Analyze this image thoroughly. If it contains text (document, receipt, sign, note, whiteboard, book, label, etc.), transcribe all the text you can see and summarize the key information. If it's a photo or scene, describe what you see in detail and highlight anything important or useful. Be clear, organized, and complete.`;
+
+      const result = await model.generateContent([
+        prompt,
+        { inlineData: { mimeType, data: base64Data } }
+      ]);
+
+      const text = result.response.text();
+      res.json({ result: text });
+    } catch (e: any) {
+      console.error('[Camera Analyze]', e.message);
+      res.status(500).json({ error: 'Analysis failed. Please try again.' });
+    }
+  });
+
   startProactiveDiagnostics();
 
   // Auto-lockdown on critical infrastructure failure (DB or AI down — not memory pressure)

@@ -425,8 +425,8 @@ export default function Chat() {
                 </Button>
               </Link>
               <Link href="/photo-editor">
-                <Button variant="ghost" size="sm" className={`h-8 px-2 text-xs ${isDark ? 'text-gray-400 hover:text-pink-400' : 'text-gray-500 hover:text-pink-500'}`} title="Photo Editor — Imagen 3 AI photo studio">
-                  <Camera className="h-4 w-4 mr-1" /> Photos
+                <Button variant="ghost" size="sm" className={`h-8 px-2 text-xs ${isDark ? 'text-gray-400 hover:text-blue-400' : 'text-gray-500 hover:text-blue-500'}`} title="AI Scanner — Scan documents, receipts & photos">
+                  <Camera className="h-4 w-4 mr-1" /> Scan
                 </Button>
               </Link>
               <Link href="/video-studio">
