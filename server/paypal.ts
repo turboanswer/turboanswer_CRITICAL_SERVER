@@ -181,7 +181,7 @@ export async function ensureSubscriptionPlans(): Promise<{ pro: string; research
       const plan = await paypalRequest("POST", "/v1/billing/plans", {
         product_id: productId,
         name: "Turbo Answer Research",
-        description: "Research tier - Antigravity + Gemini 3.1 Pro + AI Video Studio. 7-day free trial.",
+        description: "Research tier - Claude + Gemini AI + Code Studio + AI Video Studio. 7-day free trial.",
         status: "ACTIVE",
         billing_cycles: [
           trialCycle,
@@ -208,7 +208,7 @@ export async function ensureSubscriptionPlans(): Promise<{ pro: string; research
       const plan = await paypalRequest("POST", "/v1/billing/plans", {
         product_id: productId,
         name: "Turbo Answer Enterprise",
-        description: "Enterprise tier - 5 members, Antigravity, Research + Video Studio. 7-day free trial.",
+        description: "Enterprise tier - 5 members, Claude + Gemini, Research + Code Studio + Video Studio. 7-day free trial.",
         status: "ACTIVE",
         billing_cycles: [
           trialCycle,

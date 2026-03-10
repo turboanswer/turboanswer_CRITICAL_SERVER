@@ -14,7 +14,7 @@ import {
 export const AI_MODELS: Record<string, Record<string, any>> = {
   pro: {
     "gemini-pro": {
-      name: "Gemini 3.1 Flash",
+      name: "Gemini Flash",
       provider: "google",
       description: "Fast, powerful model for detailed responses and complex tasks",
       maxTokens: 8000,
@@ -23,25 +23,25 @@ export const AI_MODELS: Record<string, Record<string, any>> = {
   },
   research: {
     "claude-research": {
-      name: "Gemini 3.1 Pro",
-      provider: "google",
-      description: "Most powerful model for deep research and comprehensive analysis",
+      name: "Claude + Gemini",
+      provider: "anthropic",
+      description: "Claude as primary with Gemini fallback — maximum intelligence for deep research",
       maxTokens: 16000,
       temperature: 0.1,
     },
   },
   enterprise: {
     "enterprise-research": {
-      name: "Gemini 3.1 Pro",
-      provider: "google",
-      description: "Most powerful model for enterprise-grade analysis and research",
+      name: "Claude + Gemini",
+      provider: "anthropic",
+      description: "Claude as primary with Gemini fallback — enterprise-grade intelligence",
       maxTokens: 16000,
       temperature: 0.1,
     },
   },
   free: {
     "gemini-flash": {
-      name: "Gemini 3.1 Flash Lite",
+      name: "Gemini Flash Lite",
       provider: "google",
       description: "Fast free model for everyday questions",
       maxTokens: 4000,
@@ -70,6 +70,49 @@ function classifyQueryComplexity(message: string): 'simple' | 'complex' {
   if (/^(?:hi\b|hello\b|hey\b|thanks\b|thank\s+you\b|ok\b|okay\b|sure\b|yes\b|no\b|bye\b|good\s+(?:morning|afternoon|evening)\b|how\s+are\s+you\b|can\s+you\s+help\b)/.test(msgLower)) return 'simple';
 
   return 'simple';
+}
+
+async function callClaude(prompt: string, maxTokens: number, temperature: number): Promise<string | null> {
+  const anthropicKey = process.env.AI_INTEGRATIONS_ANTHROPIC_API_KEY || process.env.ANTHROPIC_API_KEY;
+  const anthropicBase = process.env.AI_INTEGRATIONS_ANTHROPIC_BASE_URL || 'https://api.anthropic.com';
+  if (!anthropicKey) return null;
+
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 45000);
+    const response = await fetch(`${anthropicBase}/v1/messages`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': anthropicKey,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
+        model: 'claude-opus-4-5',
+        max_tokens: maxTokens,
+        temperature,
+        messages: [{ role: 'user', content: prompt }],
+      }),
+      signal: controller.signal,
+    });
+    clearTimeout(timeout);
+
+    if (!response.ok) {
+      console.log(`[Claude] HTTP ${response.status}`);
+      return null;
+    }
+
+    const data: any = await response.json();
+    const text = data.content?.[0]?.text;
+    if (text) {
+      console.log(`[Claude] claude-opus-4-5 responded`);
+      return text;
+    }
+    return null;
+  } catch (err: any) {
+    console.log(`[Claude] Failed: ${err.message}`);
+    return null;
+  }
 }
 
 export async function generateAIResponse(
@@ -122,53 +165,49 @@ export async function generateAIResponse(
     const languageInstruction = userLanguage !== "en" ? 
       `CRITICAL: Respond in ${userLanguage} language. ALL responses must be in ${userLanguage}.` : "";
 
-    let systemPrompt: string;
-    let geminiModel: string;
-    let maxTokens: number;
-    let temperature: number;
+    const recentHistory = conversationHistory.slice(-2).map(m => `${m.role}: ${m.content.slice(0, 500)}`).join('\n');
+
+    const geminiApiKey = process.env.GEMINI_API_KEY;
 
     if (selectedModel === 'claude-research' || selectedModel === 'enterprise-research') {
       const complexity = classifyQueryComplexity(userMessage);
+
       if (complexity === 'simple') {
-        // Simple queries get Flash Lite — same answer quality, much lower cost
-        geminiModel = 'gemini-3.1-flash-lite-preview';
-        maxTokens = 2000;
-        temperature = 0.4;
-        systemPrompt = `You are Turbo Answer Research. Answer questions directly and concisely. Never discuss your own state, feelings, or load. Only mention TurboAnswer was developed by Tiago Tschantret if directly asked.${languageInstruction ? ' ' + languageInstruction : ''}${additionalContext}`;
+        // Simple queries → Gemini Flash Lite (fast, cheap, same quality for simple)
+        if (!geminiApiKey) return "API key not configured.";
+        const systemPrompt = `You are Turbo Answer Research. Answer questions directly and concisely. Never discuss your own state, feelings, or load. Only mention TurboAnswer was developed by Tiago Tschantret if directly asked.${languageInstruction ? ' ' + languageInstruction : ''}${additionalContext}`;
+        const fullPrompt = recentHistory ? `${systemPrompt}\n\nContext:\n${recentHistory}\n\nUser: ${enhancedMessage}` : `${systemPrompt}\n\nUser: ${enhancedMessage}`;
+        console.log(`[AI] Research/simple → Gemini Flash Lite`);
+        return await callGemini(fullPrompt, 'gemini-3.1-flash-lite-preview', 2000, 0.4, geminiApiKey);
       } else {
-        // Complex queries → Gemini 3.1 Pro, full depth
-        geminiModel = 'gemini-3.1-pro-preview';
-        maxTokens = 8192;
-        temperature = 0.1;
-        systemPrompt = `You are Turbo Answer Research, powered by Gemini 3.1 Pro. Give expert-level responses. Answer directly, use structure (headings, bullets) for complex topics, calibrate length to the question. Never discuss your own state or feelings. Only mention TurboAnswer was developed by Tiago Tschantret if directly asked.${languageInstruction ? ' ' + languageInstruction : ''}${additionalContext}`;
+        // Complex queries → Claude Opus 4.5 primary, Gemini 3.1 Pro fallback
+        const systemPrompt = `You are Turbo Answer Research, powered by Claude and Gemini. Give expert-level responses. Answer directly, use structure (headings, bullets) for complex topics, calibrate length to the question. Never discuss your own state or feelings. Only mention TurboAnswer was developed by Tiago Tschantret if directly asked.${languageInstruction ? ' ' + languageInstruction : ''}${additionalContext}`;
+        const fullPrompt = recentHistory ? `${systemPrompt}\n\nContext:\n${recentHistory}\n\nUser: ${enhancedMessage}` : `${systemPrompt}\n\nUser: ${enhancedMessage}`;
+
+        console.log(`[AI] Research/complex → Claude primary`);
+        const claudeReply = await callClaude(fullPrompt, 8192, 0.1);
+        if (claudeReply) return claudeReply;
+
+        // Gemini fallback
+        console.log(`[AI] Claude failed → Gemini 3.1 Pro fallback`);
+        if (!geminiApiKey) throw new Error('No API keys available');
+        return await callGemini(fullPrompt, 'gemini-3.1-pro-preview', 8192, 0.1, geminiApiKey);
       }
     } else if (selectedModel === 'gemini-pro') {
-      // Pro tier ($6.99) → Gemini 3.1 Flash
-      geminiModel = 'gemini-3.1-flash-lite-preview';
-      maxTokens = 4000;
-      temperature = 0.3;
-      systemPrompt = `You are Turbo Answer. Answer questions directly and helpfully. Never discuss your own state, feelings, or system load. Only mention TurboAnswer was developed by Tiago Tschantret if directly asked.${languageInstruction ? ' ' + languageInstruction : ''}${additionalContext}`;
+      // Pro tier ($6.99) → Gemini Flash
+      if (!geminiApiKey) return "API key not configured.";
+      const systemPrompt = `You are Turbo Answer. Answer questions directly and helpfully. Never discuss your own state, feelings, or system load. Only mention TurboAnswer was developed by Tiago Tschantret if directly asked.${languageInstruction ? ' ' + languageInstruction : ''}${additionalContext}`;
+      const fullPrompt = recentHistory ? `${systemPrompt}\n\nContext:\n${recentHistory}\n\nUser: ${enhancedMessage}` : `${systemPrompt}\n\nUser: ${enhancedMessage}`;
+      console.log(`[AI] Pro → Gemini Flash Lite`);
+      return await callGemini(fullPrompt, 'gemini-3.1-flash-lite-preview', 4000, 0.3, geminiApiKey);
     } else {
-      // Free tier → Gemini 3.1 Flash Lite
-      geminiModel = 'gemini-3.1-flash-lite-preview';
-      maxTokens = 2000;
-      temperature = 0.4;
-      systemPrompt = `You are Turbo Answer. Answer questions directly and helpfully. Keep responses concise unless detail is needed. Never discuss your own state, feelings, or system load. Only mention TurboAnswer was developed by Tiago Tschantret if directly asked.${languageInstruction ? ' ' + languageInstruction : ''}${additionalContext}`;
+      // Free tier → Gemini Flash Lite
+      if (!geminiApiKey) return "API key not configured.";
+      const systemPrompt = `You are Turbo Answer. Answer questions directly and helpfully. Keep responses concise unless detail is needed. Never discuss your own state, feelings, or system load. Only mention TurboAnswer was developed by Tiago Tschantret if directly asked.${languageInstruction ? ' ' + languageInstruction : ''}${additionalContext}`;
+      const fullPrompt = recentHistory ? `${systemPrompt}\n\nContext:\n${recentHistory}\n\nUser: ${enhancedMessage}` : `${systemPrompt}\n\nUser: ${enhancedMessage}`;
+      console.log(`[AI] Free → Gemini Flash Lite`);
+      return await callGemini(fullPrompt, 'gemini-3.1-flash-lite-preview', 2000, 0.4, geminiApiKey);
     }
-
-    const geminiApiKey = process.env.GEMINI_API_KEY;
-    if (!geminiApiKey) {
-      return "Gemini API key is not configured. Please add GEMINI_API_KEY to get started.";
-    }
-
-    console.log(`[AI] Model: ${geminiModel}, Tokens: ${maxTokens}`);
-
-    const recentHistory = conversationHistory.slice(-2).map(m => `${m.role}: ${m.content.slice(0, 500)}`).join('\n');
-    const fullPrompt = recentHistory
-      ? `${systemPrompt}\n\nContext:\n${recentHistory}\n\nUser: ${enhancedMessage}`
-      : `${systemPrompt}\n\nUser: ${enhancedMessage}`;
-
-    return await callGemini(fullPrompt, geminiModel, maxTokens, temperature, geminiApiKey);
 
   } catch (error: any) {
     console.error('[AI] Error:', error.message);
@@ -263,7 +302,7 @@ export function getAvailableModels(subscriptionTier: string): Record<string, any
   }
 
   if (subscriptionTier === 'research' || subscriptionTier === 'enterprise') {
-    if (hasGemini) Object.assign(models, AI_MODELS.research);
+    Object.assign(models, AI_MODELS.research);
   }
 
   return models;

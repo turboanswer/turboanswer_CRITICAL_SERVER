@@ -569,29 +569,22 @@ export default function Chat() {
         )}
       </header>
 
-      {/* Antigravity Banner */}
+      {/* Code Studio Banner */}
       {showAntigravityBanner && (
-        <div className="shrink-0 relative z-30 overflow-hidden" style={{ background: "linear-gradient(90deg, #0d1b3e 0%, #0a2018 50%, #1a1a0a 100%)", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
-          {/* Subtle color glow */}
-          <div className="absolute inset-0 opacity-20" style={{ background: "linear-gradient(90deg, rgba(66,133,244,0.3) 0%, rgba(52,168,83,0.2) 50%, rgba(251,188,5,0.2) 100%)" }} />
+        <div className="shrink-0 relative z-30 overflow-hidden" style={{ background: "linear-gradient(90deg, #0d0d2e 0%, #0a0a1e 50%, #0d0a2e 100%)", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+          <div className="absolute inset-0 opacity-20" style={{ background: "linear-gradient(90deg, rgba(139,92,246,0.3) 0%, rgba(34,211,238,0.2) 50%, rgba(139,92,246,0.2) 100%)" }} />
           <div className="relative flex items-center gap-3 px-4 py-2.5">
-            {/* Google G colored dots */}
-            <div className="hidden sm:flex items-center gap-1 shrink-0">
-              {["#4285F4","#EA4335","#FBBC05","#34A853"].map((c,i) => (
-                <div key={i} className="w-2 h-2 rounded-full" style={{ background: c }} />
-              ))}
-            </div>
             <div className="flex-1 flex items-center gap-2 min-w-0">
-              <span className="text-xs font-bold shrink-0" style={{ background: "linear-gradient(90deg, #4285F4, #34A853)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>NEW</span>
+              <span className="text-xs font-bold shrink-0" style={{ background: "linear-gradient(90deg, #8b5cf6, #22d3ee)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>NEW</span>
               <span className="text-white text-xs sm:text-sm font-semibold truncate">
-                Antigravity is here — build full apps from a single prompt
+                Code Studio — build full apps from a single prompt
               </span>
-              <span className="hidden md:inline text-xs text-gray-400 truncate">Powered by Google Gemini 3.1 Pro</span>
+              <span className="hidden md:inline text-xs text-gray-400 truncate">Powered by Claude + Gemini</span>
             </div>
             {!isNativeMobile && (
             <Link href="/code-studio">
-              <button className="shrink-0 text-xs font-semibold px-3 py-1.5 rounded-lg transition-all" style={{ background: "linear-gradient(135deg, #4285F4, #34A853)", color: "white" }}>
-                Try Antigravity
+              <button className="shrink-0 text-xs font-semibold px-3 py-1.5 rounded-lg transition-all" style={{ background: "linear-gradient(135deg, #8b5cf6, #22d3ee)", color: "white" }}>
+                Try Code Studio
               </button>
             </Link>
             )}
@@ -909,7 +902,7 @@ export default function Chat() {
                 <Brain className="text-white h-7 w-7" />
               </div>
               <h2 className={`text-xl font-bold mb-1 ${isDark ? 'text-white' : 'text-gray-900'}`}>Upgrade to Research</h2>
-              <p className={isDark ? 'text-zinc-400 text-sm' : 'text-gray-500 text-sm'}>Antigravity · Gemini 3.1 Pro · AI Video Studio</p>
+              <p className={isDark ? 'text-zinc-400 text-sm' : 'text-gray-500 text-sm'}>Claude + Gemini · Maximum Intelligence · AI Video Studio</p>
             </div>
             {/* Google color bar */}
             <div className="flex h-1 rounded-full overflow-hidden mb-4">
@@ -926,7 +919,7 @@ export default function Chat() {
               <p className={`text-xs mt-1 ${isDark ? 'text-zinc-500' : 'text-gray-400'}`}>after free trial</p>
             </div>
             <ul className="space-y-3 mb-6">
-              {["7 days free — cancel anytime", "🔬 Antigravity — build apps with one prompt", "🎬 AI Video Studio (Google Veo 3.1)", "Gemini 3.1 Pro — maximum intelligence", "Everything in Pro + Free included"].map((text, i) => (
+              {["7 days free — cancel anytime", "🤖 Claude + Gemini — dual AI powerhouse", "🎬 AI Video Studio (Google Veo 3.1)", "💻 Code Studio — build apps with one prompt", "Everything in Pro + Free included"].map((text, i) => (
                 <li key={i} className="flex items-center gap-3">
                   <CheckCircle className="w-4 h-4 text-green-400 flex-shrink-0" />
                   <span className={`text-sm ${i === 0 ? 'font-semibold text-green-400' : isDark ? 'text-zinc-200' : 'text-gray-700'}`}>{text}</span>
@@ -971,7 +964,7 @@ export default function Chat() {
                 <Crown className="text-white h-7 w-7" />
               </div>
               <h2 className={`text-xl font-bold mb-1 ${isDark ? 'text-white' : 'text-gray-900'}`}>Upgrade to Enterprise</h2>
-              <p className={isDark ? 'text-zinc-400 text-sm' : 'text-gray-500 text-sm'}>Antigravity + Research for up to 5 team members</p>
+              <p className={isDark ? 'text-zinc-400 text-sm' : 'text-gray-500 text-sm'}>Claude + Gemini · Research for up to 5 team members</p>
             </div>
             <div className="text-center mb-1">
               <div className="inline-flex items-center gap-1.5 bg-green-500/15 border border-green-500/30 text-green-400 text-xs font-semibold px-3 py-1 rounded-full mb-3">
@@ -1028,7 +1021,7 @@ export default function Chat() {
               </div>
             </div>
             <ul className="space-y-3 mb-6">
-              {["7 days free — cancel anytime", "🔬 Antigravity — build apps with one prompt", "🎬 AI Video Studio (Google Veo 3.1)", "All Research features included", "Shareable 6-digit team code (up to 5 members)", "Save 44% vs 5 individual Research plans"].map((text, i) => (
+              {["7 days free — cancel anytime", "🤖 Claude + Gemini — dual AI powerhouse", "🎬 AI Video Studio (Google Veo 3.1)", "All Research features included", "Shareable 6-digit team code (up to 5 members)", "Save 44% vs 5 individual Research plans"].map((text, i) => (
                 <li key={i} className="flex items-center gap-3">
                   <CheckCircle className="w-4 h-4 text-green-400 flex-shrink-0" />
                   <span className={`text-sm ${i === 0 ? 'font-semibold text-green-400' : isDark ? 'text-zinc-200' : 'text-gray-700'}`}>{text}</span>

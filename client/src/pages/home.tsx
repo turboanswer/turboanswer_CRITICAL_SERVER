@@ -60,58 +60,50 @@ export default function Home() {
 
       <div className="max-w-5xl mx-auto px-6 py-8 space-y-8">
 
-        {/* ── Antigravity Hero Card ── */}
+        {/* ── Code Studio Hero Card ── */}
         <div className="relative rounded-3xl overflow-hidden border border-white/[0.08]">
-          {/* Google gradient background */}
+          {/* Purple/cyan gradient background */}
           <div className="absolute inset-0" style={{
-            background: "linear-gradient(135deg, #0a0a2e 0%, #0d1b3e 30%, #0a2818 60%, #1a1a0a 100%)"
+            background: "linear-gradient(135deg, #0a0a2e 0%, #0d0a2e 30%, #0a0d2e 60%, #0a0a1e 100%)"
           }} />
-          {/* Colored glow orbs */}
-          <div className="absolute top-0 left-0 w-64 h-64 rounded-full opacity-20 blur-3xl" style={{ background: "#4285F4" }} />
-          <div className="absolute top-0 right-0 w-48 h-48 rounded-full opacity-15 blur-3xl" style={{ background: "#EA4335" }} />
-          <div className="absolute bottom-0 left-1/3 w-48 h-48 rounded-full opacity-20 blur-3xl" style={{ background: "#34A853" }} />
-          <div className="absolute bottom-0 right-1/4 w-40 h-40 rounded-full opacity-15 blur-3xl" style={{ background: "#FBBC05" }} />
+          {/* Glow orbs */}
+          <div className="absolute top-0 left-0 w-64 h-64 rounded-full opacity-20 blur-3xl" style={{ background: "#8b5cf6" }} />
+          <div className="absolute top-0 right-0 w-48 h-48 rounded-full opacity-15 blur-3xl" style={{ background: "#22d3ee" }} />
+          <div className="absolute bottom-0 left-1/3 w-48 h-48 rounded-full opacity-15 blur-3xl" style={{ background: "#a78bfa" }} />
 
           <div className="relative z-10 p-8 md:p-12">
             <div className="flex flex-col md:flex-row items-start md:items-center gap-8">
               <div className="flex-1">
-                {/* Google G + Antigravity branding */}
+                {/* Branding badges */}
                 <div className="flex items-center gap-3 mb-4">
-                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-semibold" style={{ borderColor: "rgba(66,133,244,0.4)", background: "rgba(66,133,244,0.1)", color: "#4285F4" }}>
-                    <GoogleG className="w-4 h-4" />
-                    Powered by Google
+                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-semibold" style={{ borderColor: "rgba(139,92,246,0.4)", background: "rgba(139,92,246,0.1)", color: "#a78bfa" }}>
+                    <Sparkles className="w-3.5 h-3.5" />
+                    Claude + Gemini
                   </div>
-                  <div className="flex items-center gap-1 px-3 py-1.5 rounded-full border text-xs font-semibold" style={{ borderColor: "rgba(251,188,5,0.4)", background: "rgba(251,188,5,0.08)", color: "#FBBC05" }}>
-                    <Sparkles className="h-3.5 w-3.5" />
+                  <div className="flex items-center gap-1 px-3 py-1.5 rounded-full border text-xs font-semibold" style={{ borderColor: "rgba(34,211,238,0.4)", background: "rgba(34,211,238,0.08)", color: "#22d3ee" }}>
+                    <Code2 className="h-3.5 w-3.5" />
                     New
                   </div>
                 </div>
 
-                <h1 className="text-4xl md:text-5xl font-black mb-3 leading-tight">
-                  <span className="text-white">Anti</span>
-                  <span style={{ color: "#4285F4" }}>g</span>
-                  <span style={{ color: "#EA4335" }}>r</span>
-                  <span style={{ color: "#FBBC05" }}>a</span>
-                  <span style={{ color: "#34A853" }}>v</span>
-                  <span style={{ color: "#4285F4" }}>i</span>
-                  <span style={{ color: "#EA4335" }}>t</span>
-                  <span style={{ color: "#FBBC05" }}>y</span>
+                <h1 className="text-4xl md:text-5xl font-black mb-3 leading-tight" style={{ background: "linear-gradient(135deg, #a78bfa, #22d3ee)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
+                  Code Studio
                 </h1>
 
                 <p className="text-xl md:text-2xl font-semibold text-white/90 mb-2">
-                  The Next Generation in App Creation
+                  Build Full Apps from a Single Prompt
                 </p>
                 <p className="text-gray-400 mb-6 max-w-lg leading-relaxed">
-                  Describe your idea in plain English. Antigravity's Gemini 3.1 Pro designs, writes, and builds your entire app — in seconds. No code required.
+                  Describe your idea in plain English. Claude and Gemini design, write, and build your entire app — in seconds. No code required.
                 </p>
 
-                {/* Google 4-color feature pills */}
+                {/* Feature pills */}
                 <div className="flex flex-wrap gap-2 mb-6">
                   {[
-                    { label: "Full HTML/CSS/JS Apps", color: "#4285F4" },
-                    { label: "Live Preview", color: "#EA4335" },
-                    { label: "One Prompt Build", color: "#FBBC05" },
-                    { label: "Deploy Instantly", color: "#34A853" },
+                    { label: "Full HTML/CSS/JS Apps", color: "#8b5cf6" },
+                    { label: "Live Preview", color: "#22d3ee" },
+                    { label: "One Prompt Build", color: "#a78bfa" },
+                    { label: "Deploy Instantly", color: "#06b6d4" },
                   ].map(({ label, color }) => (
                     <span key={label} className="text-xs px-3 py-1.5 rounded-full font-medium" style={{ background: `${color}18`, border: `1px solid ${color}40`, color }}>
                       {label}
@@ -121,21 +113,21 @@ export default function Home() {
 
                 <Link href="/code-studio">
                   <Button className="gap-2 px-6 py-3 text-base font-semibold rounded-xl text-white shadow-2xl" style={{
-                    background: "linear-gradient(135deg, #4285F4, #34A853)",
+                    background: "linear-gradient(135deg, #8b5cf6, #22d3ee)",
                   }}>
                     <Code2 className="h-5 w-5" />
-                    Build with Antigravity
+                    Open Code Studio
                     <ArrowRight className="h-5 w-5" />
                   </Button>
                 </Link>
               </div>
 
-              {/* Visual: Google G logo large */}
+              {/* Visual: code icon large */}
               <div className="shrink-0 flex items-center justify-center">
                 <div className="relative">
-                  <div className="absolute inset-0 blur-2xl opacity-40 rounded-full" style={{ background: "conic-gradient(from 0deg, #4285F4, #EA4335, #FBBC05, #34A853, #4285F4)" }} />
-                  <div className="relative w-36 h-36 md:w-44 md:h-44 rounded-3xl flex items-center justify-center shadow-2xl" style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", backdropFilter: "blur(20px)" }}>
-                    <GoogleG className="w-20 h-20 md:w-28 md:h-28" />
+                  <div className="absolute inset-0 blur-2xl opacity-40 rounded-full" style={{ background: "conic-gradient(from 0deg, #8b5cf6, #22d3ee, #a78bfa, #06b6d4, #8b5cf6)" }} />
+                  <div className="relative w-36 h-36 md:w-44 md:h-44 rounded-3xl flex items-center justify-center shadow-2xl" style={{ background: "rgba(139,92,246,0.08)", border: "1px solid rgba(139,92,246,0.2)", backdropFilter: "blur(20px)" }}>
+                    <Code2 className="w-20 h-20 md:w-28 md:h-28" style={{ color: "#a78bfa" }} />
                   </div>
                   {/* Floating color dots */}
                   {[
@@ -153,10 +145,10 @@ export default function Home() {
             {/* Bottom stats bar */}
             <div className="mt-8 pt-6 border-t border-white/[0.06] grid grid-cols-2 md:grid-cols-4 gap-4">
               {[
-                { label: "AI Model", value: "Gemini 3.1 Pro", color: "#4285F4" },
-                { label: "Build Time", value: "< 30 seconds", color: "#34A853" },
-                { label: "Languages", value: "8+ Supported", color: "#EA4335" },
-                { label: "Deploy", value: "Instant URL", color: "#FBBC05" },
+                { label: "AI Models", value: "Claude + Gemini", color: "#8b5cf6" },
+                { label: "Build Time", value: "< 30 seconds", color: "#22d3ee" },
+                { label: "Languages", value: "8+ Supported", color: "#a78bfa" },
+                { label: "Deploy", value: "Instant URL", color: "#06b6d4" },
               ].map(({ label, value, color }) => (
                 <div key={label} className="text-center">
                   <div className="text-lg font-bold" style={{ color }}>{value}</div>
@@ -250,15 +242,15 @@ export default function Home() {
         {/* ── How Antigravity Works ── */}
         <div className="rounded-2xl border border-white/[0.06] p-6" style={{ background: "rgba(255,255,255,0.02)" }}>
           <div className="flex items-center gap-3 mb-6">
-            <GoogleDots size={12} />
-            <h2 className="text-lg font-bold text-white">How Antigravity Works</h2>
+            <Sparkles className="w-4 h-4 text-purple-400" />
+            <h2 className="text-lg font-bold text-white">How Code Studio Works</h2>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             {[
-              { step: "1", title: "Describe It", desc: "Type what you want to build in plain English", color: "#4285F4", icon: "💬" },
-              { step: "2", title: "AI Designs", desc: "Gemini 3.1 Pro architects the full app structure", color: "#EA4335", icon: "🧠" },
-              { step: "3", title: "Code Appears", desc: "Files populate live in your editor — watch it build", color: "#FBBC05", icon: "⚡" },
-              { step: "4", title: "Deploy", desc: "Get an instant public URL to share your live app", color: "#34A853", icon: "🚀" },
+              { step: "1", title: "Describe It", desc: "Type what you want to build in plain English", color: "#8b5cf6", icon: "💬" },
+              { step: "2", title: "Claude Designs", desc: "Claude + Gemini architect the full app structure", color: "#22d3ee", icon: "🤖" },
+              { step: "3", title: "Code Appears", desc: "Files populate live in your editor — watch it build", color: "#a78bfa", icon: "⚡" },
+              { step: "4", title: "Deploy", desc: "Get an instant public URL to share your live app", color: "#06b6d4", icon: "🚀" },
             ].map(({ step, title, desc, color, icon }) => (
               <div key={step} className="text-center">
                 <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl mx-auto mb-3 font-bold" style={{ background: `${color}15`, border: `1px solid ${color}30` }}>
