@@ -52,12 +52,13 @@ function buildSrcdoc(files: CodeFile[]): string {
   const htmlFile = files.find(f => f.name === "index.html") || files.find(f => f.language === "html");
   if (!htmlFile) return "<p style='font-family:sans-serif;padding:2rem;color:#888'>No HTML file found.</p>";
   let html = htmlFile.content;
+  // Inline any separately stored CSS/JS files (legacy multi-file projects)
   for (const file of files) {
     if (file.language === "css") {
       const cssRegex = new RegExp(`<link[^>]*href=["']${file.name}["'][^>]*>`, "gi");
       html = html.replace(cssRegex, `<style>${file.content}</style>`);
     }
-    if (file.language === "javascript") {
+    if (file.language === "javascript" && file.name !== "index.html") {
       const jsRegex = new RegExp(`<script[^>]*src=["']${file.name}["'][^>]*>\\s*</script>`, "gi");
       html = html.replace(jsRegex, `<script>${file.content}</script>`);
     }

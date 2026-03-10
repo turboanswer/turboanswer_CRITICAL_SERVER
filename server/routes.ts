@@ -3226,79 +3226,120 @@ IMPORTANT: Study these colors and replicate the visual identity, color palette, 
         }
       }
 
-      const systemPrompt = `You are Turbo Code, a world-class full-stack developer and UI/UX designer. You build production-quality web apps that look like they were made by a professional agency — think Stripe, Linear, Vercel, or Apple quality.
+      // Use Replit AI integration proxy for Anthropic (preferred) or direct key
+      const anthropicKey = process.env.AI_INTEGRATIONS_ANTHROPIC_API_KEY || process.env.ANTHROPIC_API_KEY;
+      const anthropicBase = process.env.AI_INTEGRATIONS_ANTHROPIC_BASE_URL || 'https://api.anthropic.com';
 
-CRITICAL: Respond with ONLY a valid JSON object. No markdown, no text outside the JSON.
+      // Build prompt — produces a SINGLE self-contained HTML file (no separate CSS/JS files needed)
+      const buildPrompt = `You are Turbo Code — a world-class UI engineer and product designer who builds apps that look like Stripe, Linear, Notion, or Apple. Every app you make is STUNNING, modern, and fully functional.
 
-Technology decision:
-- Use "html" for ALL visual apps: games, dashboards, tools, landing pages, portfolios, calculators, timers, etc.
-- Use "python" ONLY for pure data/algorithm/math scripts with no UI
-- Use "javascript" ONLY for Node.js CLI utilities
+RESPOND WITH ONLY VALID JSON — no markdown fences, no explanation text.
 
-JSON structure (EXACT — no deviation):
-{"projectName":"Concise Name","mainLanguage":"html","description":"One-line description","files":[{"name":"index.html","language":"html","content":"..."},{"name":"style.css","language":"css","content":"..."},{"name":"script.js","language":"javascript","content":"..."}]}
+JSON FORMAT:
+{"projectName":"Short App Name","mainLanguage":"html","description":"One line","files":[{"name":"index.html","language":"html","content":"<FULL SELF-CONTAINED HTML HERE>"}]}
 
-═══════════════════════════════════════════════════════
-DESIGN SYSTEM — MANDATORY (no exceptions, no shortcuts)
-═══════════════════════════════════════════════════════
+════════════════════════════════════════
+THE SINGLE index.html MUST CONTAIN:
+════════════════════════════════════════
 
-FONTS — ALWAYS import from Google Fonts in CSS:
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
-Use Inter (or a thematic alternative like Poppins/DM Sans) — never system fonts alone.
+1. A <style> tag inside <head> with ALL CSS
+2. A <script> tag at end of <body> with ALL JavaScript
+3. NO external file references (no <link href>, no <script src>)
+4. Google Fonts imported inside the <style> tag:
+   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600&display=swap');
 
-CSS ARCHITECTURE:
+════════════════════════════════════════
+MANDATORY DESIGN SYSTEM (no exceptions):
+════════════════════════════════════════
+
+CSS VARIABLES — always define in :root:
 :root {
-  /* Color palette — adapt to theme, dark by default */
-  --bg-primary: #0a0a0f;
-  --bg-secondary: #111118;
-  --bg-card: rgba(255,255,255,0.04);
-  --border: rgba(255,255,255,0.08);
-  --text-primary: #f0f0ff;
-  --text-secondary: #8888aa;
+  --bg: #0a0a0f;
+  --surface: #111118;
+  --surface-2: #1a1a26;
+  --border: rgba(255,255,255,0.07);
+  --border-hover: rgba(255,255,255,0.14);
+  --text: #e8e8ff;
+  --text-2: #8888aa;
+  --text-3: #55556a;
   --accent: #7c3aed;
-  --accent-2: #06b6d4;
-  --success: #10b981;
-  --danger: #ef4444;
-  /* Spacing on 8px grid */
-  --space-1: 8px; --space-2: 16px; --space-3: 24px; --space-4: 32px; --space-6: 48px; --space-8: 64px;
-  /* Typography */
-  --text-xs: 0.75rem; --text-sm: 0.875rem; --text-base: 1rem; --text-lg: 1.125rem; --text-xl: 1.25rem; --text-2xl: 1.5rem; --text-3xl: 2rem; --text-4xl: 2.5rem;
-  /* Radius */
-  --radius-sm: 6px; --radius-md: 12px; --radius-lg: 20px; --radius-xl: 28px; --radius-full: 9999px;
+  --accent-hover: #6d28d9;
+  --accent-glow: rgba(124,58,237,0.25);
+  --cyan: #06b6d4;
+  --green: #10b981;
+  --red: #ef4444;
+  --yellow: #f59e0b;
+  --radius: 12px;
+  --radius-sm: 8px;
+  --radius-lg: 20px;
+  --shadow: 0 4px 24px rgba(0,0,0,0.5);
+  --shadow-lg: 0 20px 60px rgba(0,0,0,0.6);
 }
 
-REQUIRED CSS TECHNIQUES (all must be present):
-1. Glassmorphism cards: background: rgba(255,255,255,0.05); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.1);
-2. Gradient accents: background: linear-gradient(135deg, #7c3aed, #06b6d4); or radial-gradient
-3. Box shadows: box-shadow: 0 0 0 1px rgba(255,255,255,0.05), 0 4px 24px rgba(0,0,0,0.4);
-4. Smooth transitions: transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-5. Keyframe animations — entrance anims (fadeInUp, scaleIn) for main elements
-6. CSS Grid or Flexbox for layout — no floats, no absolute positioning hacks
-7. Hover states with transform: translateY(-2px) and enhanced glow
-8. Responsive: fluid with clamp(), media queries for mobile
+REQUIRED VISUAL ELEMENTS:
+• body: background var(--bg), color var(--text), font-family Inter
+• Cards: background var(--surface), border 1px solid var(--border), border-radius var(--radius), box-shadow var(--shadow)
+• Gradient hero/header: background: linear-gradient(135deg, #0a0a0f 0%, #1a0a2e 50%, #0a1a2e 100%)
+• Accent buttons: background linear-gradient(135deg, var(--accent), var(--cyan)), color white, font-weight 600, border-radius var(--radius-sm), padding 10px 20px
+• ALL transitions: transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1)
+• Hover lifts: transform translateY(-2px) + box-shadow glow
+• Entrance animations: @keyframes fadeInUp + @keyframes scaleIn on key elements
+• Radial glow behind hero: radial-gradient(ellipse at 50% 0%, rgba(124,58,237,0.15) 0%, transparent 70%)
 
-JAVASCRIPT — ALL features must work:
-- Every button, input, form element must have full working functionality
-- Local storage for persistence where relevant (todos, scores, preferences)
-- Smooth DOM updates — no page reloads
-- Error states and empty states handled gracefully
-- For games: complete game loop, score tracking, restart
-- For apps: CRUD operations fully implemented
+TYPOGRAPHY HIERARCHY:
+• h1: clamp(2rem, 5vw, 3.5rem), font-weight 800, line-height 1.1
+• h2: 1.75rem, font-weight 700
+• h3: 1.25rem, font-weight 600
+• body: 0.9375rem (15px), line-height 1.65
+• labels/caps: 0.75rem, font-weight 700, letter-spacing 0.08em, uppercase
 
-HTML structure:
-- Semantic HTML5 elements (main, section, header, nav, article, footer)
-- Meta viewport, charset, Open Graph tags
-- Link CSS: <link href="style.css" rel="stylesheet">
-- Script at end of body: <script src="script.js"></script>
-- NO inline styles, NO inline scripts
+LAYOUT:
+• max-width container: 1200px, margin auto, padding 0 24px
+• CSS Grid for card layouts: grid-template-columns: repeat(auto-fit, minmax(280px, 1fr))
+• Flexbox for navbars/rows
+• Mobile: @media (max-width: 768px) with stacked layout
 
-QUALITY BAR — ask yourself before outputting:
-✓ Would a professional dev be proud to show this?
-✓ Does it look like a $5,000+ website?
-✓ Do ALL interactive elements work perfectly?
-✓ Is it mobile responsive?
-✓ Are there smooth animations?
-✓ Does it use proper typography hierarchy?${designContext}`;
+JAVASCRIPT — 100% FUNCTIONAL:
+• Every button/input/interaction MUST work
+• localStorage for persistence (todos, scores, notes, settings)
+• Smooth DOM manipulation (no page reloads)
+• Error states + empty states
+• For games: full game loop, scores, restart, animations
+• Real-time feedback on user actions (ripples, state updates)
+
+QUALITY RULES:
+✗ NEVER placeholder text like "Lorem ipsum" or "Content here"
+✗ NEVER TODO comments or unfinished sections
+✗ NEVER blank/empty areas
+✗ NEVER basic blue buttons or default browser styles
+✓ EVERY pixel looks intentional
+✓ Feels like a $10,000 product${designContext}
+
+════════════════════════════════════════
+BUILD THIS APP NOW:
+════════════════════════════════════════
+${prompt.trim()}
+
+Make it professional, beautiful, and fully functional. The complete app in one index.html file.`;
+
+      async function callClaude(maxTokens: number, timeoutMs: number): Promise<string | null> {
+        if (!anthropicKey) return null;
+        try {
+          const r = await fetch(`${anthropicBase}/v1/messages`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'x-api-key': anthropicKey, 'anthropic-version': '2023-06-01' },
+            body: JSON.stringify({
+              model: 'claude-3-5-sonnet-20241022',
+              max_tokens: maxTokens,
+              messages: [{ role: 'user', content: buildPrompt }],
+            }),
+            signal: AbortSignal.timeout(timeoutMs),
+          });
+          if (!r.ok) { console.error('[CodeAI] Claude error:', r.status, await r.text()); return null; }
+          const d: any = await r.json();
+          return d.content?.[0]?.text || null;
+        } catch (e: any) { console.error('[CodeAI] Claude exception:', e.message); return null; }
+      }
 
       async function callGemini(model: string, maxTokens: number, timeoutMs: number): Promise<string | null> {
         try {
@@ -3306,7 +3347,7 @@ QUALITY BAR — ask yourself before outputting:
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              contents: [{ parts: [{ text: `${systemPrompt}\n\nBuild this app: ${prompt.trim()}` }] }],
+              contents: [{ parts: [{ text: buildPrompt }] }],
               generationConfig: { temperature: 0.4, maxOutputTokens: maxTokens },
             }),
             signal: AbortSignal.timeout(timeoutMs),
@@ -3317,7 +3358,9 @@ QUALITY BAR — ask yourself before outputting:
         } catch { return null; }
       }
 
-      let rawText = await callGemini('gemini-3.1-pro-preview', 8192, 95000)
+      // Claude first (much better design quality), then Gemini fallbacks
+      let rawText = await callClaude(8192, 100000)
+        ?? await callGemini('gemini-3.1-pro-preview', 8192, 95000)
         ?? await callGemini('gemini-2.0-flash', 8192, 45000)
         ?? await callGemini('gemini-2.0-flash-lite', 4096, 30000)
         ?? '';
