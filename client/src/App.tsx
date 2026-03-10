@@ -74,7 +74,7 @@ function AuthenticatedRouter() {
 function UnauthenticatedRouter() {
   return (
     <Switch>
-      <Route path="/" component={isNativeMobile ? Login : LandingPage} />
+      <Route path="/" component={LandingPage} />
       <Route path="/login" component={Login} />
       <Route path="/register" component={Register} />
       <Route path="/pricing" component={Pricing} />

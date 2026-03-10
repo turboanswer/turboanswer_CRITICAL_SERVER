@@ -16,6 +16,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import type { Conversation, Message } from "@shared/schema";
 import turboLogo from "@assets/file_000000007ff071f8a754520ac27c6ba4_1770423239509.png";
 
+const isNativeMobile = !!(window as any).Capacitor?.isNativePlatform?.();
+
 export default function Chat() {
   const [currentConversationId, setCurrentConversationId] = useState<number | null>(null);
   const [messageContent, setMessageContent] = useState("");
@@ -385,12 +387,14 @@ export default function Chat() {
                   <Film className="h-4 w-4 mr-1" /> Videos
                 </Button>
               </Link>
+              {!isNativeMobile && (
               <Link href="/code-studio">
                 <Button variant="ghost" size="sm" className={`h-8 px-2 text-xs relative ${isDark ? 'text-gray-400 hover:text-cyan-400' : 'text-gray-500 hover:text-cyan-600'}`} title={user?.codeStudioAddon ? "Code Studio — Build & run apps with AI" : "Code Studio — $10/mo add-on"}>
                   <Code2 className="h-4 w-4 mr-1" /> Code
                   {!user?.codeStudioAddon && <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-yellow-400" />}
                 </Button>
               </Link>
+              )}
               <Button onClick={() => setShowQR(!showQR)} variant="ghost" size="sm" className={`h-8 w-8 p-0 ${showQR ? 'text-blue-400' : isDark ? 'text-gray-400' : 'text-gray-500'} hover:text-blue-500`} title="QR Code">
                 <QrCode className="h-4 w-4" />
               </Button>
@@ -537,11 +541,13 @@ export default function Chat() {
               </span>
               <span className="hidden md:inline text-xs text-gray-400 truncate">Powered by Google Gemini 3.1 Pro</span>
             </div>
+            {!isNativeMobile && (
             <Link href="/code-studio">
               <button className="shrink-0 text-xs font-semibold px-3 py-1.5 rounded-lg transition-all" style={{ background: "linear-gradient(135deg, #4285F4, #34A853)", color: "white" }}>
                 Try Antigravity
               </button>
             </Link>
+            )}
             <button onClick={() => { setShowAntigravityBanner(false); localStorage.setItem('ag_banner_dismissed', '1'); }}
               className="shrink-0 text-gray-500 hover:text-gray-300 ml-1">
               <X className="h-4 w-4" />
