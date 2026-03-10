@@ -128,12 +128,12 @@ process.on('unhandledRejection', (reason: any) => {
   }
 
   const port = parseInt(process.env.PORT || "5000", 10);
-  console.log(`[Server] Listening on port ${port}...`);
   server.listen({
     port,
     host: "0.0.0.0",
     reusePort: true,
   }, () => {
+    console.log(`[Server] Listening on port ${port}...`);
     log(`serving on port ${port}`);
     initPayPal();
   });
