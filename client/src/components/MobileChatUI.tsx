@@ -217,19 +217,19 @@ export default function MobileChatUI({
       </div>
 
       {/* Header */}
-      <header className="flex items-center justify-between px-4 shrink-0" style={{ paddingTop: "max(12px, env(safe-area-inset-top))", paddingBottom: "12px" }}>
-        <button onClick={() => setShowDrawer(true)} className="w-10 h-10 flex items-center justify-center rounded-full transition-colors" style={{ background: "rgba(255,255,255,0.05)" }}>
-          <Menu className="h-5 w-5 text-white/70" />
+      <header className="flex items-center justify-between px-3 shrink-0" style={{ paddingTop: "max(10px, env(safe-area-inset-top))", paddingBottom: "8px" }}>
+        <button onClick={() => setShowDrawer(true)} className="w-9 h-9 flex items-center justify-center rounded-full transition-colors" style={{ background: "rgba(255,255,255,0.05)" }}>
+          <Menu className="h-4 w-4 text-white/70" />
         </button>
 
-        <div className="flex items-center gap-2">
-          <img src={turboLogo} alt="Turbo" className="w-6 h-6 rounded-lg object-cover" />
-          <span className="text-white font-semibold text-base tracking-tight">Turbo</span>
+        <div className="flex items-center gap-1.5">
+          <img src={turboLogo} alt="Turbo" className="w-5 h-5 rounded-md object-cover" />
+          <span className="text-white font-semibold text-sm tracking-tight">TurboAnswer</span>
         </div>
 
         <div className="flex items-center gap-1">
           <Select value={selectedAIModel} onValueChange={handleModelChange}>
-            <SelectTrigger className="h-8 text-[11px] rounded-full border-0 px-3" style={{ background: "rgba(255,255,255,0.06)", color: TEXT_DIM, minWidth: "70px" }}>
+            <SelectTrigger className="h-7 text-[10px] rounded-full border-0 px-2.5" style={{ background: "rgba(255,255,255,0.06)", color: TEXT_DIM, minWidth: "60px" }}>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -240,7 +240,7 @@ export default function MobileChatUI({
             </SelectContent>
           </Select>
           <div
-            className="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0"
+            className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0"
             style={{ background: "linear-gradient(135deg, #4285F4, #8B5CF6)" }}
           >
             {firstName[0]?.toUpperCase() || "U"}
@@ -252,33 +252,39 @@ export default function MobileChatUI({
       <main className="flex-1 overflow-y-auto">
         {messages.length === 0 && !isTyping ? (
           /* Welcome screen */
-          <div className="flex flex-col items-center px-5 pt-10 pb-4">
-            <h1 className="text-3xl font-bold text-center mb-2 leading-tight" style={{
+          <div className="flex flex-col items-center px-4 pt-4 pb-2">
+            {/* Big logo */}
+            <div className="relative mb-3">
+              <img src={turboLogo} alt="TurboAnswer" className="w-24 h-24 rounded-3xl object-cover shadow-2xl" style={{ boxShadow: "0 0 40px rgba(66,133,244,0.25)" }} />
+              <div className="absolute inset-0 rounded-3xl" style={{ boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.1)" }} />
+            </div>
+
+            <h1 className="text-2xl font-bold text-center mb-1 leading-tight" style={{
               background: "linear-gradient(135deg, #4285F4 0%, #EA4335 35%, #FBBC05 65%, #34A853 100%)",
               WebkitBackgroundClip: "text",
               WebkitTextFillColor: "transparent",
             }}>
-              {getGreeting()},<br />{firstName}
+              {getGreeting()}, {firstName}
             </h1>
-            <p className="text-base mb-8 text-center" style={{ color: TEXT_MUTED }}>How can I help you today?</p>
+            <p className="text-sm mb-4 text-center" style={{ color: TEXT_MUTED }}>How can I help you today?</p>
 
             {/* Suggestion grid */}
-            <div className="grid grid-cols-2 gap-3 w-full max-w-sm">
+            <div className="grid grid-cols-2 gap-2.5 w-full">
               {SUGGESTIONS.map((s, i) => (
                 <button
                   key={i}
                   onClick={() => setMessageContent(s.prompt)}
-                  className="rounded-2xl p-4 text-left transition-all active:scale-95"
+                  className="rounded-2xl p-3 text-left transition-all active:scale-95"
                   style={{ background: CARD_BG, border: `1px solid ${BORDER}` }}
                 >
-                  <div className="text-2xl mb-2">{s.icon}</div>
-                  <p className="text-sm font-medium leading-snug" style={{ color: TEXT_DIM }}>{s.text}</p>
+                  <div className="text-xl mb-1.5">{s.icon}</div>
+                  <p className="text-xs font-medium leading-snug" style={{ color: TEXT_DIM }}>{s.text}</p>
                 </button>
               ))}
             </div>
 
             {/* Tier indicator */}
-            <div className="mt-6 flex items-center gap-2 px-4 py-2 rounded-full text-xs" style={{ background: "rgba(66,133,244,0.08)", border: "1px solid rgba(66,133,244,0.15)", color: "rgba(66,133,244,0.9)" }}>
+            <div className="mt-3 flex items-center gap-2 px-3 py-1.5 rounded-full text-xs" style={{ background: "rgba(66,133,244,0.08)", border: "1px solid rgba(66,133,244,0.15)", color: "rgba(66,133,244,0.9)" }}>
               <Brain className="h-3 w-3" />
               {tierLabel} model active
             </div>
@@ -326,7 +332,7 @@ export default function MobileChatUI({
       </main>
 
       {/* Bottom input bar */}
-      <div className="shrink-0 px-4 pb-4" style={{ paddingBottom: "max(16px, env(safe-area-inset-bottom))" }}>
+      <div className="shrink-0 px-3 pt-1" style={{ paddingBottom: "max(12px, env(safe-area-inset-bottom))" }}>
         {/* Support contact - compact */}
         <div className="relative">
           {showSupportPanel && (
