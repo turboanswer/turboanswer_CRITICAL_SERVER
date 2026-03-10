@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
-import { X, Menu, Plus, Mic, Send, Brain, Crown, CheckCircle, Star, Zap, Sparkles, Rocket, Settings, LogOut, Heart, MessageSquare, Copy, Users, Shield, FlaskConical, ChevronRight, ArrowUp, Camera, Film, Phone, Mail, Clock } from "lucide-react";
+import { X, Menu, Camera, Brain, Crown, CheckCircle, Star, Zap, Sparkles, Rocket, Settings, LogOut, Heart, MessageSquare, Copy, Users, Shield, FlaskConical, ArrowUp, Film, Phone, Mail, Clock, ImagePlus, Loader2, Plus } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -91,7 +91,11 @@ export default function MobileChatUI({
 }: Props) {
   const [showDrawer, setShowDrawer] = useState(false);
   const [showSupportPanel, setShowSupportPanel] = useState(false);
+  const [cameraImage, setCameraImage] = useState<string | null>(null);
+  const [cameraInstruction, setCameraInstruction] = useState("");
+  const [cameraProcessing, setCameraProcessing] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
   const [, setLocation] = useLocation();
 
@@ -124,8 +128,143 @@ export default function MobileChatUI({
     }
   };
 
+  const handleCameraSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result as string;
+      const base64 = result.split(",")[1];
+      setCameraImage(base64);
+      setCameraInstruction("");
+    };
+    reader.readAsDataURL(file);
+    e.target.value = "";
+  };
+
+  const handleCameraSubmit = async () => {
+    if (!cameraImage || !cameraInstruction.trim()) return;
+    setCameraProcessing(true);
+    try {
+      const res = await fetch("/api/photo-editor/edit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ instruction: cameraInstruction.trim(), imageData: cameraImage, mimeType: "image/jpeg" }),
+        credentials: "include",
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        if (res.status === 403) {
+          setShowResearchPopup(true);
+        } else {
+          toast({ title: "Error", description: data.error || "Could not process image", variant: "destructive" });
+        }
+        return;
+      }
+      const resultUrl = `data:image/png;base64,${data.imageData}`;
+      const convId = await (async () => {
+        if (currentConversationId) return currentConversationId;
+        const r = await apiRequest("POST", "/api/conversations", { title: "Photo Edit" });
+        const conv = await r.json();
+        setCurrentConversationId(conv.id);
+        queryClient.invalidateQueries({ queryKey: ["/api/conversations"] });
+        return conv.id;
+      })();
+      await apiRequest("POST", `/api/conversations/${convId}/messages`, {
+        content: `![Edited photo](${resultUrl})\n\n*"${cameraInstruction}"*`,
+        selectedModel: selectedAIModel,
+        language: "en",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/conversations", convId, "messages"] });
+      setCameraImage(null);
+      setCameraInstruction("");
+    } catch {
+      toast({ title: "Error", description: "Something went wrong. Please try again.", variant: "destructive" });
+    } finally {
+      setCameraProcessing(false);
+    }
+  };
+
   return (
-    <div className="flex flex-col" style={{ position: "fixed", inset: 0, background: GEMINI_BG, overflow: "hidden" }}>
+    <div className="flex flex-col" style={{ position: "fixed", inset: 0, background: GEMINI_BG, overflow: "hidden", overscrollBehavior: "none", touchAction: "pan-y" }}>
+
+      {/* Hidden camera input */}
+      <input
+        ref={cameraInputRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        className="hidden"
+        onChange={handleCameraSelect}
+      />
+
+      {/* Camera modal */}
+      {cameraImage && (
+        <div className="fixed inset-0 z-50 flex flex-col" style={{ background: "#000" }}>
+          <div className="flex items-center justify-between px-4 py-3" style={{ background: "#0D0D14", borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
+            <button onClick={() => { setCameraImage(null); setCameraInstruction(""); }} className="text-white/60 hover:text-white">
+              <X className="h-5 w-5" />
+            </button>
+            <span className="text-white font-semibold text-sm">Photo AI Edit</span>
+            <div className="w-8" />
+          </div>
+
+          <div className="flex-1 overflow-y-auto flex flex-col">
+            <div className="relative w-full" style={{ background: "#000" }}>
+              <img src={`data:image/jpeg;base64,${cameraImage}`} alt="Captured" className="w-full object-contain" style={{ maxHeight: "50vh" }} />
+              <div className="absolute top-2 left-2 px-2 py-1 rounded-full text-xs text-white/70" style={{ background: "rgba(0,0,0,0.6)" }}>
+                Your photo
+              </div>
+            </div>
+
+            <div className="flex-1 px-4 pt-4 pb-2">
+              <p className="text-sm font-medium mb-3" style={{ color: TEXT_DIM }}>What do you want to do with this photo?</p>
+              <div className="grid grid-cols-2 gap-2 mb-4">
+                {[
+                  { icon: "✂️", text: "Remove something", prompt: "Remove the background and make it transparent" },
+                  { icon: "🌅", text: "Change background", prompt: "Replace the background with a beautiful sunset" },
+                  { icon: "✨", text: "Enhance quality", prompt: "Enhance and sharpen this photo, make it look professional" },
+                  { icon: "🎨", text: "Add artistic style", prompt: "Apply a cinematic color grade to this photo" },
+                ].map((s, i) => (
+                  <button key={i} onClick={() => setCameraInstruction(s.prompt)}
+                    className="rounded-xl p-2.5 text-left transition-all active:scale-95"
+                    style={{ background: cameraInstruction === s.prompt ? "rgba(66,133,244,0.2)" : CARD_BG, border: cameraInstruction === s.prompt ? "1px solid rgba(66,133,244,0.5)" : `1px solid ${BORDER}` }}>
+                    <span className="text-base">{s.icon}</span>
+                    <p className="text-xs mt-1" style={{ color: TEXT_DIM }}>{s.text}</p>
+                  </button>
+                ))}
+              </div>
+
+              <textarea
+                value={cameraInstruction}
+                onChange={(e) => setCameraInstruction(e.target.value)}
+                placeholder="Or type your own instruction..."
+                rows={2}
+                className="w-full rounded-2xl px-3 py-2.5 text-sm resize-none outline-none"
+                style={{ background: INPUT_BG, border: "1px solid rgba(66,133,244,0.2)", color: "rgba(255,255,255,0.9)", minHeight: "64px" }}
+              />
+            </div>
+          </div>
+
+          <div className="px-4 py-3" style={{ background: "#0D0D14", borderTop: "1px solid rgba(255,255,255,0.06)", paddingBottom: "max(12px, env(safe-area-inset-bottom))" }}>
+            <button
+              onClick={handleCameraSubmit}
+              disabled={!cameraInstruction.trim() || cameraProcessing}
+              className="w-full py-3.5 rounded-2xl text-sm font-semibold text-white flex items-center justify-center gap-2 disabled:opacity-40 transition-all active:scale-95"
+              style={{ background: "linear-gradient(135deg, #4285F4, #8B5CF6)", boxShadow: "0 4px 20px rgba(66,133,244,0.3)" }}
+            >
+              {cameraProcessing ? (
+                <><Loader2 className="h-4 w-4 animate-spin" /> Processing with AI...</>
+              ) : (
+                <><ImagePlus className="h-4 w-4" /> Edit with AI</>
+              )}
+            </button>
+            {!isFreeTier && subscriptionData?.tier !== 'research' && subscriptionData?.tier !== 'enterprise' && (
+              <p className="text-center text-xs mt-2" style={{ color: TEXT_MUTED }}>Requires Research plan</p>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Drawer backdrop */}
       {showDrawer && (
@@ -379,8 +518,13 @@ export default function MobileChatUI({
 
           {/* Input bar */}
           <div className="flex items-end gap-2 px-3 py-2.5 rounded-3xl" style={{ background: INPUT_BG, border: "1px solid rgba(66,133,244,0.2)", boxShadow: "0 0 20px rgba(66,133,244,0.05)" }}>
-            <button className="flex-shrink-0 mb-0.5 p-1 rounded-full transition-colors" style={{ color: TEXT_MUTED }}>
-              <Plus className="h-5 w-5" />
+            <button
+              onClick={() => cameraInputRef.current?.click()}
+              className="flex-shrink-0 mb-0.5 w-8 h-8 rounded-full flex items-center justify-center transition-all active:scale-95"
+              style={{ background: "rgba(66,133,244,0.12)", color: "#7BA7F7" }}
+              title="Take a photo to edit with AI"
+            >
+              <Camera className="h-4 w-4" />
             </button>
 
             <textarea
@@ -394,20 +538,14 @@ export default function MobileChatUI({
               style={{ color: "rgba(255,255,255,0.9)", minHeight: "22px", maxHeight: "112px" }}
             />
 
-            {messageContent.trim() ? (
-              <button
-                onClick={handleSend}
-                disabled={isSending}
-                className="flex-shrink-0 mb-0.5 w-8 h-8 rounded-full flex items-center justify-center transition-all active:scale-95 disabled:opacity-40"
-                style={{ background: "linear-gradient(135deg, #4285F4, #8B5CF6)", boxShadow: "0 4px 12px rgba(66,133,244,0.4)" }}
-              >
-                <ArrowUp className="h-4 w-4 text-white" />
-              </button>
-            ) : (
-              <button className="flex-shrink-0 mb-0.5 p-1 rounded-full transition-colors" style={{ color: TEXT_MUTED }}>
-                <Mic className="h-5 w-5" />
-              </button>
-            )}
+            <button
+              onClick={handleSend}
+              disabled={!messageContent.trim() || isSending}
+              className="flex-shrink-0 mb-0.5 w-8 h-8 rounded-full flex items-center justify-center transition-all active:scale-95 disabled:opacity-30"
+              style={{ background: messageContent.trim() ? "linear-gradient(135deg, #4285F4, #8B5CF6)" : "rgba(255,255,255,0.06)", boxShadow: messageContent.trim() ? "0 4px 12px rgba(66,133,244,0.4)" : "none" }}
+            >
+              <ArrowUp className="h-4 w-4 text-white" />
+            </button>
           </div>
         </div>
       </div>
