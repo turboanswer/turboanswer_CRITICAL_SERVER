@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { useToast } from "@/hooks/use-toast";
@@ -82,6 +82,8 @@ export default function PhotoEditor() {
   const [genPrompt, setGenPrompt] = useState("");
   const [genAspect, setGenAspect] = useState("1:1");
   const [genResult, setGenResult] = useState<{ imageData: string; mimeType: string } | null>(null);
+  const [genElapsed, setGenElapsed] = useState(0);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const [editFile, setEditFile] = useState<File | null>(null);
   const [editPreview, setEditPreview] = useState<string | null>(null);
@@ -100,19 +102,27 @@ export default function PhotoEditor() {
 
   const generateMutation = useMutation({
     mutationFn: async () => {
-      const res = await fetch('/api/photo-editor/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ prompt: genPrompt, aspectRatio: genAspect }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Generation failed');
-      return data;
+      setGenElapsed(0);
+      timerRef.current = setInterval(() => setGenElapsed(s => s + 1), 1000);
+      try {
+        const res = await fetch('/api/photo-editor/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ prompt: genPrompt, aspectRatio: genAspect }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Generation failed');
+        return data;
+      } finally {
+        if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
+      }
     },
     onSuccess: (data) => setGenResult(data),
-    onError: (e: any) => toast({ title: 'Error', description: e.message, variant: 'destructive' }),
+    onError: (e: any) => toast({ title: 'Generation failed', description: e.message, variant: 'destructive' }),
   });
+
+  useEffect(() => () => { if (timerRef.current) clearInterval(timerRef.current); }, []);
 
   const editMutation = useMutation({
     mutationFn: async () => {
@@ -198,7 +208,7 @@ export default function PhotoEditor() {
           </div>
           <div>
             <h1 className="text-base font-black text-white leading-none">Photo Editor</h1>
-            <p className="text-xs text-gray-500 mt-0.5">Powered by GPT Image · Gemini AI</p>
+            <p className="text-xs text-gray-500 mt-0.5">Generate: Gemini 2.0 Flash · Edit: GPT Image</p>
           </div>
         </div>
         <div className="ml-auto flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-blue-500/10 border border-blue-500/30 text-blue-400">
@@ -271,9 +281,17 @@ export default function PhotoEditor() {
               <Button
                 onClick={() => generateMutation.mutate()}
                 disabled={!genPrompt.trim() || generateMutation.isPending}
-                className="w-full h-12 font-bold text-base bg-gradient-to-r from-blue-600 to-violet-600 hover:from-blue-500 hover:to-violet-500"
+                className="w-full h-14 font-bold text-base bg-gradient-to-r from-blue-600 to-violet-600 hover:from-blue-500 hover:to-violet-500"
               >
-                {generateMutation.isPending ? <><Loader2 className="h-5 w-5 mr-2 animate-spin" />Generating image...</> : <><Wand2 className="h-5 w-5 mr-2" />Generate Image</>}
+                {generateMutation.isPending ? (
+                  <span className="flex flex-col items-center gap-0.5 leading-none">
+                    <span className="flex items-center gap-2"><Loader2 className="h-5 w-5 animate-spin" />Generating with Gemini...</span>
+                    <span className="text-xs font-normal opacity-70">{genElapsed}s elapsed — usually under 10s</span>
+                  </span>
+                ) : (
+                  <><Sparkles className="h-5 w-5 mr-2" />Generate with Gemini</>
+
+                )}
               </Button>
             </div>
 

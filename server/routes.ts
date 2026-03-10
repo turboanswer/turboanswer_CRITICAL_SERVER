@@ -3694,21 +3694,47 @@ Return ONLY valid JSON (no markdown):
     } catch (e: any) { res.status(500).json({ error: e.message }); }
   });
 
-  // ─── Photo Editor — Enterprise exclusive ─────────────────────────────────
+  // ─── Photo Editor — Gemini Imagen 3 (free for all) ───────────────────────
   app.post('/api/photo-editor/generate', isAuthenticated, async (req: any, res) => {
     try {
-      const { prompt, aspectRatio = '1:1' } = req.body;
+      const { prompt, aspectRatio = '1:1', negativePrompt = 'blurry, low quality, distorted, watermark, text, ugly' } = req.body;
       if (!prompt) return res.status(400).json({ error: 'prompt required' });
 
-      const { generateImageBuffer } = await import('./replit_integrations/image/client');
-      const sizeMap: Record<string, '1024x1024' | '1024x1536' | '1536x1024' | 'auto'> = {
-        '1:1': '1024x1024', '9:16': '1024x1536', '16:9': '1536x1024',
-        '3:4': '1024x1536', '4:3': '1536x1024',
+      const geminiKey = process.env.GEMINI_API_KEY;
+      if (!geminiKey) return res.status(500).json({ error: 'Gemini API key not configured' });
+
+      const { GoogleGenAI } = await import('@google/genai');
+      const ai = new GoogleGenAI({ apiKey: geminiKey });
+
+      // Embed aspect ratio guidance into the prompt since generateContent doesn't have an aspect param
+      const aspectGuide: Record<string, string> = {
+        '9:16': 'vertical portrait orientation (9:16 aspect ratio)',
+        '16:9': 'wide landscape orientation (16:9 aspect ratio)',
+        '3:4': 'portrait orientation (3:4 aspect ratio)',
+        '4:3': 'landscape orientation (4:3 aspect ratio)',
+        '1:1': 'square composition (1:1 aspect ratio)',
       };
-      const size = sizeMap[aspectRatio] || 'auto';
-      const buffer = await generateImageBuffer(prompt, size, 'medium');
-      res.json({ imageData: buffer.toString('base64'), mimeType: 'image/png' });
-    } catch (e: any) { res.status(500).json({ error: e.message }); }
+      const fullPrompt = `${prompt}. Compose this as a ${aspectGuide[aspectRatio] || 'square'}. High quality, sharp, photorealistic. Avoid: ${negativePrompt}.`;
+
+      console.log(`[PhotoEditor] Generating with Gemini Flash Image, aspect ${aspectRatio}: "${prompt.slice(0, 80)}"`);
+      const start = Date.now();
+
+      const response = await ai.models.generateContent({
+        model: 'gemini-2.0-flash-exp-image-generation',
+        contents: [{ role: 'user', parts: [{ text: fullPrompt }] }],
+        config: { responseModalities: ['TEXT', 'IMAGE'], temperature: 1 },
+      });
+
+      const parts = response.candidates?.[0]?.content?.parts || [];
+      const imgPart = parts.find((p: any) => p.inlineData?.mimeType?.startsWith('image'));
+      if (!imgPart?.inlineData?.data) return res.status(500).json({ error: 'No image returned from Gemini' });
+
+      console.log(`[PhotoEditor] Gemini image generated in ${Date.now() - start}ms`);
+      res.json({ imageData: imgPart.inlineData.data, mimeType: imgPart.inlineData.mimeType || 'image/png' });
+    } catch (e: any) {
+      console.error('[PhotoEditor] Generate error:', e.message);
+      res.status(500).json({ error: e.message || 'Image generation failed' });
+    }
   });
 
   app.post('/api/photo-editor/edit', isAuthenticated, async (req: any, res) => {
