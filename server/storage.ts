@@ -6,6 +6,7 @@ export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
   updateUserSubscription(userId: string, subscriptionStatus: string, subscriptionTier: string): Promise<User>;
   updatePaypalSubscription(userId: string, paypalSubscriptionId: string, tier: string): Promise<User>;
+  storePendingSubscription(userId: string, paypalSubscriptionId: string): Promise<User>;
   cancelUserSubscription(userId: string): Promise<User>;
   updateCodeStudioAddon(userId: string, addon: boolean, subId: string | null): Promise<User>;
 
@@ -164,6 +165,16 @@ export class DatabaseStorage implements IStorage {
         subscriptionTier: tier,
         subscriptionStartDate: new Date(),
       })
+      .where(eq(users.id, userId))
+      .returning();
+    if (!user) throw new Error("User not found");
+    return user;
+  }
+
+  async storePendingSubscription(userId: string, paypalSubscriptionId: string): Promise<User> {
+    const [user] = await db
+      .update(users)
+      .set({ paypalSubscriptionId })
       .where(eq(users.id, userId))
       .returning();
     if (!user) throw new Error("User not found");

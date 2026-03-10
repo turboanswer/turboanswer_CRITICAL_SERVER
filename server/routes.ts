@@ -842,8 +842,8 @@ function downloadAAB(){
       );
 
       console.log('[PayPal Checkout] Subscription created:', result.subscriptionId);
-      await storage.updatePaypalSubscription(userId, result.subscriptionId, tier);
-      console.log('[PayPal Checkout] Stored pending subscription ID for user:', userId);
+      await storage.storePendingSubscription(userId, result.subscriptionId);
+      console.log('[PayPal Checkout] Stored pending subscription ID for user:', userId, '(not yet active — awaiting PayPal approval)');
       res.json({ url: result.approvalUrl });
     } catch (error: any) {
       console.error('[PayPal Checkout] ERROR:', error.message);
