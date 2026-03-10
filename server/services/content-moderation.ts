@@ -122,7 +122,7 @@ const TERRORISM_PATTERNS = [
 
 // ── SEXUAL ────────────────────────────────────────────────────────────────────
 const SEXUAL_CONTENT_PATTERNS = [
-  /\b(sex(ual|ually)?|porn(ography|ographic)?|xxx|nsfw|hentai|erotic(a)?|nude(s)?|naked)\b/i,
+  /\b(sex(ual|ually)?|porn(ography|ographic)?|nsfw|hentai|erotic(a)?|nude(s)?|naked)\b/i,
   /\b(orgasm|masturbat(e|ion|ing)|fetish|kink(y)?|bdsm|bondage)\b/i,
   /\b(blowjob|blow\s*job|handjob|hand\s*job|anal\s*sex|oral\s*sex)\b/i,
   /\b(strip(tease|per|ping)|lap\s*dance|cam\s*girl|onlyfans|only\s*fans)\b/i,

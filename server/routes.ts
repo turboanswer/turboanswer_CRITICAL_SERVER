@@ -621,11 +621,14 @@ function downloadAAB(){
         return res.status(404).json({ message: "Conversation not found" });
       }
 
-      const modResult = moderateContent(content);
+      const _modUserId = req.user?.claims?.sub;
+      const _modUser = _modUserId ? await storage.getUser(_modUserId) : null;
+      const _isAdminOrEmployee = _modUser?.isEmployee || _modUser?.email === 'support@turboanswer.it.com';
+      const modResult = _isAdminOrEmployee ? { isFlagged: false, type: "clean" as const, matchedWords: [], severity: "none" as const } : moderateContent(content);
       if (modResult.isFlagged) {
-        const userId = req.user?.claims?.sub;
+        const userId = _modUserId;
         if (userId) {
-          const offender = await storage.getUser(userId);
+          const offender = _modUser;
           const actions: string[] = [];
 
           let wasBanned = false;
