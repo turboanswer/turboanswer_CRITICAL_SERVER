@@ -25,6 +25,7 @@ interface UserData {
   firstName: string;
   lastName: string;
   email: string;
+  phoneNumber?: string;
   homeAddress?: string;
   subscriptionTier: string;
   subscriptionStatus: string;
@@ -457,6 +458,13 @@ export default function EmployeeDashboard() {
                 <div>
                   {selectedUser?.firstName} {selectedUser?.lastName}
                   <div className="text-sm text-gray-400 font-normal">{selectedUser?.email}</div>
+                  {selectedUser?.phoneNumber && (
+                    <div className="text-sm font-normal mt-0.5">
+                      <a href={`tel:${selectedUser.phoneNumber}`} className="text-green-400 hover:text-green-300 transition-colors">
+                        📞 {selectedUser.phoneNumber}
+                      </a>
+                    </div>
+                  )}
                   {selectedUser?.homeAddress && <div className="text-xs text-gray-500 font-normal">Address: {selectedUser.homeAddress}</div>}
                 </div>
               </CardTitle>
@@ -924,7 +932,14 @@ export default function EmployeeDashboard() {
                               </div>
                               <div className="text-xs text-gray-500">ID: {user.id.slice(0, 8)}...</div>
                             </td>
-                            <td className="p-3 text-sm text-gray-300">{user.email || '-'}</td>
+                            <td className="p-3 text-sm">
+                              <div className="text-gray-300">{user.email || '-'}</div>
+                              {user.phoneNumber && (
+                                <a href={`tel:${user.phoneNumber}`} className="text-green-400 hover:text-green-300 text-xs transition-colors">
+                                  📞 {user.phoneNumber}
+                                </a>
+                              )}
+                            </td>
                             <td className="p-3">
                               <span className={`text-xs px-2 py-1 rounded font-medium ${
                                 user.subscriptionTier === 'enterprise' ? 'bg-amber-600/20 text-amber-400' :

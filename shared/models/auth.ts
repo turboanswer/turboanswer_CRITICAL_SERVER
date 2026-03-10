@@ -57,6 +57,7 @@ export const users = pgTable("users", {
   isBetaTester: boolean("is_beta_tester").default(false),
   codeStudioAddon: boolean("code_studio_addon").default(false),
   codeStudioAddonSubId: text("code_studio_addon_sub_id"),
+  phoneNumber: varchar("phone_number"),
 });
 
 export type UpsertUser = typeof users.$inferInsert;
