@@ -3576,7 +3576,7 @@ Requirements:
   // AI code assistance — with intent detection (build vs chat)
   app.post('/api/code/ai', isAuthenticated, async (req: any, res) => {
     try {
-      const { message, code, language } = req.body;
+      const { message, code, language, projectId } = req.body;
       if (!message) return res.status(400).json({ error: 'message required' });
 
       const apiKey = process.env.GEMINI_API_KEY;
@@ -3599,19 +3599,35 @@ Requirements:
         } catch { return null; }
       }
 
+      // Step 0: Instant regex pre-classifier — no AI needed for obvious modify/update requests
+      // If the user has existing code open AND is using action verbs, it's always a build/update
+      const isModifyRequest = code && code.trim().length > 50 && /\b(change|update|modify|edit|make|set|add|remove|delete|rename|replace|increase|decrease|move|fix|adjust|improve|enhance|convert|turn|switch|toggle|make\s+it|make\s+the|make\s+a|add\s+a|add\s+the|remove\s+the|change\s+the|update\s+the)\b/i.test(message);
+
+      if (isModifyRequest) {
+        // Build an update prompt that includes the existing code as context
+        const codeContext = code ? `\n\nEXISTING CODE TO MODIFY:\n\`\`\`${language || 'html'}\n${code.slice(0, 8000)}\n\`\`\`` : '';
+        const buildPrompt = `UPDATE EXISTING APP — DO NOT START FROM SCRATCH.\n\nChange requested: ${message}${codeContext}\n\nIMPORTANT: Output the complete updated file with ALL original content preserved, only applying the requested change.`;
+        console.log(`[CodeAI] Regex-classified as update: "${message.slice(0, 60)}"`);
+        return res.json({ intent: 'build', buildPrompt, reply: `Got it! Applying your update now...` });
+      }
+
       // Step 1: Detect intent (build vs chat) using fast model
       const intentPrompt = `You are Turbo Code Agent inside TurboAnswer Code Studio.
 
-Classify if the user message is a BUILD request (they want to create an app/website/game/tool) or a CHAT request (asking a coding question, asking to fix/explain/improve specific code).
+Classify if the user message is a BUILD/UPDATE request or a CHAT/question request.
 
-BUILD examples: "build me a todo app", "create a portfolio site", "make a snake game", "I want a weather dashboard", "a calculator", "landing page for my startup"
-CHAT examples: "how do I center a div?", "explain useEffect", "fix the bug in my code", "what is a promise?", "optimize this function"
+BUILD/UPDATE: creating new apps, modifying existing code, styling changes, adding features, fixing bugs in the app
+CHAT/QUESTION: asking coding questions, requesting explanations, asking how things work
+
+BUILD examples: "build me a todo app", "create a portfolio site", "make a snake game", "change the button color", "add a dark mode toggle", "update the header text", "make the font bigger", "add a search bar"
+CHAT examples: "how do I center a div?", "explain useEffect", "what is a promise?", "how does CSS flexbox work?"
 
 User message: "${message.slice(0, 500)}"
+Has existing code: ${code && code.trim().length > 50 ? 'YES' : 'NO'}
 
 Respond ONLY with valid JSON (no markdown):
-For BUILD: {"intent":"build","buildPrompt":"concise clean description of what to build","reply":"On it! I'm generating your [app description] now..."}
-For CHAT: {"intent":"chat"}`;
+For BUILD/UPDATE: {"intent":"build","buildPrompt":"concise description of what to build or modify","reply":"On it! [brief description of what you're doing]..."}
+For CHAT/QUESTION: {"intent":"chat"}`;
 
       const intentRaw = await callModel('gemini-2.0-flash-lite', intentPrompt, 256, 8000)
         ?? await callModel('gemini-2.0-flash', intentPrompt, 256, 8000);
@@ -3621,7 +3637,12 @@ For CHAT: {"intent":"chat"}`;
           const cleaned = intentRaw.replace(/^```(?:json)?\s*/im, '').replace(/\s*```\s*$/im, '').trim();
           const intentData = JSON.parse(cleaned.match(/\{[\s\S]*\}/)?.[0] || '{}');
           if (intentData.intent === 'build' && intentData.buildPrompt) {
-            return res.json({ intent: 'build', buildPrompt: intentData.buildPrompt, reply: intentData.reply || `On it! Building your app now...` });
+            // If there's existing code and this looks like a modification, embed it in the prompt
+            let finalBuildPrompt = intentData.buildPrompt;
+            if (code && code.trim().length > 50) {
+              finalBuildPrompt = `UPDATE EXISTING APP — DO NOT START FROM SCRATCH.\n\nChange: ${intentData.buildPrompt}\n\nEXISTING CODE:\n\`\`\`${language || 'html'}\n${code.slice(0, 8000)}\n\`\`\`\n\nOutput the complete updated file preserving all original content, only applying the requested change.`;
+            }
+            return res.json({ intent: 'build', buildPrompt: finalBuildPrompt, reply: intentData.reply || `On it! Building now...` });
           }
         } catch { /* fall through to chat */ }
       }
