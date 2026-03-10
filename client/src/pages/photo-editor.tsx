@@ -180,10 +180,22 @@ export default function PhotoEditor() {
   }, []);
 
   const downloadImage = (data: string, mime: string) => {
-    const link = document.createElement('a');
-    link.href = `data:${mime};base64,${data}`;
-    link.download = `turbo-image-${Date.now()}.png`;
-    link.click();
+    try {
+      const byteChars = atob(data);
+      const byteNums = new Array(byteChars.length);
+      for (let i = 0; i < byteChars.length; i++) byteNums[i] = byteChars.charCodeAt(i);
+      const blob = new Blob([new Uint8Array(byteNums)], { type: mime });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `turbo-image-${Date.now()}.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch {
+      toast({ title: 'Download failed', description: 'Could not save the image. Try right-clicking the image and saving it.', variant: 'destructive' });
+    }
   };
 
 

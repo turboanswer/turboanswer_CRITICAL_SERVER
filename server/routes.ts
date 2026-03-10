@@ -3731,15 +3731,20 @@ Return ONLY valid JSON (no markdown):
       console.log(`[PhotoEditor] Generating with Gemini Flash Image, aspect ${aspectRatio}: "${prompt.slice(0, 80)}"`);
       const start = Date.now();
 
-      const response = await ai.models.generateContent({
-        model: 'gemini-2.0-flash-exp-image-generation',
-        contents: [{ role: 'user', parts: [{ text: fullPrompt }] }],
-        config: { responseModalities: ['TEXT', 'IMAGE'], temperature: 1 },
-      });
-
-      const parts = response.candidates?.[0]?.content?.parts || [];
-      const imgPart = parts.find((p: any) => p.inlineData?.mimeType?.startsWith('image'));
-      if (!imgPart?.inlineData?.data) return res.status(500).json({ error: 'No image returned from Gemini' });
+      let imgPart: any = null;
+      for (let attempt = 1; attempt <= 3; attempt++) {
+        const response = await ai.models.generateContent({
+          model: 'gemini-2.0-flash-exp-image-generation',
+          contents: [{ role: 'user', parts: [{ text: fullPrompt }] }],
+          config: { responseModalities: ['TEXT', 'IMAGE'], temperature: 1 },
+        });
+        const parts = response.candidates?.[0]?.content?.parts || [];
+        imgPart = parts.find((p: any) => p.inlineData?.mimeType?.startsWith('image'));
+        if (imgPart?.inlineData?.data) break;
+        console.log(`[PhotoEditor] Attempt ${attempt}: no image returned, retrying...`);
+        if (attempt < 3) await new Promise(r => setTimeout(r, 800));
+      }
+      if (!imgPart?.inlineData?.data) return res.status(500).json({ error: 'Image generation failed after 3 attempts. Please try again.' });
 
       console.log(`[PhotoEditor] Gemini image generated in ${Date.now() - start}ms`);
       res.json({ imageData: imgPart.inlineData.data, mimeType: imgPart.inlineData.mimeType || 'image/png' });
@@ -3763,21 +3768,26 @@ Return ONLY valid JSON (no markdown):
       console.log(`[PhotoEditor] Editing image with Gemini: "${instruction.slice(0, 80)}"`);
       const start = Date.now();
 
-      const response = await ai.models.generateContent({
-        model: 'gemini-2.0-flash-exp-image-generation',
-        contents: [{
-          role: 'user',
-          parts: [
-            { inlineData: { mimeType: mimeType || 'image/jpeg', data: imageData } },
-            { text: `Edit this image: ${instruction}. Return only the edited image with no text or explanation.` },
-          ],
-        }],
-        config: { responseModalities: ['IMAGE', 'TEXT'], temperature: 1 },
-      });
-
-      const parts = response.candidates?.[0]?.content?.parts || [];
-      const imgPart = parts.find((p: any) => p.inlineData?.mimeType?.startsWith('image'));
-      if (!imgPart?.inlineData?.data) return res.status(500).json({ error: 'No edited image returned from Gemini' });
+      let imgPart: any = null;
+      for (let attempt = 1; attempt <= 3; attempt++) {
+        const response = await ai.models.generateContent({
+          model: 'gemini-2.0-flash-exp-image-generation',
+          contents: [{
+            role: 'user',
+            parts: [
+              { inlineData: { mimeType: mimeType || 'image/jpeg', data: imageData } },
+              { text: `Edit this image: ${instruction}. Return only the edited image with no text or explanation.` },
+            ],
+          }],
+          config: { responseModalities: ['IMAGE', 'TEXT'], temperature: 1 },
+        });
+        const parts = response.candidates?.[0]?.content?.parts || [];
+        imgPart = parts.find((p: any) => p.inlineData?.mimeType?.startsWith('image'));
+        if (imgPart?.inlineData?.data) break;
+        console.log(`[PhotoEditor] Edit attempt ${attempt}: no image returned, retrying...`);
+        if (attempt < 3) await new Promise(r => setTimeout(r, 800));
+      }
+      if (!imgPart?.inlineData?.data) return res.status(500).json({ error: 'Image edit failed after 3 attempts. Please try again.' });
 
       console.log(`[PhotoEditor] Edit complete in ${Date.now() - start}ms`);
       res.json({ imageData: imgPart.inlineData.data, mimeType: imgPart.inlineData.mimeType || 'image/png' });
