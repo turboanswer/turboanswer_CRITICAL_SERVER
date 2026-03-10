@@ -1,6 +1,6 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
-const PRODUCTION_URL = 'https://turbo-answer.replit.app';
+const PRODUCTION_URL = 'https://ai-companion-tiagotschantret.replit.app';
 
 const config: CapacitorConfig = {
   appId: 'com.turboanswer.app',
