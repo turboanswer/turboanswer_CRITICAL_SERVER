@@ -179,12 +179,17 @@ export default function PhotoEditor() {
     else { setPlaceFile(file); setPlacePreviev(url); setPlaceResult(null); }
   }, []);
 
-  const downloadImage = (data: string, mime: string) => {
+  const downloadImage = async (data: string, mime: string) => {
     try {
-      const byteChars = atob(data);
-      const byteNums = new Array(byteChars.length);
-      for (let i = 0; i < byteChars.length; i++) byteNums[i] = byteChars.charCodeAt(i);
-      const blob = new Blob([new Uint8Array(byteNums)], { type: mime });
+      // Use server endpoint — converts base64 to a real binary file, works on all browsers/devices
+      const res = await fetch('/api/photo-editor/download', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ imageData: data, mimeType: mime, filename: 'turbo-image' }),
+      });
+      if (!res.ok) throw new Error('Server download failed');
+      const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
@@ -192,9 +197,14 @@ export default function PhotoEditor() {
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      setTimeout(() => URL.revokeObjectURL(url), 2000);
     } catch {
-      toast({ title: 'Download failed', description: 'Could not save the image. Try right-clicking the image and saving it.', variant: 'destructive' });
+      // Fallback: open image in new tab so user can save manually
+      const win = window.open('', '_blank');
+      if (win) {
+        win.document.write(`<html><body style="margin:0;background:#000;display:flex;flex-direction:column;align-items:center"><img src="data:${mime};base64,${data}" style="max-width:100%;display:block"/><p style="color:#fff;font-family:sans-serif;text-align:center;padding:12px;font-size:14px">Right-click or long-press the image → Save image</p></body></html>`);
+        win.document.close();
+      }
     }
   };
 

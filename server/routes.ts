@@ -3809,6 +3809,23 @@ Return ONLY valid JSON (no markdown):
     }
   });
 
+  // ── IMAGE DOWNLOAD ENDPOINT ──────────────────────────────────────────────────
+  // Converts base64 image to a real binary file download — works on all browsers/devices
+  app.post('/api/photo-editor/download', isAuthenticated, (req: any, res) => {
+    try {
+      const { imageData, mimeType = 'image/png', filename = 'turbo-image' } = req.body;
+      if (!imageData) return res.status(400).json({ error: 'imageData required' });
+      const buffer = Buffer.from(imageData, 'base64');
+      const ext = mimeType.includes('jpeg') || mimeType.includes('jpg') ? 'jpg' : 'png';
+      res.setHeader('Content-Type', mimeType);
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}-${Date.now()}.${ext}"`);
+      res.setHeader('Content-Length', buffer.length);
+      res.send(buffer);
+    } catch (e: any) {
+      res.status(500).json({ error: 'Download failed' });
+    }
+  });
+
   startProactiveDiagnostics();
 
   // Auto-lockdown on critical infrastructure failure (DB or AI down — not memory pressure)
