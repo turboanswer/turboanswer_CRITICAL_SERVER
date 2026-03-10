@@ -33,6 +33,7 @@ import MediaEditor from "@/pages/media-editor";
 import VideoStudio from "@/pages/video-studio";
 import CodeStudio from "@/pages/code-studio";
 import BetaApply from "@/pages/beta-apply";
+import DataDeletion from "@/pages/data-deletion";
 import LockdownScreen from "@/components/lockdown-screen";
 import { primeAudioContext } from "@/lib/audio-manager";
 
@@ -50,6 +51,7 @@ function AuthenticatedRouter() {
       <Route path="/support" component={Support} />
       <Route path="/employee/dashboard" component={EmployeeDashboard} />
       <Route path="/privacy-policy" component={PrivacyPolicy} />
+      <Route path="/data-deletion" component={DataDeletion} />
       <Route path="/business" component={Business} />
       <Route path="/integration" component={Integration} />
       <Route path="/simple" component={Simple} />
@@ -78,6 +80,7 @@ function UnauthenticatedRouter() {
       <Route path="/pricing" component={Pricing} />
       <Route path="/support" component={Support} />
       <Route path="/privacy-policy" component={PrivacyPolicy} />
+      <Route path="/data-deletion" component={DataDeletion} />
       <Route path="/business" component={Business} />
       <Route path="/widget-demo" component={WidgetDemo} />
       <Route path="/crisis-info" component={CrisisInfo} />
