@@ -3234,7 +3234,7 @@ Write production-quality, impressive code.`;
         } catch { return null; }
       }
 
-      let rawText = await callGemini('gemini-2.5-pro', 8192, 90000)
+      let rawText = await callGemini('gemini-3.1-pro-preview', 8192, 90000)
         ?? await callGemini('gemini-2.0-flash', 8192, 45000)
         ?? await callGemini('gemini-2.0-flash-lite', 4096, 30000)
         ?? '';
@@ -3458,7 +3458,7 @@ Guidelines:
         } catch { return null; }
       }
 
-      const reply = await tryModel('gemini-2.5-pro', 8192, 60000)
+      const reply = await tryModel('gemini-3.1-pro-preview', 8192, 60000)
         ?? await tryModel('gemini-2.0-flash', 4096, 30000)
         ?? await tryModel('gemini-2.0-flash-lite', 4096, 15000);
 
