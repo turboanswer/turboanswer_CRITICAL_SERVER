@@ -15,6 +15,7 @@ import LanguageSelector from "@/components/LanguageSelector";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { Conversation, Message } from "@shared/schema";
 import turboLogo from "@assets/file_000000007ff071f8a754520ac27c6ba4_1770423239509.png";
+import MobileChatUI from "@/components/MobileChatUI";
 
 const isNativeMobile = !!(window as any).Capacitor?.isNativePlatform?.();
 
@@ -338,6 +339,52 @@ export default function Chat() {
       setSelectedAIModel(value === 'enterprise-research' ? 'claude-research' : value);
     }
   };
+
+  if (isNativeMobile) {
+    return (
+      <MobileChatUI
+        messages={messages}
+        conversations={conversations}
+        currentConversationId={currentConversationId}
+        setCurrentConversationId={setCurrentConversationId}
+        messageContent={messageContent}
+        setMessageContent={setMessageContent}
+        isTyping={isTyping}
+        handleSend={handleSendWithPromo}
+        isSending={sendMessageMutation.isPending}
+        user={user}
+        logout={logout}
+        subscriptionData={subscriptionData}
+        selectedAIModel={selectedAIModel}
+        handleModelChange={handleModelChange}
+        showProPopup={showProPopup}
+        setShowProPopup={setShowProPopup}
+        showResearchPopup={showResearchPopup}
+        setShowResearchPopup={setShowResearchPopup}
+        showEnterprisePopup={showEnterprisePopup}
+        setShowEnterprisePopup={setShowEnterprisePopup}
+        showWelcomePro={showWelcomePro}
+        setShowWelcomePro={setShowWelcomePro}
+        welcomeTier={welcomeTier}
+        setSelectedAIModel={setSelectedAIModel}
+        enterpriseCode={enterpriseCode}
+        checkoutLoading={checkoutLoading}
+        setCheckoutLoading={setCheckoutLoading}
+        showPromoPopup={showPromoPopup}
+        setShowPromoPopup={setShowPromoPopup}
+        dismissPromo={dismissPromo}
+        isFreeTier={isFreeTier}
+        entCoupon={entCoupon}
+        setEntCoupon={setEntCoupon}
+        entCouponApplied={entCouponApplied}
+        setEntCouponApplied={setEntCouponApplied}
+        toast={toast}
+        messagesEndRef={messagesEndRef}
+        renderMessageContent={renderMessageContent}
+        formatTimestamp={formatTimestamp}
+      />
+    );
+  }
 
   return (
     <div className={`flex flex-col h-[100dvh] ${isDark ? 'bg-black' : 'bg-gray-50'}`}>
