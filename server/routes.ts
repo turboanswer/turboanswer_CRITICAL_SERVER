@@ -727,7 +727,6 @@ function downloadAAB(){
 
       if (isImageRequest) {
         try {
-          const { generateImageBuffer } = await import('./replit_integrations/image/client');
           const imagePrompt = content
             .replace(/^(can you|could you|please|i want to|i need|i'd like to|give me|show me|let me see|make me)\s*/i, '')
             .replace(/^(generate|create|make|draw|paint|design|sketch|render|produce)\s+(an?|the|me\s+an?|me\s+the|me\s+a)?\s*/i, '')
@@ -735,9 +734,19 @@ function downloadAAB(){
             .replace(/\s+/g, ' ')
             .trim() || content;
 
-          const imageBuffer = await generateImageBuffer(imagePrompt);
-          const base64Image = imageBuffer.toString('base64');
-          const imageDataUrl = `data:image/png;base64,${base64Image}`;
+          const geminiKey = process.env.GEMINI_API_KEY;
+          if (!geminiKey) throw new Error('Gemini API key not configured');
+          const { GoogleGenAI } = await import('@google/genai');
+          const ai = new GoogleGenAI({ apiKey: geminiKey });
+          const imgResp = await ai.models.generateContent({
+            model: 'gemini-2.0-flash-exp-image-generation',
+            contents: [{ role: 'user', parts: [{ text: `${imagePrompt}. High quality, photorealistic, sharp.` }] }],
+            config: { responseModalities: ['TEXT', 'IMAGE'], temperature: 1 },
+          });
+          const imgParts = imgResp.candidates?.[0]?.content?.parts || [];
+          const imgPart = imgParts.find((p: any) => p.inlineData?.mimeType?.startsWith('image'));
+          if (!imgPart?.inlineData?.data) throw new Error('No image returned');
+          const imageDataUrl = `data:${imgPart.inlineData.mimeType};base64,${imgPart.inlineData.data}`;
 
           aiResponseContent = `Here's the image I generated for you:\n\n![Generated Image](${imageDataUrl})\n\n*Prompt: "${imagePrompt}"*`;
         } catch (imageError: any) {
@@ -3742,20 +3751,37 @@ Return ONLY valid JSON (no markdown):
       const { instruction, imageData, mimeType = 'image/jpeg' } = req.body;
       if (!instruction || !imageData) return res.status(400).json({ error: 'instruction and imageData required' });
 
-      const { openai } = await import('./replit_integrations/image/client');
-      const { toFile } = await import('openai');
+      const geminiKey = process.env.GEMINI_API_KEY;
+      if (!geminiKey) return res.status(500).json({ error: 'Gemini API key not configured' });
 
-      const imageBuffer = Buffer.from(imageData, 'base64');
-      const imageFile = await toFile(imageBuffer, 'image.png', { type: 'image/png' });
-      const response = await openai.images.edit({
-        model: 'gpt-image-1',
-        image: imageFile,
-        prompt: instruction,
+      const { GoogleGenAI } = await import('@google/genai');
+      const ai = new GoogleGenAI({ apiKey: geminiKey });
+
+      console.log(`[PhotoEditor] Editing image with Gemini: "${instruction.slice(0, 80)}"`);
+      const start = Date.now();
+
+      const response = await ai.models.generateContent({
+        model: 'gemini-2.0-flash-exp-image-generation',
+        contents: [{
+          role: 'user',
+          parts: [
+            { inlineData: { mimeType: mimeType || 'image/jpeg', data: imageData } },
+            { text: `Edit this image: ${instruction}. Return only the edited image with no text or explanation.` },
+          ],
+        }],
+        config: { responseModalities: ['IMAGE', 'TEXT'], temperature: 1 },
       });
-      const b64 = response.data[0]?.b64_json;
-      if (!b64) return res.status(500).json({ error: 'No edited image returned' });
-      res.json({ imageData: b64, mimeType: 'image/png' });
-    } catch (e: any) { res.status(500).json({ error: e.message }); }
+
+      const parts = response.candidates?.[0]?.content?.parts || [];
+      const imgPart = parts.find((p: any) => p.inlineData?.mimeType?.startsWith('image'));
+      if (!imgPart?.inlineData?.data) return res.status(500).json({ error: 'No edited image returned from Gemini' });
+
+      console.log(`[PhotoEditor] Edit complete in ${Date.now() - start}ms`);
+      res.json({ imageData: imgPart.inlineData.data, mimeType: imgPart.inlineData.mimeType || 'image/png' });
+    } catch (e: any) {
+      console.error('[PhotoEditor] Edit error:', e.message);
+      res.status(500).json({ error: e.message || 'Image edit failed' });
+    }
   });
 
   startProactiveDiagnostics();

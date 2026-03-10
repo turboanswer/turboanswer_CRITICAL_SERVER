@@ -208,7 +208,7 @@ export default function PhotoEditor() {
           </div>
           <div>
             <h1 className="text-base font-black text-white leading-none">Photo Editor</h1>
-            <p className="text-xs text-gray-500 mt-0.5">Generate: Gemini 2.0 Flash · Edit: GPT Image</p>
+            <p className="text-xs text-gray-500 mt-0.5">Powered by Gemini 2.0 Flash</p>
           </div>
         </div>
         <div className="ml-auto flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-blue-500/10 border border-blue-500/30 text-blue-400">
