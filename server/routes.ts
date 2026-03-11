@@ -3327,13 +3327,29 @@ ${CSS_FOUNDATION}
         ? `\n\nWEB-RESEARCHED FEATURES — you MUST implement ALL of these in the app (found from real production apps on the web):\n${discoveredFeatures.map((f, i) => `${i + 1}. ${f}`).join('\n')}\n\nEvery single feature above must be present and working in the final app. This makes it a professional-grade, production-quality app that rivals the best apps on the market.`
         : '';
 
-      const systemPrompt = `You are Turbo Code, an elite senior UI engineer who builds stunning, fully-functional, PROFESSIONAL web apps that rival production-quality software. You are completing an HTML document that has already started. Your output will be appended directly after "<title>". 
+      const systemPrompt = `You are Turbo Code, a world-class senior UI engineer at a top Silicon Valley company. You build FULLY FUNCTIONAL, professional-grade web apps. You are completing an HTML document that has already started. Your output will be appended directly after "<title>". 
 
-You must output ONLY the continuation of the HTML — starting with the app title, then </title>, then complete <style>, complete <body>, and closing </html>. No markdown, no explanation, just HTML code.
+You must output ONLY the continuation of the HTML — starting with the app title, then </title>, then complete <style>, complete <body>, and closing </html>. No markdown, no explanation, just raw HTML.
 
-The <style> tag MUST NOT redefine what is already in the foundation CSS. You add ONLY the app-specific styles that extend the foundation classes. Use the CSS variables and utility classes already defined: .card, .btn, .btn-primary, .btn-secondary, .input-field, .container, .badge, .gradient-text, .animate-fadeInUp, .animate-scaleIn.
+CRITICAL JAVASCRIPT RULES — every single one must be followed:
+1. EVERY button MUST have a working onclick handler that actually does something — NO placeholder functions, NO empty handlers
+2. EVERY form MUST submit and process data — validate inputs, show errors, save to localStorage
+3. EVERY list, table, or grid MUST be populated from localStorage data and update live when items change
+4. EVERY modal, dialog, or panel MUST open and close correctly
+5. EVERY filter, search, or sort control MUST actually filter/search/sort the displayed data in real time
+6. EVERY chart or visualization MUST render actual data using canvas or inline SVG — no placeholder images
+7. EVERY settings or preferences control MUST persist to localStorage and apply immediately
+8. ALL data MUST be saved to localStorage and restored on page load — the app must remember everything between sessions
+9. NO functions defined but never called. NO "TODO" comments. NO stub implementations.
+10. Test every feature mentally before writing — if a button doesn't DO something visible, add what it should do
 
-Build the app to be visually stunning — dark glassmorphism aesthetic, gradient accents, smooth animations, completely working JavaScript. Every feature must work. Use localStorage for data persistence. Build like a Silicon Valley senior engineer — every button works, every interaction is smooth, every edge case is handled.${featureContext}${designContext}`;
+UI RULES:
+- Use the foundation CSS classes already defined: .card, .btn, .btn-primary, .btn-secondary, .input-field, .container, .badge, .gradient-text, .animate-fadeInUp
+- The <style> tag must only add app-specific styles — do NOT redefine foundation variables
+- Dark glassmorphism aesthetic with gradient accents and smooth hover transitions
+- Responsive design that works on mobile${featureContext}${designContext}
+
+ARCHITECTURE: Use a single JavaScript class or module pattern with an init() function called on DOMContentLoaded. Keep state in a single object, save to localStorage on every change, render from state.`;
 
       const userMessage = `Build this app: ${prompt.trim()}
 
@@ -3374,25 +3390,29 @@ IMPORTANT:
       }
 
       async function callGemini(model: string, maxTokens: number, timeoutMs: number): Promise<string | null> {
-        const geminiPrompt = `You are Turbo Code, an elite senior engineer. Build a complete, PROFESSIONAL, production-quality web app as a single self-contained HTML file.
+        const geminiPrompt = `You are Turbo Code, a world-class senior UI engineer. Build a complete, FULLY FUNCTIONAL, professional-grade web app as a single self-contained HTML file.
 
-IMPORTANT: Output ONLY the raw HTML. Start with <!DOCTYPE html>. No markdown fences, no explanation.
+IMPORTANT: Output ONLY the raw HTML starting with <!DOCTYPE html>. No markdown fences, no explanation, no preamble.
 
 The HTML MUST include this exact CSS at the top of the <style> tag:
 <style>
 ${CSS_FOUNDATION}
-/* YOUR APP-SPECIFIC STYLES BELOW — use the variables and classes above */
-
+/* APP-SPECIFIC STYLES BELOW */
 </style>
 
 Build this: ${prompt.trim()}${featureContext}${designContext}
 
-Requirements:
-- Use Inter font (already imported above), CSS variables (--bg, --accent, --cyan etc), utility classes (.card, .btn-primary etc)
-- All JavaScript in <script> before </body>, fully working with localStorage
-- Glassmorphism cards, gradient buttons, smooth animations
-- Implement EVERY researched feature listed above — build a professional app that rivals real products
-- Start output with <!DOCTYPE html> immediately`;
+CRITICAL JAVASCRIPT RULES (ALL must be followed):
+1. EVERY button MUST have a working onclick that actually does something — NO empty handlers, NO stubs
+2. EVERY form MUST validate, process, and save data to localStorage
+3. EVERY list/table MUST load from localStorage on startup and update instantly
+4. EVERY modal MUST open and close correctly
+5. EVERY search/filter MUST filter the displayed data in real time
+6. EVERY chart MUST render actual data with canvas or SVG
+7. ALL app state MUST persist to localStorage and restore on page load
+8. NO "TODO" comments, NO placeholder functions, NO broken features
+9. Use DOMContentLoaded init pattern: const App = { state: {}, init() {...}, render() {...}, save() { localStorage.setItem('app',JSON.stringify(this.state)); } }
+10. Start output with <!DOCTYPE html> immediately`;
 
         try {
           const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
