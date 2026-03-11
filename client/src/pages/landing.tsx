@@ -223,7 +223,7 @@ export default function LandingPage() {
               {isDark ? <span className="text-lg">&#9728;</span> : <span className="text-lg">&#9790;</span>}
             </button>
             <Link href={ctaHref}>
-              <Button size="sm" className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:from-indigo-500 hover:via-purple-500 hover:to-pink-500 font-semibold px-5 shadow-lg shadow-purple-500/20">
+              <Button size="sm" className="font-semibold px-5 shadow-lg text-white" style={{ background: 'linear-gradient(135deg, #4285F4, #34A853)', boxShadow: '0 4px 15px rgba(66,133,244,0.3)' }}>
                 {ctaLabel}
               </Button>
             </Link>
@@ -260,7 +260,7 @@ export default function LandingPage() {
               </Button>
             </a>
             <Link href={ctaHref} className="block">
-              <Button className="w-full bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:from-indigo-500 hover:via-purple-500 hover:to-pink-500 font-semibold">
+              <Button className="w-full font-semibold text-white" style={{ background: 'linear-gradient(135deg, #4285F4, #34A853)' }}>
                 {ctaLabel}
               </Button>
             </Link>
@@ -306,7 +306,7 @@ export default function LandingPage() {
               <span className={isDark ? 'text-white' : 'text-gray-900'} style={{ background: "linear-gradient(90deg, #a78bfa, #22d3ee)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
                 Code Studio
               </span>
-              <span className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Claude + Gemini · now in Research</span>
+              <span className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Antigravity · Gemini 3.1 Pro · Research</span>
               <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${isDark ? 'bg-indigo-500/20 text-indigo-300' : 'bg-indigo-100 text-indigo-600'}`}>NEW</span>
             </div>
           </div>
@@ -324,9 +324,8 @@ export default function LandingPage() {
             <span
               className="shimmer-text bg-clip-text text-transparent"
               style={{
-                backgroundImage: isDark
-                  ? 'linear-gradient(90deg, #818cf8, #a78bfa, #f472b6, #818cf8)'
-                  : 'linear-gradient(90deg, #4f46e5, #7c3aed, #db2777, #4f46e5)',
+                backgroundImage: 'linear-gradient(90deg, #4285F4, #EA4335, #FBBC05, #34A853, #4285F4)',
+                backgroundSize: '200% auto',
               }}
             >
               Thinks, Creates & Analyzes
@@ -340,7 +339,7 @@ export default function LandingPage() {
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-10">
             <Link href={ctaHref}>
-              <Button size="lg" className="w-full sm:w-auto text-lg px-10 py-7 font-bold shadow-2xl bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:from-indigo-500 hover:via-purple-500 hover:to-pink-500 shadow-purple-500/25 rounded-2xl" style={isDark ? { animation: 'glow-pulse 3s ease-in-out infinite' } : {}}>
+              <Button size="lg" className="w-full sm:w-auto text-lg px-10 py-7 font-bold shadow-2xl rounded-2xl text-white" style={{ background: 'linear-gradient(135deg, #4285F4 0%, #34A853 100%)', boxShadow: isDark ? '0 0 40px rgba(66,133,244,0.35)' : '0 8px 30px rgba(66,133,244,0.3)', ...(isDark ? { animation: 'glow-pulse 3s ease-in-out infinite' } : {}) }}>
                 {ctaLabel}
                 <ArrowRight className="h-5 w-5 ml-2" />
               </Button>
@@ -388,14 +387,8 @@ export default function LandingPage() {
         </div>
 
         <style>{`
-          @keyframes antigravity-float { 0%,100%{transform:translateY(0px) rotate(-2deg)} 50%{transform:translateY(-24px) rotate(2deg)} }
-          @keyframes antigravity-orbit { from{transform:rotate(0deg) translateX(70px) rotate(0deg)} to{transform:rotate(360deg) translateX(70px) rotate(-360deg)} }
+          @keyframes antigravity-float { 0%,100%{transform:translateY(0px)} 50%{transform:translateY(-18px)} }
           @keyframes color-pulse-blue { 0%,100%{box-shadow:0 0 30px #4285F466,0 0 60px #4285F433} 50%{box-shadow:0 0 60px #4285F499,0 0 100px #4285F466} }
-          @keyframes letter-float-1 { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
-          @keyframes letter-float-2 { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-16px)} }
-          @keyframes letter-float-3 { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
-          @keyframes letter-float-4 { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-20px)} }
-          @keyframes letter-float-5 { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-12px)} }
         `}</style>
 
         <div className="relative z-10 max-w-5xl mx-auto text-center">
@@ -425,23 +418,18 @@ export default function LandingPage() {
             </div>
           </div>
 
-          {/* Giant ANTIGRAVITY title — each letter floats independently */}
-          <h2 className="text-4xl sm:text-5xl lg:text-7xl font-black leading-none tracking-tight mb-6 select-none flex items-end justify-center flex-wrap gap-0">
-            {[
-              {l:'A',c:'#4285F4',a:'letter-float-1',d:'0s'},
-              {l:'N',c:'#EA4335',a:'letter-float-3',d:'0.15s'},
-              {l:'T',c:'#FBBC05',a:'letter-float-2',d:'0.3s'},
-              {l:'I',c:'#34A853',a:'letter-float-4',d:'0.45s'},
-              {l:'G',c:'#4285F4',a:'letter-float-5',d:'0.6s'},
-              {l:'R',c:'#EA4335',a:'letter-float-1',d:'0.75s'},
-              {l:'A',c:'#FBBC05',a:'letter-float-3',d:'0.9s'},
-              {l:'V',c:'#34A853',a:'letter-float-2',d:'1.05s'},
-              {l:'I',c:'#4285F4',a:'letter-float-4',d:'1.2s'},
-              {l:'T',c:'#EA4335',a:'letter-float-5',d:'1.35s'},
-              {l:'Y',c:'#FBBC05',a:'letter-float-1',d:'1.5s'},
-            ].map((item,i) => (
-              <span key={i} className="inline-block" style={{color:item.c, animation:`${item.a} 3s ease-in-out infinite`, animationDelay:item.d, textShadow:`0 0 40px ${item.c}99, 0 0 80px ${item.c}55`}}>{item.l}</span>
-            ))}
+          {/* ANTIGRAVITY title — clean Google-color gradient, professional */}
+          <h2 className="text-5xl sm:text-6xl lg:text-8xl font-black leading-none tracking-tighter mb-6 select-none"
+            style={{
+              background: 'linear-gradient(90deg, #4285F4 0%, #EA4335 30%, #FBBC05 60%, #34A853 85%, #4285F4 100%)',
+              backgroundSize: '200% auto',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              backgroundClip: 'text',
+              animation: 'text-shimmer 4s linear infinite',
+              letterSpacing: '-0.02em',
+            }}>
+            ANTIGRAVITY
           </h2>
 
           <p className="text-xl sm:text-2xl text-white/70 font-medium mb-4 max-w-2xl mx-auto">
@@ -463,7 +451,7 @@ export default function LandingPage() {
                 background: `${f.color}18`,
                 border: `1px solid ${f.color}55`,
                 boxShadow: `0 0 30px ${f.color}33`,
-                animation: `letter-float-${(i%5)+1} ${3+i*0.4}s ease-in-out infinite`,
+                animation: `antigravity-float ${3+i*0.4}s ease-in-out infinite`,
                 animationDelay: `${i*0.3}s`,
               }}>
                 <div className="text-3xl mb-2">{f.icon}</div>

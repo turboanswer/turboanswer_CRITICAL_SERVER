@@ -76,9 +76,9 @@ export default function Home() {
               <div className="flex-1">
                 {/* Branding badges */}
                 <div className="flex items-center gap-3 mb-4">
-                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-semibold" style={{ borderColor: "rgba(139,92,246,0.4)", background: "rgba(139,92,246,0.1)", color: "#a78bfa" }}>
+                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-semibold" style={{ borderColor: "rgba(66,133,244,0.4)", background: "rgba(66,133,244,0.1)", color: "#4285F4" }}>
                     <Sparkles className="w-3.5 h-3.5" />
-                    Claude + Gemini
+                    Antigravity
                   </div>
                   <div className="flex items-center gap-1 px-3 py-1.5 rounded-full border text-xs font-semibold" style={{ borderColor: "rgba(34,211,238,0.4)", background: "rgba(34,211,238,0.08)", color: "#22d3ee" }}>
                     <Code2 className="h-3.5 w-3.5" />
@@ -94,7 +94,7 @@ export default function Home() {
                   Build Full Apps from a Single Prompt
                 </p>
                 <p className="text-gray-400 mb-6 max-w-lg leading-relaxed">
-                  Describe your idea in plain English. Claude and Gemini design, write, and build your entire app — in seconds. No code required.
+                  Describe your idea in plain English. Gemini 3.1 Pro designs, writes, and builds your entire app — in seconds. No code required.
                 </p>
 
                 {/* Feature pills */}
@@ -145,7 +145,7 @@ export default function Home() {
             {/* Bottom stats bar */}
             <div className="mt-8 pt-6 border-t border-white/[0.06] grid grid-cols-2 md:grid-cols-4 gap-4">
               {[
-                { label: "AI Models", value: "Claude + Gemini", color: "#8b5cf6" },
+                { label: "AI Models", value: "Gemini 3.1 Pro", color: "#4285F4" },
                 { label: "Build Time", value: "< 30 seconds", color: "#22d3ee" },
                 { label: "Languages", value: "8+ Supported", color: "#a78bfa" },
                 { label: "Deploy", value: "Instant URL", color: "#06b6d4" },
@@ -212,7 +212,7 @@ export default function Home() {
               <div className="absolute top-0 right-0 w-24 h-24 rounded-full opacity-15 blur-2xl" style={{ background: "#34A853" }} />
               <div className="flex items-center gap-2 mb-3">
                 <Code2 className="h-8 w-8" style={{ color: "#34A853" }} />
-                <span className="text-xs px-2 py-0.5 rounded-full font-semibold" style={{ background: "rgba(52,168,83,0.15)", color: "#34A853", border: "1px solid rgba(52,168,83,0.3)" }}>+$10/mo add-on</span>
+                <span className="text-xs px-2 py-0.5 rounded-full font-semibold" style={{ background: "rgba(52,168,83,0.15)", color: "#34A853", border: "1px solid rgba(52,168,83,0.3)" }}>7-day free trial</span>
               </div>
               <h3 className="text-lg font-bold text-white mb-1">Code Studio</h3>
               <p className="text-sm text-gray-400">Full AI IDE — build, run & deploy apps with one prompt</p>
@@ -248,7 +248,7 @@ export default function Home() {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             {[
               { step: "1", title: "Describe It", desc: "Type what you want to build in plain English", color: "#8b5cf6", icon: "💬" },
-              { step: "2", title: "Claude Designs", desc: "Claude + Gemini architect the full app structure", color: "#22d3ee", icon: "🤖" },
+              { step: "2", title: "Antigravity Builds", desc: "Gemini 3.1 Pro architects the full app structure", color: "#4285F4", icon: "⚡" },
               { step: "3", title: "Code Appears", desc: "Files populate live in your editor — watch it build", color: "#a78bfa", icon: "⚡" },
               { step: "4", title: "Deploy", desc: "Get an instant public URL to share your live app", color: "#06b6d4", icon: "🚀" },
             ].map(({ step, title, desc, color, icon }) => (

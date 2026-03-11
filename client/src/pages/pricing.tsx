@@ -52,9 +52,9 @@ const plans: PricingPlan[] = [
     name: 'Research',
     price: '$30',
     period: 'per month',
-    description: 'Claude + Gemini · Maximum Intelligence · AI Video Studio',
+    description: 'Antigravity · Gemini 3.1 Pro · Maximum Intelligence · AI Video Studio',
     features: [
-      '🤖 Claude + Gemini — dual AI powerhouse',
+      '⚡ Antigravity — AI builds full apps from a prompt',
       '🎬 AI Video Studio (Google Veo 3.1)',
       '💻 Code Studio — build apps with one prompt',
       'Always-on maximum depth on every question',
@@ -68,9 +68,9 @@ const plans: PricingPlan[] = [
     name: 'Enterprise',
     price: '$100',
     period: 'per month',
-    description: 'Claude + Gemini · Research for up to 5 team members — save 44%',
+    description: 'Antigravity · Gemini 3.1 Pro · Research for up to 5 team members — save 44%',
     features: [
-      '🤖 Claude + Gemini — dual AI powerhouse',
+      '⚡ Antigravity — AI builds full apps from a prompt',
       '🎬 AI Video Studio (Google Veo 3.1)',
       'All Research features included',
       'Shareable 6-digit team code',
