@@ -27,11 +27,13 @@ interface ChatMsg {
   buildDone?: boolean;
   deployUrl?: string;
   files?: string[];
+  discoveredFeatures?: string[];
 }
 
 const BUILD_PHASES = [
-  "Analyzing your request...",
-  "Architecting the app with Gemini 3.1 Pro...",
+  "Researching similar apps on the web...",
+  "Analyzing features from real apps...",
+  "Architecting with Claude + Gemini...",
   "Writing HTML structure...",
   "Crafting CSS & animations...",
   "Building JavaScript logic...",
@@ -316,6 +318,7 @@ export default function CodeStudio() {
         buildDone: true,
         deployUrl: liveUrl || undefined,
         files: generatedFiles.map(f => f.name),
+        discoveredFeatures: data.discoveredFeatures || [],
       } : m));
       setBuildingMsgId(null);
 
@@ -662,6 +665,18 @@ export default function CodeStudio() {
                             style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "rgba(16,185,129,0.12)", border: "1px solid rgba(16,185,129,0.3)", borderRadius: 8, padding: "6px 12px", color: "#10b981", textDecoration: "none", fontSize: 12, fontWeight: 600 }}>
                             <Globe style={{ width: 12, height: 12 }} /> Open deployed app <ExternalLink style={{ width: 11, height: 11 }} />
                           </a>
+                        </div>
+                      )}
+                      {done && msg.discoveredFeatures && msg.discoveredFeatures.length > 0 && (
+                        <div style={{ marginTop: 10, background: "rgba(6,182,212,0.06)", border: "1px solid rgba(6,182,212,0.15)", borderRadius: 8, padding: "10px 12px" }}>
+                          <div style={{ fontSize: 11, fontWeight: 700, color: "#06b6d4", marginBottom: 7, display: "flex", alignItems: "center", gap: 5 }}>
+                            <span>🔍</span> Researched from real apps — {msg.discoveredFeatures.length} features built in:
+                          </div>
+                          <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+                            {msg.discoveredFeatures.slice(0, 20).map((f, i) => (
+                              <span key={i} style={{ fontSize: 10, color: "#67e8f9", background: "rgba(6,182,212,0.1)", border: "1px solid rgba(6,182,212,0.2)", padding: "2px 7px", borderRadius: 999, lineHeight: 1.6 }}>{f}</span>
+                            ))}
+                          </div>
                         </div>
                       )}
                       {done && msg.files && (

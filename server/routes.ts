@@ -3186,7 +3186,7 @@ Only mention that TurboAnswer was developed by Tiago Tschantret if directly aske
 
   // AI-generate a complete project from a single prompt
   app.post('/api/code/ai-generate', isAuthenticated, async (req: any, res) => {
-    res.setTimeout(120000);
+    res.setTimeout(180000);
     try {
       const userId = req.user.claims.sub;
       const { prompt, projectId, referenceUrl } = req.body;
@@ -3194,6 +3194,38 @@ Only mention that TurboAnswer was developed by Tiago Tschantret if directly aske
 
       const apiKey = process.env.GEMINI_API_KEY;
       if (!apiKey) return res.status(500).json({ error: 'AI not configured' });
+
+      // ── PHASE 1: Web research — find real apps, copy their features ──────────
+      async function researchAppFeatures(userPrompt: string): Promise<{ summary: string; features: string[] }> {
+        try {
+          const searchQuery = `What are all the features, UI components, and best practices in a professional "${userPrompt}" web app? List every feature from popular apps like this. Be very specific and comprehensive.`;
+          const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              tools: [{ google_search: {} }],
+              contents: [{ role: 'user', parts: [{ text: searchQuery }] }],
+              generationConfig: { temperature: 0.2, maxOutputTokens: 1200 },
+            }),
+            signal: AbortSignal.timeout(20000),
+          });
+          if (!r.ok) throw new Error(`Research HTTP ${r.status}`);
+          const d: any = await r.json();
+          const raw = d.candidates?.[0]?.content?.parts?.[0]?.text || '';
+          if (!raw) throw new Error('Empty research response');
+
+          // Extract bullet-point features
+          const lines = raw.split('\n').map((l: string) => l.replace(/^[\s\-\*•\d\.]+/, '').trim()).filter((l: string) => l.length > 8 && l.length < 200);
+          const features = lines.slice(0, 30);
+          const summary = raw.slice(0, 600);
+          return { summary, features };
+        } catch (e: any) {
+          console.log('[CodeAI] Research skipped:', e.message);
+          return { summary: '', features: [] };
+        }
+      }
+
+      const { features: discoveredFeatures, summary: researchSummary } = await researchAppFeatures(prompt.trim());
 
       // Fetch reference website for design inspiration (best-effort, 6s timeout)
       let designContext = '';
@@ -3290,13 +3322,18 @@ ${CSS_FOUNDATION}
   </style>
   <title>`;
 
-      const systemPrompt = `You are Turbo Code, an elite UI engineer who builds stunning, fully-functional web apps. You are completing an HTML document that has already started. Your output will be appended directly after "<title>". 
+      // Build research context block from discovered features
+      const featureContext = discoveredFeatures.length > 0
+        ? `\n\nWEB-RESEARCHED FEATURES — you MUST implement ALL of these in the app (found from real production apps on the web):\n${discoveredFeatures.map((f, i) => `${i + 1}. ${f}`).join('\n')}\n\nEvery single feature above must be present and working in the final app. This makes it a professional-grade, production-quality app that rivals the best apps on the market.`
+        : '';
+
+      const systemPrompt = `You are Turbo Code, an elite senior UI engineer who builds stunning, fully-functional, PROFESSIONAL web apps that rival production-quality software. You are completing an HTML document that has already started. Your output will be appended directly after "<title>". 
 
 You must output ONLY the continuation of the HTML — starting with the app title, then </title>, then complete <style>, complete <body>, and closing </html>. No markdown, no explanation, just HTML code.
 
 The <style> tag MUST NOT redefine what is already in the foundation CSS. You add ONLY the app-specific styles that extend the foundation classes. Use the CSS variables and utility classes already defined: .card, .btn, .btn-primary, .btn-secondary, .input-field, .container, .badge, .gradient-text, .animate-fadeInUp, .animate-scaleIn.
 
-Build the app to be visually stunning — dark glassmorphism aesthetic, gradient accents, smooth animations, completely working JavaScript. Every feature must work. Use localStorage for data persistence.${designContext}`;
+Build the app to be visually stunning — dark glassmorphism aesthetic, gradient accents, smooth animations, completely working JavaScript. Every feature must work. Use localStorage for data persistence. Build like a Silicon Valley senior engineer — every button works, every interaction is smooth, every edge case is handled.${featureContext}${designContext}`;
 
       const userMessage = `Build this app: ${prompt.trim()}
 
@@ -3306,7 +3343,8 @@ IMPORTANT:
 - The foundation CSS is already loaded — use its classes and variables
 - Add app-specific styles in a <style> tag after </title> in <head>
 - All JavaScript goes in a <script> tag before </body>
-- Make it beautiful, complete, and fully working`;
+- Make it beautiful, complete, fully working, and professional-grade
+- Implement ALL researched features listed above — do not skip any`;
 
       async function callClaude(maxTokens: number, timeoutMs: number): Promise<string | null> {
         if (!anthropicKey) return null;
@@ -3336,7 +3374,7 @@ IMPORTANT:
       }
 
       async function callGemini(model: string, maxTokens: number, timeoutMs: number): Promise<string | null> {
-        const geminiPrompt = `You are Turbo Code. Build a complete, stunning web app as a single self-contained HTML file.
+        const geminiPrompt = `You are Turbo Code, an elite senior engineer. Build a complete, PROFESSIONAL, production-quality web app as a single self-contained HTML file.
 
 IMPORTANT: Output ONLY the raw HTML. Start with <!DOCTYPE html>. No markdown fences, no explanation.
 
@@ -3347,12 +3385,13 @@ ${CSS_FOUNDATION}
 
 </style>
 
-Build this: ${prompt.trim()}${designContext}
+Build this: ${prompt.trim()}${featureContext}${designContext}
 
 Requirements:
 - Use Inter font (already imported above), CSS variables (--bg, --accent, --cyan etc), utility classes (.card, .btn-primary etc)
 - All JavaScript in <script> before </body>, fully working with localStorage
 - Glassmorphism cards, gradient buttons, smooth animations
+- Implement EVERY researched feature listed above — build a professional app that rivals real products
 - Start output with <!DOCTYPE html> immediately`;
 
         try {
@@ -3446,7 +3485,7 @@ Requirements:
         console.log('[CodeAI] Auto-deploy skipped:', e.message);
       }
 
-      res.json({ project, files: generatedFiles, publishUrl });
+      res.json({ project, files: generatedFiles, publishUrl, discoveredFeatures });
     } catch (e: any) {
       console.error('[CodeAI] Generate error:', e.message);
       res.status(500).json({ error: e.message });
