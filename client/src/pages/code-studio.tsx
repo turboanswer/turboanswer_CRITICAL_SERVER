@@ -180,16 +180,29 @@ export default function CodeStudio() {
   const [showBuyCredits, setShowBuyCredits] = useState(false);
   const [buyingCredits, setBuyingCredits] = useState(false);
   const [selectedPack, setSelectedPack] = useState<number>(1000); // default $10
-  const [lastBuildCost, setLastBuildCost] = useState<{ cents: number; lines: number } | null>(null);
+  const [lastBuildCost, setLastBuildCost] = useState<{ cents: number; tierLabel: string } | null>(null);
 
-  // Per-line pricing: $0.02/line, 10 lines = $0.20
+  // Complexity-based pricing
+  const COMPLEXITY_TIERS: Record<string, { label: string; emoji: string; cents: number; desc: string; color: string }> = {
+    micro:    { label: "Micro",    emoji: "⚡", cents: 10,  desc: "Single widget or minimal UI", color: "#94a3b8" },
+    simple:   { label: "Simple",   emoji: "🟢", cents: 35,  desc: "Small interactive app", color: "#22c55e" },
+    standard: { label: "Standard", emoji: "🔵", cents: 75,  desc: "Full-featured app", color: "#3b82f6" },
+    complex:  { label: "Complex",  emoji: "🟣", cents: 150, desc: "Advanced multi-feature app", color: "#a855f7" },
+    advanced: { label: "Advanced", emoji: "🔴", cents: 300, desc: "Professional-grade application", color: "#ef4444" },
+  };
+
+  type ComplexityEstimate = { tier: string; label: string; emoji: string; cents: number; display: string; description: string };
+  const [complexityEstimate, setComplexityEstimate] = useState<ComplexityEstimate | null>(null);
+  const [pendingBuildPrompt, setPendingBuildPrompt] = useState<string | null>(null);
+  const [isEstimating, setIsEstimating] = useState(false);
+
   // Pack key = cents to add, price = USD charged
   const CREDIT_PACKS = [
-    { cents: 500,   price: 5,   lines: 250 },
-    { cents: 1000,  price: 10,  lines: 500 },
-    { cents: 2500,  price: 25,  lines: 1250 },
-    { cents: 5000,  price: 50,  lines: 2500 },
-    { cents: 10000, price: 100, lines: 5000 },
+    { cents: 500,   price: 5  },
+    { cents: 1000,  price: 10 },
+    { cents: 2500,  price: 25 },
+    { cents: 5000,  price: 50 },
+    { cents: 10000, price: 100 },
   ];
 
   const formatDollars = (cents: number) => `$${(cents / 100).toFixed(2)}`;
@@ -333,7 +346,7 @@ export default function CodeStudio() {
 
   async function sendMessage() {
     const msg = input.trim();
-    if (!msg || agentLoading) return;
+    if (!msg || agentLoading || isEstimating || complexityEstimate) return;
     setInput("");
     setAgentLoading(true);
 
@@ -370,14 +383,41 @@ export default function CodeStudio() {
     }
   }
 
-  async function triggerBuild(buildPrompt: string, originalMsg?: string) {
+  // Step 1: estimate complexity and show confirmation
+  async function triggerBuild(buildPrompt: string, _originalMsg?: string) {
+    setIsEstimating(true);
+    try {
+      const res = await fetch("/api/code/estimate-complexity", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ prompt: buildPrompt }),
+      });
+      const estimate: ComplexityEstimate = await res.json();
+      setComplexityEstimate(estimate);
+      setPendingBuildPrompt(buildPrompt);
+    } catch {
+      // fallback: use standard tier and proceed
+      setComplexityEstimate({ tier: "standard", label: "Standard", emoji: "🔵", cents: 75, display: "$0.75", description: "Full-featured app" });
+      setPendingBuildPrompt(buildPrompt);
+    } finally {
+      setIsEstimating(false);
+    }
+  }
+
+  // Step 2: user confirmed → actually build
+  async function confirmBuild() {
+    if (!pendingBuildPrompt || !complexityEstimate) return;
+    const buildPrompt = pendingBuildPrompt;
+    const agreedCostCents = complexityEstimate.cents;
+    const tierLabel = complexityEstimate.label;
+
+    setComplexityEstimate(null);
+    setPendingBuildPrompt(null);
+
     const buildMsgId = uid();
     setBuildingMsgId(buildMsgId);
-
-    setMessages(prev => [...prev, {
-      id: buildMsgId, role: "building", content: "",
-      buildPrompt, buildPhase: 0, buildDone: false,
-    }]);
+    setMessages(prev => [...prev, { id: buildMsgId, role: "building", content: "", buildPrompt, buildPhase: 0, buildDone: false }]);
 
     let phase = 0;
     const phaseInterval = setInterval(() => {
@@ -390,7 +430,7 @@ export default function CodeStudio() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ prompt: buildPrompt, projectId: undefined }),
+        body: JSON.stringify({ prompt: buildPrompt, projectId: undefined, agreedCostCents }),
       });
       const data = await res.json();
       clearInterval(phaseInterval);
@@ -398,7 +438,7 @@ export default function CodeStudio() {
       if (res.status === 402 && data.outOfCredits) {
         const bal = data.creditsDisplay || formatDollars(data.credits ?? 0);
         setMessages(prev => prev.map(m => m.id === buildMsgId ? {
-          ...m, buildDone: true, content: `Insufficient balance (${bal} remaining — need at least $0.20). Add budget to keep building!`, role: "system",
+          ...m, buildDone: true, content: `Insufficient balance (${bal} remaining — this build costs ${formatDollars(agreedCostCents)}). Add budget to keep building!`, role: "system",
         } : m));
         setBuildingMsgId(null);
         setCredits(data.credits ?? 0);
@@ -431,16 +471,14 @@ export default function CodeStudio() {
       }
 
       if (data.creditsRemaining !== undefined) setCredits(data.creditsRemaining);
-      if (data.costCents && data.linesGenerated) {
-        setLastBuildCost({ cents: data.costCents, lines: data.linesGenerated });
-      }
+      if (data.costCents) setLastBuildCost({ cents: data.costCents, tierLabel });
+
       setMessages(prev => prev.map(m => m.id === buildMsgId ? {
         ...m, buildPhase: BUILD_PHASES.length - 1, buildDone: true,
         deployUrl: liveUrl || undefined,
         files: generatedFiles.map(f => f.name),
         discoveredFeatures: data.discoveredFeatures || [],
         costDisplay: data.costDisplay,
-        linesGenerated: data.linesGenerated,
         balanceDisplay: data.balanceDisplay,
       } : m));
       setBuildingMsgId(null);
@@ -453,6 +491,11 @@ export default function CodeStudio() {
       setBuildingMsgId(null);
       toast({ title: "Build failed", description: e.message, variant: "destructive" });
     }
+  }
+
+  function cancelBuild() {
+    setComplexityEstimate(null);
+    setPendingBuildPrompt(null);
   }
 
   async function saveProject() {
@@ -592,7 +635,7 @@ export default function CodeStudio() {
             <span style={{ fontSize: 18 }}>🎉</span>
             <div>
               <div style={{ fontSize: 13, fontWeight: 700, color: "#6ee7b7" }}>7-Day Free Trial</div>
-              <div style={{ fontSize: 12, color: C.muted }}>Try it free with 5 AI credits — no charge for 7 days</div>
+              <div style={{ fontSize: 12, color: C.muted }}>Try it free — $1.00 trial budget, no charge for 7 days</div>
             </div>
           </div>
           <div style={{ background: "rgba(16,185,129,0.06)", border: "1px solid rgba(16,185,129,0.2)", borderRadius: 12, padding: "14px 20px", marginBottom: 12, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -606,7 +649,7 @@ export default function CodeStudio() {
             </div>
           </div>
           <div style={{ background: "rgba(124,58,237,0.06)", border: "1px solid rgba(124,58,237,0.15)", borderRadius: 10, padding: "10px 16px", marginBottom: 16, fontSize: 12, color: C.muted }}>
-            Priced at <strong style={{ color: C.text }}>$0.02/line</strong> — 10 lines = $0.20. Need more? Add budget packs from $5. Pack budget never expires.
+            Priced by <strong style={{ color: C.text }}>task complexity</strong> — Simple $0.35 · Standard $0.75 · Complex $1.50. Budget packs from $5. Pack budget never expires.
           </div>
           {isEnterprise && (
             <div style={{ marginBottom: 12, padding: "10px 16px", background: "rgba(251,188,5,0.08)", border: "1px solid rgba(251,188,5,0.3)", borderRadius: 10, fontSize: 13, color: "#FCD34D", fontWeight: 600, textAlign: "center" as const }}>
@@ -689,7 +732,7 @@ export default function CodeStudio() {
 
         <div style={{ flex: 1 }} />
 
-        {/* Budget Bar ($0.02/line, max $15/month) */}
+        {/* Budget Bar (complexity pricing, $15/month reset) */}
         {(() => {
           const MAX_CENTS = 1500; // $15.00/month
           const pct = credits === null ? 0 : Math.min(100, Math.round((credits / MAX_CENTS) * 100));
@@ -701,7 +744,7 @@ export default function CodeStudio() {
           return (
             <button
               onClick={() => setShowBuyCredits(true)}
-              title={`${display} budget remaining · $0.02/line · click to add more`}
+              title={`${display} budget remaining · complexity pricing · click to add more`}
               style={{ display: "flex", alignItems: "center", gap: 6, background: "rgba(255,255,255,0.04)", border: `1px solid ${C.border}`, borderRadius: 7, padding: "5px 10px", cursor: "pointer" }}>
               <Zap style={{ width: 10, height: 10, color: barColor, flexShrink: 0 }} />
               <span style={{ fontSize: 11, fontWeight: 700, color: textColor, minWidth: 34 }}>
@@ -845,11 +888,20 @@ export default function CodeStudio() {
                       </div>
                     </div>
 
-                    {done && msg.deployUrl && (
-                      <a href={msg.deployUrl} target="_blank" rel="noopener noreferrer"
-                        style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "rgba(16,185,129,0.1)", border: "1px solid rgba(16,185,129,0.25)", borderRadius: 8, padding: "7px 14px", color: C.green, textDecoration: "none", fontSize: 12, fontWeight: 600, marginBottom: 10 }}>
-                        <Globe style={{ width: 13, height: 13 }} /> Open live app <ExternalLink style={{ width: 11, height: 11 }} />
-                      </a>
+                    {done && (
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
+                        {msg.deployUrl && (
+                          <a href={msg.deployUrl} target="_blank" rel="noopener noreferrer"
+                            style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "rgba(16,185,129,0.1)", border: "1px solid rgba(16,185,129,0.25)", borderRadius: 8, padding: "7px 14px", color: C.green, textDecoration: "none", fontSize: 12, fontWeight: 600 }}>
+                            <Globe style={{ width: 13, height: 13 }} /> Open live app <ExternalLink style={{ width: 11, height: 11 }} />
+                          </a>
+                        )}
+                        {msg.costDisplay && (
+                          <span style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 11, color: C.muted, background: "rgba(255,255,255,0.04)", border: `1px solid ${C.border}`, borderRadius: 8, padding: "5px 10px" }}>
+                            <Zap style={{ width: 10, height: 10, color: "#a78bfa" }} /> {msg.costDisplay} charged · {msg.balanceDisplay} left
+                          </span>
+                        )}
+                      </div>
                     )}
 
                     {done && msg.discoveredFeatures && msg.discoveredFeatures.length > 0 && (
@@ -1129,7 +1181,68 @@ export default function CodeStudio() {
         </div>
       )}
 
-      {/* ── Buy Credits Modal ────────────────────────────────────────────────── */}
+      {/* ── Complexity Estimate Confirmation Modal ── */}
+      {(complexityEstimate || isEstimating) && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.75)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 9999, padding: 20 }}>
+          <div style={{ background: C.panel, border: `1px solid ${C.border}`, borderRadius: 20, width: "100%", maxWidth: 440, padding: 28, boxShadow: "0 20px 60px rgba(0,0,0,0.7)" }}>
+            {isEstimating ? (
+              <div style={{ textAlign: "center", padding: "20px 0" }}>
+                <div style={{ fontSize: 32, marginBottom: 12 }}>🔍</div>
+                <div style={{ fontWeight: 700, fontSize: 16, color: C.text, marginBottom: 6 }}>Analyzing complexity...</div>
+                <div style={{ fontSize: 13, color: C.muted }}>Estimating the build cost for your project</div>
+              </div>
+            ) : complexityEstimate ? (
+              <>
+                <div style={{ textAlign: "center", marginBottom: 20 }}>
+                  <div style={{ fontSize: 42, marginBottom: 8 }}>{complexityEstimate.emoji}</div>
+                  <div style={{ fontWeight: 800, fontSize: 20, color: C.text, marginBottom: 4 }}>
+                    {complexityEstimate.label} Build
+                  </div>
+                  <div style={{ fontSize: 13, color: C.muted, marginBottom: 16 }}>{complexityEstimate.description}</div>
+
+                  <div style={{ display: "inline-flex", alignItems: "baseline", gap: 4, background: "rgba(124,58,237,0.1)", border: "1px solid rgba(124,58,237,0.3)", borderRadius: 12, padding: "10px 24px", marginBottom: 8 }}>
+                    <span style={{ fontSize: 36, fontWeight: 900, color: "#a78bfa" }}>{complexityEstimate.display}</span>
+                    <span style={{ fontSize: 14, color: C.muted }}>will be deducted</span>
+                  </div>
+
+                  <div style={{ fontSize: 12, color: C.muted }}>
+                    Balance after: <strong style={{ color: "#a3e635" }}>{credits !== null ? formatDollars(Math.max(0, credits - complexityEstimate.cents)) : "..."}</strong>
+                  </div>
+                </div>
+
+                {/* All 5 tiers reference */}
+                <div style={{ background: "rgba(255,255,255,0.03)", borderRadius: 10, padding: "10px 14px", marginBottom: 18, border: `1px solid ${C.border}` }}>
+                  <div style={{ fontSize: 11, color: C.muted, marginBottom: 8, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.08em" }}>Pricing Tiers</div>
+                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                    {Object.entries(COMPLEXITY_TIERS).map(([key, tier]) => (
+                      <div key={key} style={{
+                        padding: "4px 10px", borderRadius: 6, fontSize: 11, fontWeight: 600,
+                        background: key === complexityEstimate.tier ? `${tier.color}20` : "rgba(255,255,255,0.04)",
+                        border: `1px solid ${key === complexityEstimate.tier ? `${tier.color}60` : C.border}`,
+                        color: key === complexityEstimate.tier ? tier.color : C.muted,
+                      }}>
+                        {tier.emoji} {tier.label} · {formatDollars(tier.cents)}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                  <button onClick={cancelBuild}
+                    style={{ padding: "13px", borderRadius: 10, background: "rgba(255,255,255,0.05)", border: `1px solid ${C.border}`, color: C.muted, cursor: "pointer", fontWeight: 600, fontSize: 14 }}>
+                    Cancel
+                  </button>
+                  <button onClick={confirmBuild}
+                    style={{ padding: "13px", borderRadius: 10, background: "linear-gradient(135deg, #7c3aed, #06b6d4)", border: "none", color: "#fff", cursor: "pointer", fontWeight: 700, fontSize: 14 }}>
+                    Build It — {complexityEstimate.display}
+                  </button>
+                </div>
+              </>
+            ) : null}
+          </div>
+        </div>
+      )}
+
       {showBuyCredits && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 9999, padding: 20 }}>
           <div style={{ background: C.panel, border: `1px solid ${C.border}`, borderRadius: 20, width: "100%", maxWidth: 480, padding: 28, boxShadow: "0 20px 60px rgba(0,0,0,0.7)" }}>
@@ -1149,25 +1262,22 @@ export default function CodeStudio() {
             </div>
 
             <div style={{ marginBottom: 12, padding: "10px 14px", background: "rgba(124,58,237,0.06)", borderRadius: 10, border: "1px solid rgba(124,58,237,0.15)" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 20, fontSize: 13 }}>
-                <div style={{ textAlign: "center" }}>
-                  <div style={{ fontWeight: 700, color: C.text, fontSize: 15 }}>$0.02</div>
-                  <div style={{ color: C.muted, fontSize: 11 }}>per line</div>
-                </div>
-                <div style={{ width: 1, height: 30, background: C.border }} />
-                <div style={{ textAlign: "center" }}>
-                  <div style={{ fontWeight: 700, color: C.text, fontSize: 15 }}>10 lines</div>
-                  <div style={{ color: C.muted, fontSize: 11 }}>= $0.20</div>
-                </div>
-                <div style={{ width: 1, height: 30, background: C.border }} />
-                <div style={{ textAlign: "center" }}>
-                  <div style={{ fontWeight: 700, color: C.text, fontSize: 15 }}>$15.00</div>
-                  <div style={{ color: C.muted, fontSize: 11 }}>monthly reset</div>
-                </div>
+              <div style={{ fontSize: 12, color: C.muted, marginBottom: 8, fontWeight: 600 }}>Complexity-based pricing:</div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6, fontSize: 11 }}>
+                {[
+                  { tier: "Simple",   price: "$0.35", color: "#22c55e" },
+                  { tier: "Standard", price: "$0.75", color: "#3b82f6" },
+                  { tier: "Complex",  price: "$1.50", color: "#a855f7" },
+                ].map(({ tier, price, color }) => (
+                  <div key={tier} style={{ textAlign: "center", padding: "6px 4px", borderRadius: 8, background: `${color}10`, border: `1px solid ${color}25` }}>
+                    <div style={{ fontWeight: 700, color, fontSize: 13 }}>{price}</div>
+                    <div style={{ color: C.muted, fontSize: 10, marginTop: 1 }}>{tier}</div>
+                  </div>
+                ))}
               </div>
               {nextReset && (
                 <p style={{ color: "#fbbf24", fontSize: 11, margin: "8px 0 0" }}>
-                  Monthly reset: {nextReset.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}
+                  Monthly $15 reset: {nextReset.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}
                 </p>
               )}
             </div>
@@ -1177,19 +1287,22 @@ export default function CodeStudio() {
 
             <div style={{ fontSize: 12, fontWeight: 700, color: C.muted, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 12 }}>Add budget</div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 20 }}>
-              {CREDIT_PACKS.map(pack => (
-                <button key={pack.cents}
-                  onClick={() => setSelectedPack(pack.cents)}
-                  style={{
-                    background: selectedPack === pack.cents ? "rgba(124,58,237,0.15)" : "rgba(255,255,255,0.03)",
-                    border: `1px solid ${selectedPack === pack.cents ? "rgba(124,58,237,0.5)" : C.border}`,
-                    borderRadius: 10, padding: "12px 10px", cursor: "pointer", textAlign: "center" as const, transition: "all 0.15s",
-                  }}>
-                  <div style={{ fontSize: 20, fontWeight: 800, color: C.text }}>${pack.price}</div>
-                  <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>~{pack.lines.toLocaleString()} lines</div>
-                  <div style={{ fontSize: 10, color: "#a78bfa", marginTop: 4 }}>{formatDollars(pack.cents)} budget</div>
-                </button>
-              ))}
+              {CREDIT_PACKS.map(pack => {
+                const stdBuilds = Math.floor(pack.cents / 75);
+                return (
+                  <button key={pack.cents}
+                    onClick={() => setSelectedPack(pack.cents)}
+                    style={{
+                      background: selectedPack === pack.cents ? "rgba(124,58,237,0.15)" : "rgba(255,255,255,0.03)",
+                      border: `1px solid ${selectedPack === pack.cents ? "rgba(124,58,237,0.5)" : C.border}`,
+                      borderRadius: 10, padding: "12px 10px", cursor: "pointer", textAlign: "center" as const, transition: "all 0.15s",
+                    }}>
+                    <div style={{ fontSize: 20, fontWeight: 800, color: C.text }}>${pack.price}</div>
+                    <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>~{stdBuilds} Standard builds</div>
+                    <div style={{ fontSize: 10, color: "#a78bfa", marginTop: 4 }}>{formatDollars(pack.cents)} budget</div>
+                  </button>
+                );
+              })}
             </div>
 
             <button

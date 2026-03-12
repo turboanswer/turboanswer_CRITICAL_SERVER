@@ -3202,6 +3202,63 @@ Only mention that TurboAnswer was developed by Tiago Tschantret if directly aske
     next();
   });
 
+  // Estimate complexity of a build prompt → returns tier + cost before building
+  app.post('/api/code/estimate-complexity', isAuthenticated, async (req: any, res) => {
+    const { prompt } = req.body;
+    if (!prompt?.trim()) return res.status(400).json({ error: 'Prompt required' });
+
+    const TIERS: Record<string, { label: string; cents: number; emoji: string; desc: string }> = {
+      micro:    { label: 'Micro',    cents: 10,  emoji: '⚡', desc: 'Single element or minimal widget (clock, counter, color picker)' },
+      simple:   { label: 'Simple',   cents: 35,  emoji: '🟢', desc: 'Small interactive app (calculator, to-do list, quiz, timer)' },
+      standard: { label: 'Standard', cents: 75,  emoji: '🔵', desc: 'Full-featured app (notes, weather, landing page, medium game)' },
+      complex:  { label: 'Complex',  cents: 150, emoji: '🟣', desc: 'Advanced app (CRUD, multi-page, complex state, API integrations)' },
+      advanced: { label: 'Advanced', cents: 300, emoji: '🔴', desc: 'Professional-grade (dashboard, real-time app, large-scale project)' },
+    };
+
+    try {
+      const apiKey = process.env.GEMINI_API_KEY;
+      if (!apiKey) throw new Error('No API key');
+
+      const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ role: 'user', parts: [{ text: `Classify this web app build complexity. Reply with ONLY one word.
+
+TIERS:
+- micro: Single widget (clock, counter, color picker, basic animation, single button)
+- simple: Small app (calculator, to-do list, quiz, timer, contact form)
+- standard: Full app with multiple features (notes app, weather widget, landing page, game, data tables)
+- complex: Advanced (multi-page, CRUD with storage, complex state, real-time, API calls, charts)
+- advanced: Professional-grade (complete dashboard, e-commerce, multi-feature platform, large scale)
+
+Build request: "${prompt.trim().slice(0, 300)}"
+
+Reply with exactly one word (micro/simple/standard/complex/advanced):` }] }],
+          generationConfig: { temperature: 0, maxOutputTokens: 10 },
+        }),
+        signal: AbortSignal.timeout(8000),
+      });
+
+      const d: any = await r.json();
+      const raw = d.candidates?.[0]?.content?.parts?.[0]?.text?.trim().toLowerCase().replace(/[^a-z]/g, '') || 'standard';
+      const tierKey = TIERS[raw] ? raw : 'standard';
+      const tier = TIERS[tierKey];
+
+      return res.json({
+        tier: tierKey,
+        label: tier.label,
+        emoji: tier.emoji,
+        cents: tier.cents,
+        display: `$${(tier.cents / 100).toFixed(2)}`,
+        description: tier.desc,
+      });
+    } catch {
+      const tier = TIERS.standard;
+      return res.json({ tier: 'standard', label: tier.label, emoji: tier.emoji, cents: tier.cents, display: `$${(tier.cents / 100).toFixed(2)}`, description: tier.desc });
+    }
+  });
+
   // AI-generate a complete project from a single prompt
   app.post('/api/code/ai-generate', isAuthenticated, async (req: any, res) => {
     res.setTimeout(180000);
@@ -3210,21 +3267,28 @@ Only mention that TurboAnswer was developed by Tiago Tschantret if directly aske
       const { prompt, projectId, referenceUrl } = req.body;
       if (!prompt?.trim()) return res.status(400).json({ error: 'Prompt required' });
 
-      // ── Credit check (per-line pricing: $0.02/line, 10 lines = $0.20) ───────
+      // ── Complexity-based billing ──────────────────────────────────────────────
+      // Tiers: micro=10¢, simple=35¢, standard=75¢, complex=150¢, advanced=300¢
+      const VALID_COST_CENTS = [10, 35, 75, 150, 300];
+      const agreedCostCents = VALID_COST_CENTS.includes(Number(req.body.agreedCostCents))
+        ? Number(req.body.agreedCostCents)
+        : 75; // default to standard if not provided
+
       const currentUser = await storage.getUser(userId);
       if (!currentUser) return res.status(403).json({ error: 'User not found' });
       const availableCents = currentUser.codeStudioCredits ?? 0;
-      const MIN_COST_CENTS = 20; // minimum charge = $0.20 (one 10-line block)
-      if (availableCents < MIN_COST_CENTS) {
+
+      if (availableCents < agreedCostCents) {
         return res.status(402).json({
-          error: 'Insufficient balance. You need at least $0.20 to generate code. Add budget to continue.',
+          error: `Insufficient balance. This build costs $${(agreedCostCents / 100).toFixed(2)} but you only have $${(availableCents / 100).toFixed(2)}. Add budget to continue.`,
           outOfCredits: true,
           credits: availableCents,
           creditsDisplay: `$${(availableCents / 100).toFixed(2)}`,
+          requiredCents: agreedCostCents,
         });
       }
-      // Reserve minimum upfront to prevent duplicate submits bypassing the check
-      await storage.updateCodeStudioCredits(userId, availableCents - MIN_COST_CENTS);
+      // Deduct full cost upfront
+      await storage.updateCodeStudioCredits(userId, availableCents - agreedCostCents);
 
       const apiKey = process.env.GEMINI_API_KEY;
       if (!apiKey) return res.status(500).json({ error: 'AI not configured' });
@@ -3539,23 +3603,15 @@ CRITICAL JAVASCRIPT RULES (ALL must be followed):
         console.log('[CodeAI] Auto-deploy skipped:', e.message);
       }
 
-      // ── Per-line billing: count all generated lines, deduct exact cost ───────
-      const totalLines = generatedFiles.reduce((sum: number, f: any) => {
-        return sum + (f.content || '').split('\n').length;
-      }, 0);
-      const costCents = Math.max(MIN_COST_CENTS, Math.ceil(totalLines) * 2); // $0.02/line
-      // We already reserved MIN_COST_CENTS; now deduct the remainder (if any)
-      const afterReserve = (availableCents - MIN_COST_CENTS);
-      const additionalDeduct = Math.max(0, costCents - MIN_COST_CENTS);
-      const finalBalance = Math.max(0, afterReserve - additionalDeduct);
-      await storage.updateCodeStudioCredits(userId, finalBalance).catch(() => {});
-      console.log(`[Credits] User ${userId}: ${totalLines} lines generated → cost $${(costCents/100).toFixed(2)} → balance $${(finalBalance/100).toFixed(2)}`);
+      // ── Complexity billing: cost was already deducted upfront ───────────────
+      const costCents = agreedCostCents;
+      const finalBalance = availableCents - costCents;
+      console.log(`[Credits] User ${userId}: complexity build → cost $${(costCents/100).toFixed(2)} → balance $${(finalBalance/100).toFixed(2)}`);
 
       const freshUser = await storage.getUser(userId).catch(() => null);
       res.json({
         project, files: generatedFiles, publishUrl, discoveredFeatures,
         creditsRemaining: freshUser?.codeStudioCredits ?? finalBalance,
-        linesGenerated: totalLines,
         costCents,
         costDisplay: `$${(costCents / 100).toFixed(2)}`,
         balanceDisplay: `$${(finalBalance / 100).toFixed(2)}`,

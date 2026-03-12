@@ -203,7 +203,7 @@ export default function Home() {
                   Type your idea in plain English. Gemini 3.1 Pro + Claude design, write, and ship your entire app — HTML, CSS, JS — in under 30 seconds.
                 </p>
                 <p className="text-sm mb-5" style={{ color: "#a78bfa" }}>
-                  Priced at $0.02/line · 10 lines = $0.20 · {isEnterprise ? "$15/mo FREE with Enterprise" : "$15/mo after trial"}
+                  Complexity pricing · Simple $0.35 · Standard $0.75 · Complex $1.50 · {isEnterprise ? "$15/mo FREE with Enterprise" : "$15/mo after trial"}
                 </p>
 
                 <div className="flex flex-wrap gap-2 mb-6">
