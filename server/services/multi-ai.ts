@@ -121,7 +121,9 @@ export async function generateAIResponse(
   subscriptionTier: string = "free",
   selectedModel?: string,
   userId?: string,
-  userLanguage: string = "en"
+  userLanguage: string = "en",
+  responseStyle: string = "balanced",
+  responseTone: string = "casual"
 ): Promise<string> {
   try {
     let additionalContext = "";
@@ -165,6 +167,21 @@ export async function generateAIResponse(
     const languageInstruction = userLanguage !== "en" ? 
       `CRITICAL: Respond in ${userLanguage} language. ALL responses must be in ${userLanguage}.` : "";
 
+    const styleMap: Record<string, string> = {
+      concise: "Keep responses brief and to the point. Use short sentences.",
+      balanced: "",
+      detailed: "Give thorough, comprehensive answers with full explanations, examples, and context.",
+    };
+    const toneMap: Record<string, string> = {
+      casual: "Use a friendly, conversational tone.",
+      professional: "Use a formal, professional tone.",
+      creative: "Be creative and expressive in your responses.",
+      academic: "Use an academic, scholarly tone with precise language.",
+    };
+    const styleInstruction = styleMap[responseStyle] || "";
+    const toneInstruction = toneMap[responseTone] || "";
+    const behaviorInstruction = [styleInstruction, toneInstruction].filter(Boolean).join(" ");
+
     const recentHistory = conversationHistory.slice(-2).map(m => `${m.role}: ${m.content.slice(0, 500)}`).join('\n');
 
     const geminiApiKey = process.env.GEMINI_API_KEY;
@@ -175,13 +192,13 @@ export async function generateAIResponse(
       if (complexity === 'simple') {
         // Simple queries → Gemini Flash Lite (fast, cheap, same quality for simple)
         if (!geminiApiKey) return "API key not configured.";
-        const systemPrompt = `You are Turbo Answer Research. Answer questions directly and concisely. Never discuss your own state, feelings, or load. Only mention TurboAnswer was developed by Tiago Tschantret if directly asked.${languageInstruction ? ' ' + languageInstruction : ''}${additionalContext}`;
+        const systemPrompt = `You are Turbo Answer Research. Answer questions directly and concisely. Never discuss your own state, feelings, or load. Only mention TurboAnswer was developed by Tiago Tschantret if directly asked.${behaviorInstruction ? ' ' + behaviorInstruction : ''}${languageInstruction ? ' ' + languageInstruction : ''}${additionalContext}`;
         const fullPrompt = recentHistory ? `${systemPrompt}\n\nContext:\n${recentHistory}\n\nUser: ${enhancedMessage}` : `${systemPrompt}\n\nUser: ${enhancedMessage}`;
         console.log(`[AI] Research/simple → Gemini Flash Lite`);
         return await callGemini(fullPrompt, 'gemini-3.1-flash-lite-preview', 2000, 0.4, geminiApiKey);
       } else {
         // Complex queries → Claude Opus 4.5 primary, Gemini 3.1 Pro fallback
-        const systemPrompt = `You are Turbo Answer Research, powered by Claude and Gemini. Give expert-level responses. Answer directly, use structure (headings, bullets) for complex topics, calibrate length to the question. Never discuss your own state or feelings. Only mention TurboAnswer was developed by Tiago Tschantret if directly asked.${languageInstruction ? ' ' + languageInstruction : ''}${additionalContext}`;
+        const systemPrompt = `You are Turbo Answer Research, powered by Claude and Gemini. Give expert-level responses. Answer directly, use structure (headings, bullets) for complex topics, calibrate length to the question. Never discuss your own state or feelings. Only mention TurboAnswer was developed by Tiago Tschantret if directly asked.${behaviorInstruction ? ' ' + behaviorInstruction : ''}${languageInstruction ? ' ' + languageInstruction : ''}${additionalContext}`;
         const fullPrompt = recentHistory ? `${systemPrompt}\n\nContext:\n${recentHistory}\n\nUser: ${enhancedMessage}` : `${systemPrompt}\n\nUser: ${enhancedMessage}`;
 
         console.log(`[AI] Research/complex → Claude primary`);
@@ -196,14 +213,14 @@ export async function generateAIResponse(
     } else if (selectedModel === 'gemini-pro') {
       // Pro tier ($6.99) → Gemini Flash
       if (!geminiApiKey) return "API key not configured.";
-      const systemPrompt = `You are Turbo Answer. Answer questions directly and helpfully. Never discuss your own state, feelings, or system load. Only mention TurboAnswer was developed by Tiago Tschantret if directly asked.${languageInstruction ? ' ' + languageInstruction : ''}${additionalContext}`;
+      const systemPrompt = `You are Turbo Answer. Answer questions directly and helpfully. Never discuss your own state, feelings, or system load. Only mention TurboAnswer was developed by Tiago Tschantret if directly asked.${behaviorInstruction ? ' ' + behaviorInstruction : ''}${languageInstruction ? ' ' + languageInstruction : ''}${additionalContext}`;
       const fullPrompt = recentHistory ? `${systemPrompt}\n\nContext:\n${recentHistory}\n\nUser: ${enhancedMessage}` : `${systemPrompt}\n\nUser: ${enhancedMessage}`;
       console.log(`[AI] Pro → Gemini Flash Lite`);
       return await callGemini(fullPrompt, 'gemini-3.1-flash-lite-preview', 4000, 0.3, geminiApiKey);
     } else {
       // Free tier → Gemini Flash Lite
       if (!geminiApiKey) return "API key not configured.";
-      const systemPrompt = `You are Turbo Answer. Answer questions directly and helpfully. Keep responses concise unless detail is needed. Never discuss your own state, feelings, or system load. Only mention TurboAnswer was developed by Tiago Tschantret if directly asked.${languageInstruction ? ' ' + languageInstruction : ''}${additionalContext}`;
+      const systemPrompt = `You are Turbo Answer. Answer questions directly and helpfully. Keep responses concise unless detail is needed. Never discuss your own state, feelings, or system load. Only mention TurboAnswer was developed by Tiago Tschantret if directly asked.${behaviorInstruction ? ' ' + behaviorInstruction : ''}${languageInstruction ? ' ' + languageInstruction : ''}${additionalContext}`;
       const fullPrompt = recentHistory ? `${systemPrompt}\n\nContext:\n${recentHistory}\n\nUser: ${enhancedMessage}` : `${systemPrompt}\n\nUser: ${enhancedMessage}`;
       console.log(`[AI] Free → Gemini Flash Lite`);
       return await callGemini(fullPrompt, 'gemini-3.1-flash-lite-preview', 2000, 0.4, geminiApiKey);

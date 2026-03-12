@@ -725,7 +725,9 @@ function downloadAAB(){
           "premium",
           req.body.selectedModel || "auto-select",
           userId,
-          req.body.language || "en"
+          req.body.language || "en",
+          req.body.responseStyle || "balanced",
+          req.body.responseTone || "casual"
         );
       }
 

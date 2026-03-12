@@ -52,6 +52,20 @@ export default function Chat() {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const timedPromoShown = useRef(false);
 
+  // Read user preferences from Settings page
+  const getPref = <T,>(key: string, def: T): T => {
+    try { const s = localStorage.getItem(key); return s !== null ? JSON.parse(s) as T : def; } catch { return def; }
+  };
+  const sendOnEnterPref = getPref("pref_sendOnEnter", true);
+  const autoScrollPref = getPref("pref_autoScroll", true);
+  const showTimestampsPref = getPref("pref_showTimestamps", true);
+  const responseStylePref = getPref<string>("pref_responseStyle", "balanced");
+  const responseTonePref = getPref<string>("pref_responseTone", "casual");
+  const autoReadPref = getPref("pref_autoRead", false);
+  const voiceSpeedPref = getPref<string>("pref_voiceSpeed", "normal");
+  const voicePitchPref = getPref<string>("pref_voicePitch", "normal");
+  const voiceGenderPref = getPref<string>("pref_voiceGender", "default");
+
   const { user, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const queryClient = useQueryClient();
@@ -169,6 +183,7 @@ export default function Chat() {
     mutationFn: async ({ content, convId }: { content: string; convId: number }) => {
       const response = await apiRequest("POST", `/api/conversations/${convId}/messages`, {
         content, selectedModel: selectedAIModel, language: currentLanguage,
+        responseStyle: responseStylePref, responseTone: responseTonePref,
       });
       return response.json();
     },
@@ -194,7 +209,31 @@ export default function Chat() {
     }
   }, [conversations, currentConversationId]);
 
-  useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages, isTyping]);
+  useEffect(() => {
+    if (autoScrollPref) messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, isTyping]);
+
+  // Auto-read AI responses aloud when pref is enabled
+  useEffect(() => {
+    if (!autoReadPref || !messages || messages.length === 0) return;
+    const last = messages[messages.length - 1];
+    if (last.role !== 'assistant') return;
+    if (!('speechSynthesis' in window)) return;
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(last.content.replace(/[#*`_~]/g, '').slice(0, 2000));
+    utterance.rate = voiceSpeedPref === 'slow' ? 0.75 : voiceSpeedPref === 'fast' ? 1.5 : 1;
+    utterance.pitch = voicePitchPref === 'low' ? 0.6 : voicePitchPref === 'high' ? 1.5 : 1;
+    if (voiceGenderPref !== 'default') {
+      const voices = window.speechSynthesis.getVoices();
+      const femaleNames = /female|woman|girl|zira|samantha|karen|victoria|fiona|moira|tessa|veena|nicky|kate|susan|serena|heather|eva|joanna|kendra|kimberly|salli|ivy|jacki/i;
+      const maleNames = /male|man|david|mark|james|richard|daniel|fred|thomas|alex/i;
+      const match = voiceGenderPref === 'female'
+        ? voices.find(v => femaleNames.test(v.name))
+        : voices.find(v => maleNames.test(v.name) && !femaleNames.test(v.name));
+      if (match) utterance.voice = match;
+    }
+    window.speechSynthesis.speak(utterance);
+  }, [messages]);
 
   useEffect(() => {
     if (textareaRef.current) {
@@ -238,7 +277,7 @@ export default function Chat() {
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendWithPromo(); }
+    if (e.key === 'Enter' && !e.shiftKey && sendOnEnterPref) { e.preventDefault(); handleSendWithPromo(); }
   };
 
   const handleLanguageChange = (languageCode: string) => {
@@ -746,9 +785,11 @@ export default function Chat() {
                 }`}>
                   {renderMessageContent(message.content, message.role)}
                 </div>
-                <div className={`text-[10px] mt-1 ${message.role === 'user' ? 'mr-1 text-right' : 'ml-1'} ${isDark ? 'text-zinc-600' : 'text-gray-400'}`}>
-                  {formatTimestamp(message.timestamp)}
-                </div>
+                {showTimestampsPref && (
+                  <div className={`text-[10px] mt-1 ${message.role === 'user' ? 'mr-1 text-right' : 'ml-1'} ${isDark ? 'text-zinc-600' : 'text-gray-400'}`}>
+                    {formatTimestamp(message.timestamp)}
+                  </div>
+                )}
               </div>
 
               {message.role === 'user' && (
@@ -824,7 +865,7 @@ export default function Chat() {
                 <div className={`w-1.5 h-1.5 rounded-full ${isDark ? 'bg-emerald-400 shadow-sm shadow-emerald-400/50' : 'bg-green-400'}`} />
                 <span>Ready</span>
               </span>
-              <span className="hidden sm:inline">Press Enter to send</span>
+              {sendOnEnterPref && <span className="hidden sm:inline">Press Enter to send</span>}
             </div>
             <span>{messageContent.length}/2000</span>
           </div>
