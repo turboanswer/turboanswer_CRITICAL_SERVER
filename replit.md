@@ -51,7 +51,6 @@ Subscription preference: Lifetime free premium access through promo code system 
 - **Code Studio**: An in-browser IDE add-on with complexity-based pricing, Monaco editor, multi-file support, and Gemini 3.1 Pro integration.
 - **Embeddable AI Widget**: Universal JavaScript widget for website integration.
 - **Promo Code System**: Database-driven system for discounts and free access.
-- **AI Live Chat**: Gemini Live-inspired voice conversation page with real-time feedback and ultra-low latency responses.
 - **Beta Testing Program**: Public application and feedback system for new features.
 
 ## External Dependencies

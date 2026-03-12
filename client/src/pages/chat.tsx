@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Send, User, FileText, X, Brain, Settings, LogOut, Zap, Menu, QrCode, ImageIcon, Crown, CheckCircle, Star, Sun, Moon, Shield, Heart, Users, Copy, Sparkles, ArrowRight, Rocket, FlaskConical, MessageSquare, Phone, Mail, Clock, Film, Code2, Camera, Scissors, Radio } from "lucide-react";
+import { Send, User, FileText, X, Brain, Settings, LogOut, Zap, Menu, QrCode, ImageIcon, Crown, CheckCircle, Star, Sun, Moon, Shield, Heart, Users, Copy, Sparkles, ArrowRight, Rocket, FlaskConical, MessageSquare, Phone, Mail, Clock, Film, Code2, Camera, Scissors } from "lucide-react";
 import { QRCodeCanvas } from "qrcode.react";
 import { Link } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
@@ -419,11 +419,6 @@ export default function Chat() {
             </button>
 
             <div className="hidden sm:flex items-center gap-1">
-              <Link href="/ai-live">
-                <Button variant="ghost" size="sm" className={`h-8 px-2 text-xs ${isDark ? 'text-gray-400 hover:text-green-400' : 'text-gray-500 hover:text-green-600'}`} title="AI Live — Voice conversation with Turbo">
-                  <Radio className="h-4 w-4 mr-1" /> Live
-                </Button>
-              </Link>
               <Link href="/media-editor">
                 <Button variant="ghost" size="sm" className={`h-8 px-2 text-xs ${isDark ? 'text-gray-400 hover:text-pink-400' : 'text-gray-500 hover:text-pink-500'}`} title="Media Editor — CapCut-style photo & video editor">
                   <Scissors className="h-4 w-4 mr-1" /> Edit
@@ -489,11 +484,6 @@ export default function Chat() {
               <Button onClick={() => { setShowDocumentUpload(!showDocumentUpload); setShowToolbar(false); }} variant="ghost" size="sm" className={`h-8 px-2 text-xs ${showDocumentUpload ? 'text-blue-400' : isDark ? 'text-gray-400' : 'text-gray-500'}`}>
                 <FileText className="h-4 w-4 mr-1" /> Docs
               </Button>
-              <Link href="/ai-live">
-                <Button variant="ghost" size="sm" className={`h-8 px-2 text-xs ${isDark ? 'text-gray-400 hover:text-green-400' : 'text-gray-500 hover:text-green-600'}`}>
-                  <Radio className="h-4 w-4 mr-1" /> Live
-                </Button>
-              </Link>
               <Link href="/media-editor">
                 <Button variant="ghost" size="sm" className={`h-8 px-2 text-xs ${isDark ? 'text-gray-400 hover:text-pink-400' : 'text-gray-500 hover:text-pink-500'}`}>
                   <Scissors className="h-4 w-4 mr-1" /> Edit
