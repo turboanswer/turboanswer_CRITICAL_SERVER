@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Link, useLocation } from "wouter";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -71,14 +71,16 @@ function Toggle({ value, onChange, color = "#4285F4" }: { value: boolean; onChan
   );
 }
 
-function SettingRow({ label, desc, children }: { label: string; desc?: string; children: React.ReactNode }) {
+function SettingRow({ label, desc, children, stacked }: { label: string; desc?: string; children: React.ReactNode; stacked?: boolean }) {
+  const mobile = typeof window !== "undefined" && window.innerWidth < 640;
+  const shouldStack = stacked || mobile;
   return (
-    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, padding: "14px 0", borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
+    <div style={{ display: "flex", flexDirection: shouldStack ? "column" : "row", alignItems: shouldStack ? "flex-start" : "center", justifyContent: "space-between", gap: shouldStack ? 10 : 16, padding: "14px 0", borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
       <div style={{ flex: 1 }}>
         <div style={{ fontSize: 14, fontWeight: 500, color: "#e2e8f0" }}>{label}</div>
         {desc && <div style={{ fontSize: 12, color: "#64748b", marginTop: 2 }}>{desc}</div>}
       </div>
-      <div style={{ flexShrink: 0 }}>{children}</div>
+      <div style={{ flexShrink: 0, flexWrap: "wrap", display: "flex", gap: 6 }}>{children}</div>
     </div>
   );
 }
@@ -152,6 +154,14 @@ export default function AISettings() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { user } = useAuth();
+
+  // Responsive: detect mobile
+  const [isMobile, setIsMobile] = useState(() => typeof window !== "undefined" && window.innerWidth < 640);
+  useEffect(() => {
+    const handler = () => setIsMobile(window.innerWidth < 640);
+    window.addEventListener("resize", handler);
+    return () => window.removeEventListener("resize", handler);
+  }, []);
 
   const { data: subscriptionData } = useQuery<{ tier: string; status: string }>({ queryKey: ["/api/subscription-status"] });
   const { data: enterpriseData } = useQuery<{ hasCode: boolean; code?: string; maxUses?: number; currentUses?: number }>({ queryKey: ["/api/enterprise-code"] });
@@ -248,47 +258,67 @@ export default function AISettings() {
 
       {/* Header */}
       <div style={{ borderBottom: `1px solid ${C.border}`, background: `${C.panel}cc`, backdropFilter: "blur(12px)", position: "sticky", top: 0, zIndex: 10 }}>
-        <div style={{ maxWidth: 1000, margin: "0 auto", padding: "14px 24px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+        <div style={{ maxWidth: 1000, margin: "0 auto", padding: isMobile ? "12px 16px" : "14px 24px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: isMobile ? 10 : 16 }}>
             <Link href="/chat">
               <button style={{ display: "flex", alignItems: "center", gap: 6, color: C.muted, background: "none", border: "none", cursor: "pointer", fontSize: 14 }}>
-                <ArrowLeft size={16} /> Back
+                <ArrowLeft size={16} /> {!isMobile && "Back"}
               </button>
             </Link>
             <div style={{ width: 1, height: 20, background: C.border }} />
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <Settings size={18} style={{ color: accentColor }} />
-              <span style={{ fontWeight: 700, fontSize: 16 }}>Settings</span>
+              <span style={{ fontWeight: 700, fontSize: isMobile ? 15 : 16 }}>Settings</span>
             </div>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <div style={{ fontSize: 12, padding: "4px 10px", borderRadius: 20, background: `${accentColor}18`, border: `1px solid ${accentColor}40`, color: accentColor, fontWeight: 600 }}>{tierLabel}</div>
+            <div style={{ fontSize: 11, padding: "4px 10px", borderRadius: 20, background: `${accentColor}18`, border: `1px solid ${accentColor}40`, color: accentColor, fontWeight: 600, whiteSpace: "nowrap" }}>{tierLabel}</div>
           </div>
         </div>
-      </div>
 
-      <div style={{ maxWidth: 1000, margin: "0 auto", padding: "32px 24px", display: "flex", gap: 28, alignItems: "flex-start" }}>
-
-        {/* Sidebar nav */}
-        <div style={{ width: 200, flexShrink: 0, position: "sticky", top: 80 }}>
-          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+        {/* Mobile: horizontal scrolling tab bar */}
+        {isMobile && (
+          <div style={{ overflowX: "auto", display: "flex", gap: 4, padding: "8px 12px", borderTop: `1px solid ${C.border}`, scrollbarWidth: "none" }}>
             {TABS.map(tab => {
               const Icon = tab.icon;
+              const active = activeTab === tab.id;
               return (
-                <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={tabStyle(tab.id)}>
-                  <Icon size={16} />
-                  {tab.label}
+                <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 14px", borderRadius: 20, border: `1px solid ${active ? accentColor : "rgba(255,255,255,0.08)"}`, background: active ? `${accentColor}18` : "transparent", color: active ? accentColor : C.muted, fontSize: 13, fontWeight: active ? 600 : 400, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0, transition: "all 0.15s" }}>
+                  <Icon size={13} />{tab.label}
                 </button>
               );
             })}
-          </div>
-          <div style={{ marginTop: 20, padding: "12px 16px", borderRadius: 10, background: "rgba(239,68,68,0.06)", border: "1px solid rgba(239,68,68,0.15)" }}>
-            <div style={{ fontSize: 12, color: C.muted, marginBottom: 8 }}>Danger Zone</div>
-            <button onClick={() => setShowDeleteConfirm(true)} style={{ display: "flex", alignItems: "center", gap: 6, color: "#f87171", background: "none", border: "none", cursor: "pointer", fontSize: 13, fontWeight: 500 }}>
-              <Trash2 size={14} /> Delete Account
+            <button onClick={() => setShowDeleteConfirm(true)} style={{ display: "flex", alignItems: "center", gap: 6, padding: "7px 14px", borderRadius: 20, border: "1px solid rgba(239,68,68,0.3)", background: "rgba(239,68,68,0.06)", color: "#f87171", fontSize: 13, fontWeight: 500, cursor: "pointer", whiteSpace: "nowrap", flexShrink: 0 }}>
+              <Trash2 size={13} /> Delete Account
             </button>
           </div>
-        </div>
+        )}
+      </div>
+
+      <div style={{ maxWidth: 1000, margin: "0 auto", padding: isMobile ? "20px 14px" : "32px 24px", display: "flex", gap: 28, alignItems: "flex-start" }}>
+
+        {/* Desktop: Sidebar nav */}
+        {!isMobile && (
+          <div style={{ width: 200, flexShrink: 0, position: "sticky", top: 80 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+              {TABS.map(tab => {
+                const Icon = tab.icon;
+                return (
+                  <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={tabStyle(tab.id)}>
+                    <Icon size={16} />
+                    {tab.label}
+                  </button>
+                );
+              })}
+            </div>
+            <div style={{ marginTop: 20, padding: "12px 16px", borderRadius: 10, background: "rgba(239,68,68,0.06)", border: "1px solid rgba(239,68,68,0.15)" }}>
+              <div style={{ fontSize: 12, color: C.muted, marginBottom: 8 }}>Danger Zone</div>
+              <button onClick={() => setShowDeleteConfirm(true)} style={{ display: "flex", alignItems: "center", gap: 6, color: "#f87171", background: "none", border: "none", cursor: "pointer", fontSize: 13, fontWeight: 500 }}>
+                <Trash2 size={14} /> Delete Account
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Main content */}
         <div style={{ flex: 1, minWidth: 0 }}>
@@ -330,7 +360,7 @@ export default function AISettings() {
 
               <div style={{ background: C.panel, border: `1px solid ${C.border}`, borderRadius: 16, padding: 24 }}>
                 <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 16, color: C.text }}>Quick Links</div>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 10 }}>
                   {[
                     { href: "/pricing", icon: CreditCard, label: "Upgrade Plan", color: "#4285F4" },
                     { href: "/support", icon: HelpCircle, label: "Get Support", color: "#34A853" },
