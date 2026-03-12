@@ -3183,12 +3183,12 @@ Only mention that TurboAnswer was developed by Tiago Tschantret if directly aske
     if (!u?.codeStudioAddon) return res.status(403).json({ error: 'Code Studio add-on required', requiresAddon: true });
 
     // Credit reset: resetAt stores the NEXT reset date.
-    // When that date passes → set credits to exactly 15 (no rollover), push next reset 30 days out.
+    // When that date passes → reset to exactly 1500 cents ($15.00), push next reset 30 days out.
     if (u.codeStudioCreditsResetAt) {
       const nextReset = new Date(u.codeStudioCreditsResetAt);
       if (Date.now() >= nextReset.getTime()) {
         const next30 = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
-        await storage.updateCodeStudioCredits(userId, 15, next30).catch(() => {});
+        await storage.updateCodeStudioCredits(userId, 1500, next30).catch(() => {});
       }
     }
     next();
@@ -3202,19 +3202,21 @@ Only mention that TurboAnswer was developed by Tiago Tschantret if directly aske
       const { prompt, projectId, referenceUrl } = req.body;
       if (!prompt?.trim()) return res.status(400).json({ error: 'Prompt required' });
 
-      // ── Credit check ────────────────────────────────────────────────────────
+      // ── Credit check (per-line pricing: $0.02/line, 10 lines = $0.20) ───────
       const currentUser = await storage.getUser(userId);
       if (!currentUser) return res.status(403).json({ error: 'User not found' });
-      const availableCredits = currentUser.codeStudioCredits ?? 0;
-      if (availableCredits <= 0) {
+      const availableCents = currentUser.codeStudioCredits ?? 0;
+      const MIN_COST_CENTS = 20; // minimum charge = $0.20 (one 10-line block)
+      if (availableCents < MIN_COST_CENTS) {
         return res.status(402).json({
-          error: 'No AI credits remaining. Purchase more credits to continue.',
+          error: 'Insufficient balance. You need at least $0.20 to generate code. Add budget to continue.',
           outOfCredits: true,
-          credits: 0,
+          credits: availableCents,
+          creditsDisplay: `$${(availableCents / 100).toFixed(2)}`,
         });
       }
-      // Deduct 1 credit immediately (before generation, so duplicate submits don't bypass)
-      await storage.updateCodeStudioCredits(userId, availableCredits - 1);
+      // Reserve minimum upfront to prevent duplicate submits bypassing the check
+      await storage.updateCodeStudioCredits(userId, availableCents - MIN_COST_CENTS);
 
       const apiKey = process.env.GEMINI_API_KEY;
       if (!apiKey) return res.status(500).json({ error: 'AI not configured' });
@@ -3529,8 +3531,27 @@ CRITICAL JAVASCRIPT RULES (ALL must be followed):
         console.log('[CodeAI] Auto-deploy skipped:', e.message);
       }
 
+      // ── Per-line billing: count all generated lines, deduct exact cost ───────
+      const totalLines = generatedFiles.reduce((sum: number, f: any) => {
+        return sum + (f.content || '').split('\n').length;
+      }, 0);
+      const costCents = Math.max(MIN_COST_CENTS, Math.ceil(totalLines) * 2); // $0.02/line
+      // We already reserved MIN_COST_CENTS; now deduct the remainder (if any)
+      const afterReserve = (availableCents - MIN_COST_CENTS);
+      const additionalDeduct = Math.max(0, costCents - MIN_COST_CENTS);
+      const finalBalance = Math.max(0, afterReserve - additionalDeduct);
+      await storage.updateCodeStudioCredits(userId, finalBalance).catch(() => {});
+      console.log(`[Credits] User ${userId}: ${totalLines} lines generated → cost $${(costCents/100).toFixed(2)} → balance $${(finalBalance/100).toFixed(2)}`);
+
       const freshUser = await storage.getUser(userId).catch(() => null);
-      res.json({ project, files: generatedFiles, publishUrl, discoveredFeatures, creditsRemaining: freshUser?.codeStudioCredits ?? 0 });
+      res.json({
+        project, files: generatedFiles, publishUrl, discoveredFeatures,
+        creditsRemaining: freshUser?.codeStudioCredits ?? finalBalance,
+        linesGenerated: totalLines,
+        costCents,
+        costDisplay: `$${(costCents / 100).toFixed(2)}`,
+        balanceDisplay: `$${(finalBalance / 100).toFixed(2)}`,
+      });
     } catch (e: any) {
       console.error('[CodeAI] Generate error:', e.message);
       res.status(500).json({ error: e.message });
@@ -3547,7 +3568,12 @@ CRITICAL JAVASCRIPT RULES (ALL must be followed):
       if (!user) return res.status(403).json({ error: 'User not found' });
       // codeStudioCreditsResetAt IS the next reset date (not last reset)
       const nextReset = user.codeStudioCreditsResetAt ? new Date(user.codeStudioCreditsResetAt) : null;
-      res.json({ credits: user.codeStudioCredits ?? 0, nextReset: nextReset?.toISOString() ?? null });
+      const cents = user.codeStudioCredits ?? 0;
+      res.json({
+        credits: cents,
+        dollars: (cents / 100).toFixed(2),
+        nextReset: nextReset?.toISOString() ?? null,
+      });
     } catch (e: any) { res.status(500).json({ error: e.message }); }
   });
 

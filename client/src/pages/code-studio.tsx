@@ -175,17 +175,24 @@ export default function CodeStudio() {
   const projectsRef = useRef<HTMLDivElement>(null);
 
   const [promoCode, setPromoCode] = useState("");
-  const [credits, setCredits] = useState<number | null>(null);
+  const [credits, setCredits] = useState<number | null>(null); // stored in cents
   const [nextReset, setNextReset] = useState<Date | null>(null);
   const [showBuyCredits, setShowBuyCredits] = useState(false);
   const [buyingCredits, setBuyingCredits] = useState(false);
-  const [selectedPack, setSelectedPack] = useState<number>(15);
+  const [selectedPack, setSelectedPack] = useState<number>(1000); // default $10
+  const [lastBuildCost, setLastBuildCost] = useState<{ cents: number; lines: number } | null>(null);
 
+  // Per-line pricing: $0.02/line, 10 lines = $0.20
+  // Pack key = cents to add, price = USD charged
   const CREDIT_PACKS = [
-    { credits: 15, price: 15 }, { credits: 25, price: 25 },
-    { credits: 45, price: 45 }, { credits: 100, price: 100 },
-    { credits: 250, price: 250 }, { credits: 500, price: 500 },
+    { cents: 500,   price: 5,   lines: 250 },
+    { cents: 1000,  price: 10,  lines: 500 },
+    { cents: 2500,  price: 25,  lines: 1250 },
+    { cents: 5000,  price: 50,  lines: 2500 },
+    { cents: 10000, price: 100, lines: 5000 },
   ];
+
+  const formatDollars = (cents: number) => `$${(cents / 100).toFixed(2)}`;
 
   const activeFileData = files.find(f => f.name === activeFile);
   const isWebProject = currentProject?.mainLanguage === "html";
@@ -242,7 +249,9 @@ export default function CodeStudio() {
           .then(r => r.json()).then(d => {
             if (d.success) {
               setCredits(d.totalCredits);
-              toast({ title: `✅ ${d.creditsAdded} credits added!`, description: `You now have ${d.totalCredits} AI credits.` });
+              const added = (d.creditsAdded / 100).toFixed(2);
+              const total = (d.totalCredits / 100).toFixed(2);
+              toast({ title: `✅ $${added} budget added!`, description: `Your balance is now $${total}.` });
             }
           }).catch(() => {});
       }
@@ -377,11 +386,12 @@ export default function CodeStudio() {
       clearInterval(phaseInterval);
 
       if (res.status === 402 && data.outOfCredits) {
+        const bal = data.creditsDisplay || formatDollars(data.credits ?? 0);
         setMessages(prev => prev.map(m => m.id === buildMsgId ? {
-          ...m, buildDone: true, content: "You've used all your AI credits. Buy more to keep building!", role: "system",
+          ...m, buildDone: true, content: `Insufficient balance (${bal} remaining — need at least $0.20). Add budget to keep building!`, role: "system",
         } : m));
         setBuildingMsgId(null);
-        setCredits(0);
+        setCredits(data.credits ?? 0);
         setShowBuyCredits(true);
         return;
       }
@@ -411,11 +421,17 @@ export default function CodeStudio() {
       }
 
       if (data.creditsRemaining !== undefined) setCredits(data.creditsRemaining);
+      if (data.costCents && data.linesGenerated) {
+        setLastBuildCost({ cents: data.costCents, lines: data.linesGenerated });
+      }
       setMessages(prev => prev.map(m => m.id === buildMsgId ? {
         ...m, buildPhase: BUILD_PHASES.length - 1, buildDone: true,
         deployUrl: liveUrl || undefined,
         files: generatedFiles.map(f => f.name),
         discoveredFeatures: data.discoveredFeatures || [],
+        costDisplay: data.costDisplay,
+        linesGenerated: data.linesGenerated,
+        balanceDisplay: data.balanceDisplay,
       } : m));
       setBuildingMsgId(null);
 
@@ -575,12 +591,12 @@ export default function CodeStudio() {
               <div style={{ fontSize: 28, fontWeight: 800, color: C.text }}>$15<span style={{ fontSize: 14, fontWeight: 400, color: C.muted }}>/mo</span></div>
             </div>
             <div style={{ textAlign: "right" }}>
-              <div style={{ fontSize: 12, color: "#10b981", fontWeight: 600 }}>15 AI credits/month</div>
-              <div style={{ fontSize: 11, color: "#f87171", fontWeight: 500 }}>Credits don't roll over</div>
+              <div style={{ fontSize: 12, color: "#10b981", fontWeight: 600 }}>$15.00 budget/month</div>
+              <div style={{ fontSize: 11, color: "#f87171", fontWeight: 500 }}>Budget resets monthly</div>
             </div>
           </div>
           <div style={{ background: "rgba(124,58,237,0.06)", border: "1px solid rgba(124,58,237,0.15)", borderRadius: 10, padding: "10px 16px", marginBottom: 16, fontSize: 12, color: C.muted }}>
-            Each AI build uses 1 credit. Need more? Buy extra packs from $15 — up to 500 credits. Pack credits never expire.
+            Priced at <strong style={{ color: C.text }}>$0.02/line</strong> — 10 lines = $0.20. Need more? Add budget packs from $5. Pack budget never expires.
           </div>
           <button onClick={() => addonMutation.mutate()} disabled={addonMutation.isPending}
             style={{ width: "100%", background: "linear-gradient(135deg, #059669, #10b981)", color: "#fff", border: "none", padding: "14px 24px", borderRadius: 10, cursor: "pointer", fontSize: 15, fontWeight: 700, marginBottom: 16, opacity: addonMutation.isPending ? 0.7 : 1 }}>
@@ -658,25 +674,28 @@ export default function CodeStudio() {
 
         <div style={{ flex: 1 }} />
 
-        {/* Credit Percentage Bar */}
+        {/* Budget Bar ($0.02/line, max $15/month) */}
         {(() => {
-          const pct = credits === null ? 0 : Math.min(100, Math.round((credits / 15) * 100));
-          const barColor = credits === 0 ? "#ef4444" : credits !== null && credits <= 3 ? "#f59e0b" : credits !== null && credits <= 7 ? "#eab308" : "#10b981";
-          const textColor = credits === 0 ? "#f87171" : credits !== null && credits <= 3 ? "#fbbf24" : "#a3e635";
+          const MAX_CENTS = 1500; // $15.00/month
+          const pct = credits === null ? 0 : Math.min(100, Math.round((credits / MAX_CENTS) * 100));
+          const empty = (credits ?? 0) < 20;
+          const low = (credits ?? 0) < 300;
+          const barColor = empty ? "#ef4444" : low ? "#f59e0b" : "#10b981";
+          const textColor = empty ? "#f87171" : low ? "#fbbf24" : "#a3e635";
+          const display = credits === null ? "..." : formatDollars(credits);
           return (
             <button
               onClick={() => setShowBuyCredits(true)}
-              title={`${credits ?? 0} AI credits remaining — click to buy more`}
+              title={`${display} budget remaining · $0.02/line · click to add more`}
               style={{ display: "flex", alignItems: "center", gap: 6, background: "rgba(255,255,255,0.04)", border: `1px solid ${C.border}`, borderRadius: 7, padding: "5px 10px", cursor: "pointer" }}>
               <Zap style={{ width: 10, height: 10, color: barColor, flexShrink: 0 }} />
-              <span style={{ fontSize: 11, fontWeight: 700, color: textColor, minWidth: 28 }}>
-                {credits !== null ? credits : "..."}
+              <span style={{ fontSize: 11, fontWeight: 700, color: textColor, minWidth: 34 }}>
+                {display}
               </span>
               <div style={{ width: 52, height: 4, background: "rgba(255,255,255,0.06)", borderRadius: 99, overflow: "hidden" }}>
                 <div style={{ width: `${pct}%`, height: "100%", background: barColor, borderRadius: 99, transition: "width 0.4s ease, background 0.3s" }} />
               </div>
-              <span style={{ fontSize: 9, color: C.muted, minWidth: 22 }}>{pct}%</span>
-              {credits === 0 && <ShoppingCart style={{ width: 10, height: 10, color: "#f87171" }} />}
+              {empty && <ShoppingCart style={{ width: 10, height: 10, color: "#f87171" }} />}
             </button>
           );
         })()}
@@ -1105,8 +1124,8 @@ export default function CodeStudio() {
                   <Zap style={{ width: 18, height: 18, color: "#fff" }} />
                 </div>
                 <div>
-                  <div style={{ fontWeight: 700, fontSize: 16, color: C.text }}>Buy AI Credits</div>
-                  <div style={{ fontSize: 12, color: C.muted }}>You have {credits ?? 0} credits remaining</div>
+                  <div style={{ fontWeight: 700, fontSize: 16, color: C.text }}>Add Coding Budget</div>
+                  <div style={{ fontSize: 12, color: C.muted }}>Balance: <strong style={{ color: "#a3e635" }}>{credits !== null ? formatDollars(credits) : "..."}</strong></div>
                 </div>
               </div>
               <button onClick={() => setShowBuyCredits(false)} style={{ color: C.muted, background: "none", border: "none", cursor: "pointer" }}>
@@ -1114,34 +1133,46 @@ export default function CodeStudio() {
               </button>
             </div>
 
-            <div style={{ marginBottom: 16, padding: "10px 14px", background: "rgba(124,58,237,0.06)", borderRadius: 10, border: "1px solid rgba(124,58,237,0.15)" }}>
-              <p style={{ color: C.muted, fontSize: 13, margin: "0 0 6px" }}>
-                Each AI build uses <strong style={{ color: C.text }}>1 credit</strong>. Monthly plan gives <strong style={{ color: C.text }}>15 credits/cycle</strong> — unused credits do <strong style={{ color: "#f87171" }}>not</strong> roll over.
-              </p>
+            <div style={{ marginBottom: 12, padding: "10px 14px", background: "rgba(124,58,237,0.06)", borderRadius: 10, border: "1px solid rgba(124,58,237,0.15)" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 20, fontSize: 13 }}>
+                <div style={{ textAlign: "center" }}>
+                  <div style={{ fontWeight: 700, color: C.text, fontSize: 15 }}>$0.02</div>
+                  <div style={{ color: C.muted, fontSize: 11 }}>per line</div>
+                </div>
+                <div style={{ width: 1, height: 30, background: C.border }} />
+                <div style={{ textAlign: "center" }}>
+                  <div style={{ fontWeight: 700, color: C.text, fontSize: 15 }}>10 lines</div>
+                  <div style={{ color: C.muted, fontSize: 11 }}>= $0.20</div>
+                </div>
+                <div style={{ width: 1, height: 30, background: C.border }} />
+                <div style={{ textAlign: "center" }}>
+                  <div style={{ fontWeight: 700, color: C.text, fontSize: 15 }}>$15.00</div>
+                  <div style={{ color: C.muted, fontSize: 11 }}>monthly reset</div>
+                </div>
+              </div>
               {nextReset && (
-                <p style={{ color: "#fbbf24", fontSize: 12, margin: 0 }}>
-                  Next reset: {nextReset.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}
+                <p style={{ color: "#fbbf24", fontSize: 11, margin: "8px 0 0" }}>
+                  Monthly reset: {nextReset.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" })}
                 </p>
               )}
             </div>
             <div style={{ marginBottom: 16, padding: "8px 12px", background: "rgba(16,185,129,0.06)", borderRadius: 8, border: "1px solid rgba(16,185,129,0.15)", fontSize: 12, color: "#6ee7b7" }}>
-              Pack credits are permanent — they never expire or reset.
+              Extra budget packs are permanent — they never expire or reset.
             </div>
 
-            <div style={{ fontSize: 12, fontWeight: 700, color: C.muted, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 12 }}>Choose a pack</div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 20 }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: C.muted, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 12 }}>Add budget</div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 20 }}>
               {CREDIT_PACKS.map(pack => (
-                <button key={pack.credits}
-                  onClick={() => setSelectedPack(pack.credits)}
+                <button key={pack.cents}
+                  onClick={() => setSelectedPack(pack.cents)}
                   style={{
-                    background: selectedPack === pack.credits ? "rgba(124,58,237,0.15)" : "rgba(255,255,255,0.03)",
-                    border: `1px solid ${selectedPack === pack.credits ? "rgba(124,58,237,0.5)" : C.border}`,
-                    borderRadius: 10, padding: "12px 8px", cursor: "pointer", textAlign: "center", transition: "all 0.15s",
+                    background: selectedPack === pack.cents ? "rgba(124,58,237,0.15)" : "rgba(255,255,255,0.03)",
+                    border: `1px solid ${selectedPack === pack.cents ? "rgba(124,58,237,0.5)" : C.border}`,
+                    borderRadius: 10, padding: "12px 10px", cursor: "pointer", textAlign: "center" as const, transition: "all 0.15s",
                   }}>
-                  <div style={{ fontSize: 18, fontWeight: 800, color: C.text }}>{pack.credits}</div>
-                  <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>credits</div>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: "#a78bfa", marginTop: 6 }}>${pack.price}</div>
-                  <div style={{ fontSize: 10, color: C.muted }}>${(pack.price / pack.credits).toFixed(2)}/credit</div>
+                  <div style={{ fontSize: 20, fontWeight: 800, color: C.text }}>${pack.price}</div>
+                  <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>~{pack.lines.toLocaleString()} lines</div>
+                  <div style={{ fontSize: 10, color: "#a78bfa", marginTop: 4 }}>{formatDollars(pack.cents)} budget</div>
                 </button>
               ))}
             </div>
@@ -1151,9 +1182,9 @@ export default function CodeStudio() {
               disabled={buyingCredits}
               style={{ width: "100%", background: "linear-gradient(135deg, #7c3aed, #06b6d4)", border: "none", borderRadius: 10, padding: "14px 24px", color: "#fff", fontSize: 14, fontWeight: 700, cursor: "pointer", opacity: buyingCredits ? 0.7 : 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
               {buyingCredits ? <Loader2 style={{ width: 16, height: 16, animation: "spin 1s linear infinite" }} /> : <CreditCard style={{ width: 16, height: 16 }} />}
-              {buyingCredits ? "Redirecting to PayPal..." : `Buy ${selectedPack} Credits — $${selectedPack}`}
+              {buyingCredits ? "Redirecting to PayPal..." : `Add $${CREDIT_PACKS.find(p => p.cents === selectedPack)?.price ?? "?"} Budget — Pay with PayPal`}
             </button>
-            <div style={{ textAlign: "center", marginTop: 10, fontSize: 11, color: C.muted }}>Secure payment via PayPal · One-time charge · Credits never expire</div>
+            <div style={{ textAlign: "center", marginTop: 10, fontSize: 11, color: C.muted }}>Secure payment via PayPal · One-time charge · Budget never expires</div>
           </div>
         </div>
       )}

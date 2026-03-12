@@ -200,9 +200,8 @@ export class DatabaseStorage implements IStorage {
   async updateCodeStudioAddon(userId: string, addon: boolean, subId: string | null): Promise<User> {
     const updates: any = { codeStudioAddon: addon, codeStudioAddonSubId: subId };
     if (addon) {
-      // 7-day trial: grant 5 credits, set next reset to 7 days from now
-      // After 7 days the reset fires and gives 15 credits (first monthly cycle starts)
-      updates.codeStudioCredits = 5;
+      // 7-day trial: grant 100 cents ($1.00), next reset in 7 days → then 1500 cents/month
+      updates.codeStudioCredits = 100;
       updates.codeStudioCreditsResetAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
     } else {
       updates.codeStudioCredits = 0;

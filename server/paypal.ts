@@ -459,13 +459,14 @@ export function getPayPalClientId(): string {
 }
 
 // Credit packs: one-time PayPal Orders v2 payment
+// Credit packs: key = cents to add, value = USD price
+// Pricing: $0.02 per line of code (10 lines = $0.20)
 export const CREDIT_PACKS: Record<number, number> = {
-  15: 15,    // 15 credits = $15
-  25: 25,    // 25 credits = $25
-  45: 45,    // 45 credits = $45
-  100: 100,  // 100 credits = $100
-  250: 250,  // 250 credits = $250
-  500: 500,  // 500 credits = $500
+  500:   5,    //  500 cents = $5.00  (~250 lines)
+  1000:  10,   // 1000 cents = $10.00 (~500 lines)
+  2500:  25,   // 2500 cents = $25.00 (~1,250 lines)
+  5000:  50,   // 5000 cents = $50.00 (~2,500 lines)
+  10000: 100,  // 10000 cents = $100.00 (~5,000 lines)
 };
 
 export async function createCreditPackOrder(
@@ -482,7 +483,7 @@ export async function createCreditPackOrder(
     purchase_units: [
       {
         amount: { currency_code: "USD", value: price.toFixed(2) },
-        description: `TurboAnswer Code Studio — ${credits} AI Credits`,
+        description: `TurboAnswer Code Studio — $${(credits / 100).toFixed(2)} coding budget (~${Math.floor(credits / 2).toLocaleString()} lines)`,
         custom_id: JSON.stringify({ userId, credits }),
       },
     ],
