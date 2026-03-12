@@ -1,489 +1,449 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link } from "wouter";
 import { ArrowLeft, X, Volume2, VolumeX } from "lucide-react";
 
-type Status = "idle" | "standby" | "listening" | "thinking" | "speaking";
+type Status = "idle" | "listening" | "thinking" | "speaking";
 
-interface Turn {
-  id: number;
-  role: "user" | "assistant";
-  text: string;
-}
+interface Turn { id: number; role: "user" | "assistant"; text: string; }
 
-// ─── Voice selection ────────────────────────────────────────────────────────
+// ─── Voice picker ─────────────────────────────────────────────────────────────
 function pickVoice(synth: SpeechSynthesis): SpeechSynthesisVoice | null {
-  const voices = synth.getVoices();
-  const priority = [
+  const all = synth.getVoices();
+  const want = [
     "Google UK English Male",
-    "Microsoft Guy Online (Natural) - English (United States)",
     "Microsoft Ryan Online (Natural) - English (United States)",
+    "Microsoft Guy Online (Natural) - English (United States)",
     "Microsoft Mark - English (United States)",
     "Microsoft David - English (United States)",
-    "Alex", "Daniel", "Aaron", "Rishi",
-    "Google US English",
+    "Alex", "Daniel", "Aaron", "Rishi", "Google US English",
   ];
-  for (const p of priority) {
-    const v = voices.find(v => v.name === p || v.name.startsWith(p));
+  for (const name of want) {
+    const v = all.find(v => v.name === name || v.name.startsWith(name));
     if (v) return v;
   }
   return (
-    voices.find(v => v.lang.startsWith("en") && /male|guy|man|david|mark|ryan|daniel|alex|aaron/i.test(v.name)) ||
-    voices.find(v => v.lang === "en-US") ||
-    voices.find(v => v.lang.startsWith("en")) ||
+    all.find(v => v.lang.startsWith("en") && /male|guy|david|mark|ryan|daniel|alex|aaron/i.test(v.name)) ||
+    all.find(v => v.lang === "en-US") ||
+    all.find(v => v.lang.startsWith("en")) ||
     null
   );
 }
 
-// ─── Morphing orb component ─────────────────────────────────────────────────
-const ORB_STATES: Record<Status, { colors: [string, string, string]; borderRadius: string; scale: number; speed: string }> = {
-  idle:      { colors: ["#1a1a2e", "#16213e", "#0f3460"],           borderRadius: "50%",                                                             scale: 0.6, speed: "4s" },
-  standby:   { colors: ["#1e3a5f", "#1a2e4a", "#0d2137"],           borderRadius: "60% 40% 55% 45% / 50% 60% 40% 50%",                              scale: 0.75, speed: "5s" },
-  listening: { colors: ["#34A853", "#1a73e8", "#00897b"],           borderRadius: "45% 55% 40% 60% / 55% 45% 65% 35%",                              scale: 1,    speed: "1.2s" },
-  thinking:  { colors: ["#FBBC05", "#F9A825", "#FF8F00"],           borderRadius: "50% 50% 50% 50% / 50% 50% 50% 50%",                              scale: 0.9,  speed: "0.8s" },
-  speaking:  { colors: ["#4285F4", "#9C27B0", "#EA4335"],           borderRadius: "38% 62% 46% 54% / 60% 44% 56% 40%",                              scale: 1.15, speed: "0.6s" },
+// ─── Orb ─────────────────────────────────────────────────────────────────────
+const CFG: Record<Status, { g: [string,string,string]; glow: string; r: string; scale: number; dur: string }> = {
+  idle:      { g: ["#1e3a5f","#0d2137","#1a2e4a"],  glow: "#1e3a5f", r:"50%", scale:0.55, dur:"6s" },
+  listening: { g: ["#1a9e4a","#1565C0","#00897b"],   glow:"#1a9e4a", r:"48% 52% 42% 58% / 54% 46% 60% 40%", scale:1,    dur:"1.4s" },
+  thinking:  { g: ["#F9A825","#FB8C00","#E65100"],   glow:"#F9A825", r:"50%", scale:0.88, dur:"0.9s" },
+  speaking:  { g: ["#3d5afe","#7c4dff","#d500f9"],   glow:"#7c4dff", r:"44% 56% 50% 50% / 58% 42% 56% 44%", scale:1.12, dur:"0.7s" },
 };
 
-function GeminiOrb({ status }: { status: Status }) {
-  const cfg = ORB_STATES[status];
-  const [phase, setPhase] = useState(0);
-
-  useEffect(() => {
-    let raf: number;
-    let start = 0;
-    function tick(ts: number) {
-      if (!start) start = ts;
-      setPhase(((ts - start) / 1000) % 360);
-      raf = requestAnimationFrame(tick);
-    }
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, []);
-
-  const hue = (phase * 1.2) % 360;
-  const isActive = status !== "idle" && status !== "standby";
+function GeminiOrb({ status, interim }: { status: Status; interim: string }) {
+  const cfg = CFG[status];
+  const active = status !== "idle";
 
   return (
-    <div className="relative flex items-center justify-center" style={{ width: 220, height: 220 }}>
+    <div className="relative flex items-center justify-center" style={{ width: 200, height: 200 }}>
       {/* Glow rings */}
-      {isActive && [1, 2, 3].map(i => (
-        <div
-          key={i}
-          className="absolute rounded-full"
-          style={{
-            width:  150 + i * 22,
-            height: 150 + i * 22,
-            background: `conic-gradient(from ${hue + i * 60}deg, ${cfg.colors[0]}44, ${cfg.colors[1]}22, ${cfg.colors[2]}44, transparent)`,
-            borderRadius: "50%",
-            opacity: 0.6 / i,
-            animation: `spin-${i % 2 === 0 ? "cw" : "ccw"} ${3 + i}s linear infinite`,
-          }}
-        />
+      {active && [1,2,3].map(i => (
+        <div key={i} className="absolute rounded-full" style={{
+          width:  130 + i*24, height: 130 + i*24,
+          border: `1px solid ${cfg.g[i % 3]}55`,
+          opacity: 0.5 / i,
+          animation: `lv-ring ${2+i}s linear infinite`,
+          animationDirection: i % 2 ? "normal" : "reverse",
+        }} />
       ))}
 
-      {/* Main blob */}
-      <div
-        style={{
-          width:  150,
-          height: 150,
-          transform: `scale(${cfg.scale})`,
-          borderRadius: cfg.borderRadius,
-          background: `radial-gradient(circle at ${35 + Math.sin(phase * 0.05) * 10}% ${35 + Math.cos(phase * 0.05) * 10}%, ${cfg.colors[0]}, ${cfg.colors[1]} 50%, ${cfg.colors[2]})`,
-          boxShadow: isActive
-            ? `0 0 40px ${cfg.colors[0]}88, 0 0 80px ${cfg.colors[1]}44, inset 0 0 40px ${cfg.colors[2]}22`
-            : `0 0 20px ${cfg.colors[0]}44`,
-          transition: "border-radius 0.8s cubic-bezier(0.4,0,0.2,1), transform 0.6s ease, background 0.8s ease, box-shadow 0.8s ease",
-          animation: isActive ? `morph-${status} ${cfg.speed} ease-in-out infinite alternate` : undefined,
-          filter: isActive ? "blur(0px)" : "blur(1px)",
-        }}
-      />
+      {/* Blob */}
+      <div style={{
+        width: 130, height: 130,
+        transform: `scale(${cfg.scale})`,
+        borderRadius: cfg.r,
+        background: `radial-gradient(circle at 38% 36%, ${cfg.g[0]}, ${cfg.g[1]} 55%, ${cfg.g[2]})`,
+        boxShadow: active ? `0 0 50px ${cfg.glow}77, 0 0 100px ${cfg.glow}33` : `0 0 20px ${cfg.glow}33`,
+        transition: "border-radius 0.7s ease, transform 0.5s ease, background 0.8s ease, box-shadow 0.8s ease",
+        animation: active ? `lv-morph-${status} ${cfg.dur} ease-in-out infinite alternate` : undefined,
+      }} />
 
-      {/* Wave bars when speaking */}
+      {/* Wave bars — speaking */}
       {status === "speaking" && (
-        <div className="absolute flex items-center gap-1" style={{ bottom: 28 }}>
-          {[4, 7, 10, 14, 10, 7, 4].map((h, i) => (
-            <div
-              key={i}
-              style={{
-                width: 3,
-                height: h,
-                borderRadius: 4,
-                background: cfg.colors[i % 3],
-                animation: `wave-bar 0.${5 + (i % 4)}s ease-in-out ${i * 0.08}s infinite alternate`,
-              }}
-            />
+        <div className="absolute flex items-end gap-[3px]" style={{ bottom: 18 }}>
+          {[5,9,13,17,22,17,13,9,5].map((h,i) => (
+            <div key={i} style={{
+              width: 3, height: h, borderRadius: 2,
+              background: cfg.g[i%3],
+              animation: `lv-wave ${0.4+i%3*0.15}s ease-in-out ${i*0.06}s infinite alternate`,
+            }} />
           ))}
         </div>
       )}
 
-      {/* Listening ripple dots */}
+      {/* Mic dots — listening */}
       {status === "listening" && (
-        <div className="absolute flex items-center gap-1.5" style={{ bottom: 28 }}>
-          {[0, 1, 2].map(i => (
-            <div
-              key={i}
-              style={{
-                width: 6,
-                height: 6,
-                borderRadius: "50%",
-                background: cfg.colors[0],
-                animation: `listen-dot 1.1s ease-in-out ${i * 0.18}s infinite alternate`,
-              }}
-            />
+        <div className="absolute flex items-center gap-2" style={{ bottom: 20 }}>
+          {[0,1,2,3,2,1,0].map((delay, i) => (
+            <div key={i} style={{
+              width: 4, height: 4+(delay*2), borderRadius: 2,
+              background: cfg.g[0],
+              animation: `lv-mic ${0.6+delay*0.12}s ease-in-out ${delay*0.1}s infinite alternate`,
+              opacity: 0.7 + delay * 0.1,
+            }} />
+          ))}
+        </div>
+      )}
+
+      {/* Spinning dots — thinking */}
+      {status === "thinking" && (
+        <div className="absolute inset-0 flex items-center justify-center">
+          {[0,1,2].map(i => (
+            <div key={i} className="absolute w-2 h-2 rounded-full" style={{
+              background: cfg.g[i],
+              animation: `lv-orbit 1.2s ease-in-out ${i*0.4}s infinite`,
+            }} />
           ))}
         </div>
       )}
 
       <style>{`
-        @keyframes spin-cw  { to { transform: rotate(360deg); } }
-        @keyframes spin-ccw { to { transform: rotate(-360deg); } }
-        @keyframes morph-listening {
-          0%   { border-radius: 45% 55% 40% 60% / 55% 45% 65% 35%; }
-          100% { border-radius: 62% 38% 58% 42% / 42% 58% 38% 62%; }
+        @keyframes lv-ring   { to { transform: rotate(360deg); } }
+        @keyframes lv-morph-listening {
+          0%   { border-radius: 48% 52% 42% 58% / 54% 46% 60% 40%; }
+          100% { border-radius: 60% 40% 56% 44% / 40% 60% 36% 64%; }
         }
-        @keyframes morph-speaking {
-          0%   { border-radius: 38% 62% 46% 54% / 60% 44% 56% 40%; }
-          100% { border-radius: 54% 46% 62% 38% / 38% 62% 44% 56%; }
+        @keyframes lv-morph-speaking {
+          0%   { border-radius: 44% 56% 50% 50% / 58% 42% 56% 44%; }
+          100% { border-radius: 56% 44% 44% 56% / 42% 58% 44% 56%; }
         }
-        @keyframes morph-thinking {
-          0%   { border-radius: 50%; transform: scale(0.9) rotate(0deg); }
-          100% { border-radius: 50%; transform: scale(0.95) rotate(180deg); }
+        @keyframes lv-morph-thinking {
+          0%   { transform: scale(0.88) rotate(0deg); }
+          100% { transform: scale(0.94) rotate(120deg); }
         }
-        @keyframes morph-standby {
-          0%   { border-radius: 60% 40% 55% 45% / 50% 60% 40% 50%; }
-          100% { border-radius: 45% 55% 40% 60% / 58% 42% 58% 42%; }
+        @keyframes lv-wave {
+          from { transform: scaleY(0.5); opacity: 0.6; }
+          to   { transform: scaleY(2.2); opacity: 1; }
         }
-        @keyframes wave-bar {
-          from { transform: scaleY(0.5); opacity: 0.7; }
+        @keyframes lv-mic {
+          from { transform: scaleY(0.6); opacity: 0.5; }
           to   { transform: scaleY(2);   opacity: 1; }
         }
-        @keyframes listen-dot {
-          from { transform: scale(0.6); opacity: 0.4; }
-          to   { transform: scale(1.3); opacity: 1; }
+        @keyframes lv-orbit {
+          0%   { transform: translateX(0px)  translateY(-28px) scale(0.7); }
+          33%  { transform: translateX(24px) translateY(14px)  scale(1);   }
+          66%  { transform: translateX(-24px) translateY(14px) scale(0.7); }
+          100% { transform: translateX(0px)  translateY(-28px) scale(0.7); }
         }
       `}</style>
     </div>
   );
 }
 
-// ─── Main page ───────────────────────────────────────────────────────────────
+// ─── Page ─────────────────────────────────────────────────────────────────────
 export default function AILive() {
-  const [status, setStatus]           = useState<Status>("idle");
-  const [turns, setTurns]             = useState<Turn[]>([]);
-  const [liveText, setLiveText]       = useState("");
-  const [muted, setMuted]             = useState(false);
-  const [error, setError]             = useState("");
+  const [status, setStatus]     = useState<Status>("idle");
+  const [turns, setTurns]       = useState<Turn[]>([]);
+  const [interim, setInterim]   = useState("");
+  const [muted, setMuted]       = useState(false);
+  const [error, setError]       = useState("");
 
-  const statusRef     = useRef<Status>("idle");
-  const historyRef    = useRef<{ role: string; content: string }[]>([]);
-  const recRef        = useRef<any>(null);
-  const synthRef      = useRef<SpeechSynthesis | null>(null);
-  const voiceRef      = useRef<SpeechSynthesisVoice | null>(null);
-  const idRef         = useRef(0);
-  const processingRef = useRef(false);
-  const bottomRef     = useRef<HTMLDivElement>(null);
-  const mutableId     = useRef(0);
+  // Refs that survive re-renders
+  const sid        = useRef(0);          // session id — increment to kill all old callbacks
+  const statusRef  = useRef<Status>("idle");
+  const histRef    = useRef<{role:string;content:string}[]>([]);
+  const recRef     = useRef<any>(null);
+  const synthRef   = useRef(window.speechSynthesis);
+  const voiceRef   = useRef<SpeechSynthesisVoice|null>(null);
+  const turnId     = useRef(0);
+  const mutedRef   = useRef(false);
 
-  const setS = useCallback((s: Status) => {
-    statusRef.current = s;
-    setStatus(s);
-  }, []);
+  mutedRef.current = muted;
 
-  // Init voices
+  function go(s: Status) { statusRef.current = s; setStatus(s); }
+
+  // Load voice (voiceschanged fires asynchronously in Chrome)
   useEffect(() => {
-    synthRef.current = window.speechSynthesis;
-    const load = () => { voiceRef.current = pickVoice(window.speechSynthesis); };
+    const load = () => { voiceRef.current = pickVoice(synthRef.current); };
     load();
-    window.speechSynthesis.addEventListener("voiceschanged", load);
+    synthRef.current.addEventListener("voiceschanged", load);
     return () => {
-      window.speechSynthesis.removeEventListener("voiceschanged", load);
-      window.speechSynthesis.cancel();
-      stopRec();
+      sid.current += 1;
+      synthRef.current.removeEventListener("voiceschanged", load);
+      synthRef.current.cancel();
+      killRec();
     };
   }, []);
 
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [turns]);
-
-  function stopRec() {
-    try { recRef.current?.abort(); } catch {}
-    try { recRef.current?.stop(); } catch {}
+  function killRec() {
+    const r = recRef.current;
     recRef.current = null;
+    try { r?.abort(); } catch {}
   }
 
-  const startListening = useCallback(() => {
-    if (processingRef.current) return;
+  // ── Start one recognition pass ──────────────────────────────────────────────
+  function startRec(mySid: number) {
+    if (mySid !== sid.current) return;
+
     const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SR) { setError("Voice not supported. Use Chrome or Edge."); return; }
+    if (!SR) { setError("Voice recognition not supported. Please use Chrome or Edge."); go("idle"); return; }
 
-    stopRec();
+    killRec();
+
     const rec = new SR();
-    rec.continuous       = false;
-    rec.interimResults   = true;
-    rec.lang             = "en-US";
-    rec.maxAlternatives  = 1;
-    recRef.current       = rec;
+    rec.continuous      = false;
+    rec.interimResults  = true;
+    rec.lang            = "en-US";
+    rec.maxAlternatives = 1;
+    recRef.current      = rec;
 
-    rec.onstart = () => { setS("listening"); setLiveText(""); };
+    rec.onstart = () => {
+      if (mySid !== sid.current) return;
+      go("listening");
+      setInterim("");
+    };
 
     rec.onresult = (e: any) => {
-      let interim = "";
-      let final   = "";
+      if (mySid !== sid.current) return;
+      let inter = "", final = "";
       for (let i = e.resultIndex; i < e.results.length; i++) {
         const t = e.results[i][0].transcript;
-        if (e.results[i].isFinal) final += t;
-        else interim += t;
+        if (e.results[i].isFinal) final += t; else inter += t;
       }
-      setLiveText(final || interim);
+      if (inter) setInterim(inter);
       if (final.trim()) {
-        processingRef.current = true;
-        rec.abort();
-        sendToAI(final.trim());
+        setInterim("");
+        killRec();
+        askAI(final.trim(), mySid);
       }
     };
 
     rec.onerror = (e: any) => {
-      if (e.error === "no-speech" || e.error === "aborted") {
-        if (statusRef.current !== "idle" && !processingRef.current) {
-          setTimeout(startListening, 200);
-        }
-      } else if (e.error === "not-allowed") {
-        setError("Microphone access denied. Please allow mic permission.");
-        setS("idle");
+      if (mySid !== sid.current) return;
+      if (e.error === "aborted") return; // we caused it — ignore
+      if (e.error === "no-speech") {
+        // restart quietly
+        if (statusRef.current === "listening") setTimeout(() => startRec(mySid), 120);
+        return;
       }
+      if (e.error === "not-allowed") {
+        setError("Microphone blocked. Allow microphone access in your browser then tap Start.");
+        go("idle"); sid.current += 1; return;
+      }
+      // any other error: try restarting
+      setTimeout(() => startRec(mySid), 400);
     };
 
     rec.onend = () => {
-      if (statusRef.current !== "idle" && statusRef.current !== "thinking" && statusRef.current !== "speaking" && !processingRef.current) {
-        setTimeout(startListening, 150);
+      if (mySid !== sid.current) return;
+      // Only restart if we're still supposed to be listening
+      if (statusRef.current === "listening") {
+        setTimeout(() => startRec(mySid), 120);
       }
     };
 
-    try { rec.start(); } catch {}
-  }, []);
+    try { rec.start(); }
+    catch (ex: any) {
+      if (mySid === sid.current) setTimeout(() => startRec(mySid), 300);
+    }
+  }
 
-  const sendToAI = useCallback(async (text: string) => {
-    setLiveText("");
-    setS("thinking");
-    const tid = ++idRef.current;
-    setTurns(prev => [...prev, { id: mutableId.current++, role: "user", text }]);
-    historyRef.current = [...historyRef.current, { role: "user", content: text }];
+  // ── Ask AI ──────────────────────────────────────────────────────────────────
+  async function askAI(text: string, mySid: number) {
+    if (mySid !== sid.current) return;
+    go("thinking");
+
+    const userTurn: Turn = { id: turnId.current++, role: "user", text };
+    setTurns(p => [...p, userTurn]);
+    histRef.current = [...histRef.current, { role: "user", content: text }];
 
     try {
       const res  = await fetch("/api/ai-live", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ message: text, history: historyRef.current.slice(-10) }),
+        body: JSON.stringify({ message: text, history: histRef.current.slice(-12) }),
       });
-      const data = await res.json();
-      const reply = (data.reply ?? "Sorry, I didn't catch that.").replace(/\*+|#+|-{2,}|_+/g, "").trim();
+      if (mySid !== sid.current) return;
 
-      historyRef.current = [...historyRef.current, { role: "assistant", content: reply }];
-      setTurns(prev => [...prev, { id: mutableId.current++, role: "assistant", text: reply }]);
+      const data  = await res.json();
+      const reply = (data.reply ?? "I'm here — what would you like to talk about?")
+        .replace(/[\*\_\#\`]+/g, "").trim();
 
-      setS("speaking");
-      speakText(reply, () => {
-        processingRef.current = false;
-        if (statusRef.current !== "idle") {
-          setS("listening");
-          startListening();
-        }
-      });
+      const aiTurn: Turn = { id: turnId.current++, role: "assistant", text: reply };
+      setTurns(p => [...p, aiTurn]);
+      histRef.current = [...histRef.current, { role: "assistant", content: reply }];
+
+      if (mySid !== sid.current) return;
+      go("speaking");
+      speakReply(reply, mySid);
+
     } catch {
-      setError("Connection issue. Still listening…");
-      processingRef.current = false;
-      if (statusRef.current !== "idle") {
-        setS("listening");
-        startListening();
-      }
+      if (mySid !== sid.current) return;
+      setError("Connection issue — resuming…");
+      go("listening");
+      startRec(mySid);
     }
-  }, [startListening]);
+  }
 
-  const speakText = useCallback((text: string, onDone: () => void) => {
+  // ── Speak ──────────────────────────────────────────────────────────────────
+  function speakReply(text: string, mySid: number) {
     const synth = synthRef.current;
-    if (!synth) { onDone(); return; }
     synth.cancel();
 
-    const utter      = new SpeechSynthesisUtterance(text);
-    utter.rate       = 1.0;
-    utter.pitch      = 0.95;
-    utter.volume     = muted ? 0 : 1;
-    if (voiceRef.current) utter.voice = voiceRef.current;
-    utter.onend      = onDone;
-    utter.onerror    = onDone;
+    const done = () => {
+      if (mySid !== sid.current) return;
+      go("listening");
+      startRec(mySid);
+    };
 
-    // iOS Safari needs a tiny delay
-    setTimeout(() => { try { synth.speak(utter); } catch { onDone(); } }, 50);
-  }, [muted]);
+    if (mutedRef.current) { setTimeout(done, 0); return; }
 
-  const startSession = useCallback(() => {
+    const u = new SpeechSynthesisUtterance(text);
+    u.rate  = 0.97;
+    u.pitch = 0.92;
+    if (voiceRef.current) u.voice = voiceRef.current;
+    u.onend   = done;
+    u.onerror = done;
+    setTimeout(() => { try { synth.speak(u); } catch { done(); } }, 60);
+  }
+
+  // ── Session control ────────────────────────────────────────────────────────
+  function startSession() {
     const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SR) { setError("Use Chrome or Edge for voice support."); return; }
+    if (!SR) { setError("Voice recognition requires Chrome or Edge."); return; }
     setError("");
-    processingRef.current = false;
     setTurns([]);
-    historyRef.current = [];
-    setS("listening");
-    startListening();
-  }, [startListening]);
+    histRef.current = [];
+    const mySid = ++sid.current;
+    go("listening");
+    startRec(mySid);
+  }
 
-  const endSession = useCallback(() => {
-    stopRec();
-    synthRef.current?.cancel();
-    processingRef.current = false;
-    setS("idle");
-    setLiveText("");
-  }, []);
+  function endSession() {
+    // Increment FIRST — this kills every pending callback immediately
+    sid.current += 1;
+    go("idle");
+    setInterim("");
+    killRec();
+    synthRef.current.cancel();
+  }
 
+  // ── Derived display values ─────────────────────────────────────────────────
   const isActive  = status !== "idle";
   const lastAI    = [...turns].reverse().find(t => t.role === "assistant");
   const lastUser  = [...turns].reverse().find(t => t.role === "user");
 
   const statusLabel: Record<Status, string> = {
     idle:      "",
-    standby:   "On standby",
-    listening: "Listening…",
-    thinking:  "Thinking…",
-    speaking:  "Speaking…",
+    listening: "Listening",
+    thinking:  "Thinking",
+    speaking:  "Speaking",
   };
 
   return (
     <div
       className="flex flex-col h-[100dvh] select-none overflow-hidden"
-      style={{ background: "radial-gradient(ellipse at 50% 120%, #0a1628 0%, #050a14 50%, #020508 100%)" }}
+      style={{ background: "radial-gradient(ellipse at 50% 110%, #071428 0%, #050a14 45%, #020508 100%)" }}
     >
       {/* Header */}
-      <header className="flex items-center justify-between px-5 pt-safe pt-4 pb-3 relative z-30">
+      <header className="flex items-center justify-between px-5 py-3.5 relative z-30">
         <Link href="/chat">
-          <button className="flex items-center gap-1.5 text-white/40 hover:text-white/70 transition-colors">
+          <button className="flex items-center gap-1.5 text-white/35 hover:text-white/65 transition-colors">
             <ArrowLeft className="w-4 h-4" />
-            <span className="text-sm">Back</span>
+            <span className="text-sm">Chat</span>
           </button>
         </Link>
 
         <div className="flex items-center gap-2">
+          <span className="text-sm font-medium text-white/50">Turbo Live</span>
           {isActive && (
-            <div className="flex items-center gap-1.5">
-              <div
-                className="w-1.5 h-1.5 rounded-full bg-emerald-400"
-                style={{ boxShadow: "0 0 6px #34D399", animation: "pulse 1.5s ease-in-out infinite" }}
-              />
-              <span className="text-xs text-white/50 font-medium">LIVE</span>
+            <div className="flex items-center gap-1">
+              <div className="w-1.5 h-1.5 rounded-full bg-emerald-400" style={{ animation: "pulse 1.4s ease-in-out infinite", boxShadow: "0 0 6px #34D399" }} />
+              <span className="text-[10px] font-semibold tracking-widest text-emerald-400/70 uppercase">Live</span>
             </div>
           )}
         </div>
 
-        <button
-          onClick={() => setMuted(m => !m)}
-          className="p-2 rounded-xl text-white/30 hover:text-white/60 transition-colors"
-        >
+        <button onClick={() => setMuted(m => { if (!m) synthRef.current.cancel(); return !m; })}
+          className="p-2 rounded-xl text-white/30 hover:text-white/60 transition-colors">
           {muted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
         </button>
       </header>
 
-      {/* Main content area */}
-      <div className="flex-1 flex flex-col items-center justify-between px-6 pb-6 relative z-10 overflow-hidden">
+      {/* Body */}
+      <div className="flex-1 flex flex-col items-center justify-between px-6 pb-8 overflow-hidden">
 
-        {/* Conversation text — last exchange */}
-        <div className="flex-1 flex flex-col items-center justify-center w-full max-w-sm gap-6 text-center">
-          {!isActive && (
-            <div className="space-y-3">
-              <h1 className="text-2xl font-light text-white/80 tracking-tight">Turbo Live</h1>
-              <p className="text-sm text-white/30 leading-relaxed">
-                Tap to start a live voice conversation.<br />Hands-free — no tapping between turns.
+        {/* Text display */}
+        <div className="flex-1 flex flex-col items-center justify-center w-full max-w-xs gap-5 text-center">
+          {!isActive ? (
+            <div className="space-y-2">
+              <p className="text-xl font-light text-white/60 tracking-tight">AI Live</p>
+              <p className="text-sm text-white/25 leading-relaxed">
+                Fully hands-free voice conversation.<br />Tap once to start — no tapping between turns.
               </p>
             </div>
-          )}
-
-          {isActive && (
-            <div className="w-full space-y-4">
-              {/* AI last response */}
-              {lastAI && status !== "listening" && status !== "thinking" && (
-                <div
-                  className="text-white/85 text-[17px] font-light leading-relaxed tracking-tight"
-                  style={{ animation: "fadeUp 0.4s ease-out" }}
-                >
+          ) : (
+            <div className="w-full space-y-4 min-h-[90px] flex flex-col items-center justify-center">
+              {/* AI reply */}
+              {lastAI && (status === "speaking" || (status === "listening" && !interim)) && (
+                <p key={lastAI.id} className="text-white/80 text-[17px] font-light leading-relaxed"
+                  style={{ animation: "lv-up 0.35s ease-out" }}>
                   {lastAI.text}
-                </div>
+                </p>
               )}
-
-              {/* User last input */}
-              {lastUser && (status === "listening" || status === "thinking") && (
-                <div className="text-white/35 text-sm leading-relaxed">
+              {/* User last said */}
+              {lastUser && status === "thinking" && (
+                <p key={lastUser.id} className="text-white/35 text-sm"
+                  style={{ animation: "lv-up 0.25s ease-out" }}>
                   {lastUser.text}
-                </div>
+                </p>
               )}
-
-              {/* Live transcript */}
-              {liveText && (
-                <div
-                  className="text-white/55 text-base italic leading-relaxed"
-                  style={{ animation: "fadeIn 0.15s ease-out" }}
-                >
-                  "{liveText}"
-                </div>
+              {/* Live interim */}
+              {interim && (
+                <p className="text-white/50 text-base italic leading-snug">"{interim}"</p>
               )}
             </div>
           )}
         </div>
 
-        {/* Status label */}
+        {/* Status dot row */}
         {isActive && (
-          <div className="text-xs font-medium tracking-widest uppercase text-white/25 mb-4">
+          <p className="text-[10px] tracking-[0.2em] uppercase text-white/20 mb-5 font-medium">
             {statusLabel[status]}
-          </div>
+          </p>
         )}
 
         {/* Orb */}
         <div className="mb-8">
-          <GeminiOrb status={status} />
+          <GeminiOrb status={status} interim={interim} />
         </div>
 
         {/* Error */}
         {error && (
-          <div className="mb-4 text-xs text-red-400/80 text-center max-w-[240px]">
-            {error}
-          </div>
+          <p className="mb-4 text-xs text-amber-400/70 text-center max-w-[260px] leading-relaxed">{error}</p>
         )}
 
-        {/* Action button */}
+        {/* Buttons */}
         {!isActive ? (
-          <button
-            onClick={startSession}
-            className="w-full max-w-[240px] py-4 rounded-2xl text-white font-semibold text-base transition-all active:scale-95"
-            style={{
-              background: "linear-gradient(135deg, #4285F4 0%, #34A853 100%)",
-              boxShadow: "0 4px 32px rgba(66,133,244,0.35)",
-            }}
-          >
+          <button onClick={startSession}
+            className="w-full max-w-[220px] py-4 rounded-2xl text-white font-semibold text-[15px] transition-all active:scale-95"
+            style={{ background: "linear-gradient(135deg, #1565C0, #1a9e4a)", boxShadow: "0 4px 32px rgba(21,101,192,0.4)" }}>
             Start conversation
           </button>
         ) : (
-          <button
-            onClick={endSession}
-            className="flex items-center justify-center w-14 h-14 rounded-full transition-all active:scale-90"
-            style={{
-              background: "rgba(234,67,53,0.15)",
-              border: "1.5px solid rgba(234,67,53,0.4)",
-              boxShadow: "0 0 20px rgba(234,67,53,0.15)",
-            }}
-          >
-            <X className="w-5 h-5 text-red-400" />
-          </button>
+          <div className="flex flex-col items-center gap-2">
+            <button onClick={endSession}
+              className="flex items-center justify-center w-14 h-14 rounded-full transition-all active:scale-90"
+              style={{ background:"rgba(220,38,38,0.12)", border:"1.5px solid rgba(220,38,38,0.35)", boxShadow:"0 0 24px rgba(220,38,38,0.12)" }}>
+              <X className="w-5 h-5 text-red-400" />
+            </button>
+            <p className="text-[10px] text-white/20">End session</p>
+          </div>
         )}
-
-        <div ref={bottomRef} />
       </div>
 
       <style>{`
-        @keyframes fadeUp {
-          from { opacity: 0; transform: translateY(10px); }
-          to   { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes fadeIn {
-          from { opacity: 0; }
-          to   { opacity: 1; }
+        @keyframes lv-up {
+          from { opacity:0; transform: translateY(8px); }
+          to   { opacity:1; transform: translateY(0); }
         }
       `}</style>
     </div>
