@@ -2,7 +2,6 @@ import express, { type Request, Response, NextFunction } from "express";
 import compression from "compression";
 import rateLimit from "express-rate-limit";
 import path from "path";
-import fs from "fs";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { ensureSubscriptionPlans } from "./paypal";
@@ -155,14 +154,10 @@ process.on('unhandledRejection', (reason: any) => {
     console.log('[Server] Setting up static file serving...');
     serveStatic(app);
 
-    const distPath = path.resolve(import.meta.dirname, "public");
-    app.get("*", (_req, res) => {
-      const indexPath = path.resolve(distPath, "index.html");
-      if (fs.existsSync(indexPath)) {
-        res.sendFile(indexPath);
-      } else {
-        res.status(500).send("index.html not found");
-      }
+    const spaIndexPath = path.resolve(import.meta.dirname, "public", "index.html");
+    app.get("*", (req, res, next) => {
+      if (req.path.startsWith("/api")) return next();
+      res.sendFile(spaIndexPath);
     });
 
     console.log('[Server] Static files ready.');
