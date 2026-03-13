@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, type CSSProperties } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { X, Menu, Camera, Brain, Crown, CheckCircle, Star, Zap, Sparkles, Rocket, Settings, LogOut, Heart, MessageSquare, Copy, Users, Shield, FlaskConical, ArrowUp, Film, Phone, Mail, Clock, ImagePlus, Loader2, Plus, Pencil, Trash2, Check } from "lucide-react";
@@ -95,6 +95,28 @@ export default function MobileChatUI({
 }: Props) {
   const { theme } = useTheme();
   const isDark = theme === "dark";
+
+  const getPref = <T,>(key: string, def: T): T => {
+    try { const s = localStorage.getItem(key); return s !== null ? JSON.parse(s) as T : def; } catch { return def; }
+  };
+  const fontSizePref = getPref<"small"|"medium"|"large">("pref_fontSize", "medium");
+  const chatDensityPref = getPref<"compact"|"comfortable"|"spacious">("pref_chatDensity", "comfortable");
+  const bubbleStylePref = getPref<"bubbles"|"flat"|"minimal">("pref_bubbleStyle", "bubbles");
+  const showTimestampsPref = getPref("pref_showTimestamps", true);
+  const animationsPref = getPref("pref_animations", true);
+
+  const msgFontSize = fontSizePref === "small" ? "11px" : fontSizePref === "large" ? "16px" : "14px";
+  const msgSpacing = chatDensityPref === "compact" ? "12px" : chatDensityPref === "spacious" ? "24px" : "20px";
+  const getUserBubbleStyle = (): CSSProperties => {
+    if (bubbleStylePref === "flat") return { background: "#2563EB", borderRadius: "8px", padding: "10px 14px" };
+    if (bubbleStylePref === "minimal") return { background: "rgba(37,99,235,0.12)", border: "1px solid rgba(37,99,235,0.25)", borderRadius: "14px", padding: "8px 12px" };
+    return { background: "#2563EB", borderRadius: "18px 18px 4px 18px", padding: "12px 16px" };
+  };
+  const getAIBubbleStyle = (): CSSProperties => {
+    if (bubbleStylePref === "flat") return { background: CARD_BG, border: `1px solid ${BORDER}`, borderRadius: "8px", padding: "10px 14px" };
+    if (bubbleStylePref === "minimal") return { background: "transparent", padding: "4px 0" };
+    return { background: "transparent", padding: "0" };
+  };
   const GEMINI_BG = isDark ? DARK_BG : "#F8F9FC";
   const CARD_BG = isDark ? DARK_CARD : "#FFFFFF";
   const INPUT_BG = isDark ? DARK_INPUT : "#F0F1F8";
@@ -540,25 +562,31 @@ export default function MobileChatUI({
           </div>
         ) : (
           /* Messages */
-          <div className="px-4 py-4 space-y-5">
+          <div className="px-4 py-4">
             {messages.map((msg) => (
-              <div key={msg.id} className={`flex gap-3 ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
+              <div
+                key={msg.id}
+                className={`flex gap-3 ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+                style={{ marginBottom: msgSpacing, transition: animationsPref ? "all 0.15s" : "none" }}
+              >
                 {msg.role === "assistant" && (
                   <img src={turboLogo} alt="Turbo" className="w-7 h-7 rounded-full object-cover flex-shrink-0 mt-0.5" />
                 )}
-                <div className={`max-w-[82%] ${msg.role === "user" ? "" : ""}`}>
+                <div className="max-w-[82%]">
                   {msg.role === "user" ? (
-                    <div className="px-4 py-3 rounded-2xl rounded-br-md text-sm leading-relaxed break-words text-white" style={{ background: "#2563EB" }}>
+                    <div className="leading-relaxed break-words text-white" style={{ fontSize: msgFontSize, ...getUserBubbleStyle() }}>
                       {renderMessageContent(msg.content, msg.role)}
                     </div>
                   ) : (
-                    <div className="text-sm leading-relaxed break-words" style={{ color: TEXT_MAIN }}>
+                    <div className="leading-relaxed break-words" style={{ fontSize: msgFontSize, color: TEXT_MAIN, ...getAIBubbleStyle() }}>
                       {renderMessageContent(msg.content, msg.role)}
                     </div>
                   )}
-                  <p className="text-[10px] mt-1 px-1" style={{ color: TEXT_TS }}>
-                    {formatTimestamp(msg.timestamp)}
-                  </p>
+                  {showTimestampsPref && (
+                    <p className="text-[10px] mt-1 px-1" style={{ color: TEXT_TS }}>
+                      {formatTimestamp(msg.timestamp)}
+                    </p>
+                  )}
                 </div>
               </div>
             ))}
@@ -568,8 +596,8 @@ export default function MobileChatUI({
               <div className="flex gap-3 justify-start">
                 <img src={turboLogo} alt="Turbo" className="w-7 h-7 rounded-full object-cover flex-shrink-0 mt-0.5" />
                 <div className="flex items-center gap-1.5 px-4 py-3 rounded-2xl" style={{ background: CARD_BG, border: `1px solid ${BORDER}` }}>
-                  {[0, 150, 300].map((delay) => (
-                    <div key={delay} className="w-2 h-2 rounded-full bg-blue-400 animate-pulse" style={{ animationDelay: `${delay}ms` }} />
+                  {[0, 150, 300].map((delay, idx) => (
+                    <div key={delay} className={`w-2 h-2 rounded-full bg-blue-400 ${animationsPref ? 'animate-pulse' : ''}`} style={{ animationDelay: `${delay}ms`, opacity: animationsPref ? 1 : 1 - idx * 0.2 }} />
                   ))}
                 </div>
               </div>

@@ -65,6 +65,28 @@ export default function Chat() {
   const voiceSpeedPref = getPref<string>("pref_voiceSpeed", "normal");
   const voicePitchPref = getPref<string>("pref_voicePitch", "normal");
   const voiceGenderPref = getPref<string>("pref_voiceGender", "default");
+  const fontSizePref = getPref<"small"|"medium"|"large">("pref_fontSize", "medium");
+  const chatDensityPref = getPref<"compact"|"comfortable"|"spacious">("pref_chatDensity", "comfortable");
+  const bubbleStylePref = getPref<"bubbles"|"flat"|"minimal">("pref_bubbleStyle", "bubbles");
+  const animationsPref = getPref("pref_animations", true);
+
+  const msgFontClass = fontSizePref === "small" ? "text-xs" : fontSizePref === "large" ? "text-base sm:text-lg" : "text-sm sm:text-base";
+  const msgSpacingClass = chatDensityPref === "compact" ? "mb-2" : chatDensityPref === "spacious" ? "mb-7 sm:mb-8" : "mb-4 sm:mb-5";
+  const getBubbleClass = (role: string) => {
+    if (bubbleStylePref === "flat") {
+      return role === "user"
+        ? "px-4 py-2.5 rounded-lg border border-blue-400/40 bg-blue-500/80 text-white"
+        : "px-4 py-2.5 rounded-lg";
+    }
+    if (bubbleStylePref === "minimal") {
+      return role === "user"
+        ? "px-3 py-2 rounded-xl bg-blue-500/10 border border-blue-400/20 text-blue-100"
+        : "px-0 py-1";
+    }
+    return role === "user"
+      ? "px-4 py-3 rounded-2xl rounded-br-md bg-blue-500 text-white"
+      : "px-4 py-3 rounded-2xl rounded-bl-md";
+  };
 
   const { user, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
@@ -747,7 +769,7 @@ export default function Chat() {
               <div className="relative z-10 flex flex-col items-center">
                 <div className={`relative mb-6 ${isDark ? '' : ''}`}>
                   <img src={turboLogo} alt="TurboAnswer" className={`w-20 h-20 sm:w-28 sm:h-28 rounded-2xl object-cover ${isDark ? 'shadow-2xl shadow-indigo-500/20' : 'shadow-lg'}`} />
-                  {isDark && <div className="absolute -inset-2 rounded-3xl border border-indigo-500/20 animate-pulse" />}
+                  {isDark && animationsPref && <div className="absolute -inset-2 rounded-3xl border border-indigo-500/20 animate-pulse" />}
                 </div>
                 <h2 className={`text-xl sm:text-2xl font-bold mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>Welcome to TurboAnswer</h2>
                 <p className={`text-sm sm:text-base mb-6 ${isDark ? 'bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 bg-clip-text text-transparent font-medium' : 'text-gray-500'}`}>Think Faster. Build Smarter.</p>
@@ -770,15 +792,15 @@ export default function Chat() {
 
           {/* Messages */}
           {messages.map((message) => (
-            <div key={message.id} className={`flex items-end gap-2 sm:gap-3 mb-4 sm:mb-5 ${message.role === 'user' ? 'justify-end' : ''}`}>
+            <div key={message.id} className={`flex items-end gap-2 sm:gap-3 ${msgSpacingClass} ${message.role === 'user' ? 'justify-end' : ''} ${animationsPref ? 'transition-all' : ''}`}>
               {message.role === 'assistant' && (
                 <img src={turboLogo} alt="AI" className="w-7 h-7 sm:w-8 sm:h-8 rounded-full object-cover flex-shrink-0" />
               )}
 
               <div className={`min-w-0 ${message.role === 'user' ? 'max-w-[80%] sm:max-w-lg' : 'max-w-[85%] sm:max-w-2xl'}`}>
                 <div
-                  className={`px-4 py-3 text-sm sm:text-base leading-relaxed break-words ${message.role === 'user' ? 'bg-blue-500 text-white rounded-2xl rounded-br-md' : 'rounded-2xl rounded-bl-md'}`}
-                  style={message.role !== 'user' ? { background: 'var(--chat-bubble-ai-bg)', color: 'var(--chat-bubble-ai-text)', border: '1px solid var(--chat-bubble-ai-border)' } : undefined}
+                  className={`${msgFontClass} leading-relaxed break-words ${getBubbleClass(message.role)}`}
+                  style={message.role !== 'user' && bubbleStylePref !== 'minimal' ? { background: 'var(--chat-bubble-ai-bg)', color: 'var(--chat-bubble-ai-text)', border: '1px solid var(--chat-bubble-ai-border)' } : message.role !== 'user' ? { color: 'var(--chat-bubble-ai-text)' } : undefined}
                 >
                   {renderMessageContent(message.content, message.role)}
                 </div>
@@ -804,9 +826,9 @@ export default function Chat() {
               <div className={`px-4 py-3 rounded-2xl rounded-bl-md ${isDark ? 'bg-zinc-800/80 border border-zinc-700/50' : 'bg-white border border-gray-200 shadow-sm'}`}>
                 <div className="flex items-center space-x-2">
                   <div className="flex space-x-1">
-                    <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse" style={{ animationDelay: '0ms' }} />
-                    <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse" style={{ animationDelay: '150ms' }} />
-                    <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse" style={{ animationDelay: '300ms' }} />
+                    <div className={`w-2 h-2 bg-blue-400 rounded-full ${animationsPref ? 'animate-pulse' : 'opacity-80'}`} style={{ animationDelay: '0ms' }} />
+                    <div className={`w-2 h-2 bg-blue-400 rounded-full ${animationsPref ? 'animate-pulse' : 'opacity-60'}`} style={{ animationDelay: '150ms' }} />
+                    <div className={`w-2 h-2 bg-blue-400 rounded-full ${animationsPref ? 'animate-pulse' : 'opacity-40'}`} style={{ animationDelay: '300ms' }} />
                   </div>
                   <span className={`text-xs sm:text-sm ${isDark ? 'text-zinc-400' : 'text-gray-400'}`}>Thinking...</span>
                 </div>
