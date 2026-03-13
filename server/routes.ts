@@ -499,6 +499,39 @@ function downloadAAB(){
     res.send(html);
   });
 
+  const trialLimiter = rateLimit({
+    windowMs: 60 * 60 * 1000,
+    max: 10,
+    message: { error: 'Trial rate limit reached. Please create an account to continue.' },
+  });
+
+  app.post("/api/trial/ask", trialLimiter, async (req: any, res) => {
+    try {
+      const { question } = req.body;
+      if (!question || typeof question !== "string" || !question.trim()) {
+        return res.status(400).json({ message: "Question is required" });
+      }
+
+      const { generateAIResponse } = await import('./services/multi-ai.js');
+      const trialUserId = `trial_${req.ip || 'anon'}`;
+      const answer = await generateAIResponse(
+        question.trim(),
+        [],
+        "free",
+        "gemini-flash",
+        trialUserId,
+        "en",
+        "balanced",
+        "casual"
+      );
+
+      res.json({ answer });
+    } catch (error: any) {
+      console.error("[Trial] Error:", error.message);
+      res.status(500).json({ message: "Something went wrong. Please try again." });
+    }
+  });
+
   // Create a new conversation
   app.post("/api/conversations", isAuthenticated, async (req: any, res) => {
     try {

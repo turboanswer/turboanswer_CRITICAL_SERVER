@@ -34,8 +34,11 @@ import VideoStudio from "@/pages/video-studio";
 import CodeStudio from "@/pages/code-studio";
 import BetaApply from "@/pages/beta-apply";
 import DataDeletion from "@/pages/data-deletion";
+import MobileWelcome from "@/pages/mobile-welcome";
+import TrialChat from "@/pages/trial-chat";
 import LockdownScreen from "@/components/lockdown-screen";
 import { primeAudioContext } from "@/lib/audio-manager";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const isNativeMobile = !!(window as any).Capacitor?.isNativePlatform?.();
 
@@ -73,9 +76,11 @@ function AuthenticatedRouter() {
 }
 
 function UnauthenticatedRouter() {
+  const isMobileWeb = useIsMobile();
   return (
     <Switch>
-      <Route path="/" component={LandingPage} />
+      <Route path="/" component={isMobileWeb && !isNativeMobile ? MobileWelcome : LandingPage} />
+      <Route path="/trial-chat" component={TrialChat} />
       <Route path="/login" component={Login} />
       <Route path="/register" component={Register} />
       <Route path="/pricing" component={Pricing} />
