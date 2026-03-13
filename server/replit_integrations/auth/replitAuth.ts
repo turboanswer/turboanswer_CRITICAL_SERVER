@@ -4,6 +4,54 @@ import connectPg from "connect-pg-simple";
 import bcrypt from "bcryptjs";
 import { authStorage } from "./storage";
 
+import crypto from "crypto";
+
+const smsVerificationCodes = new Map<string, { code: string; expiresAt: number; verified: boolean; attempts: number }>();
+const smsSendLimits = new Map<string, { count: number; windowStart: number }>();
+const SMS_MAX_ATTEMPTS = 5;
+const SMS_SEND_LIMIT = 3;
+const SMS_SEND_WINDOW = 15 * 60 * 1000;
+
+function normalizePhone(phone: string): string {
+  const digits = phone.replace(/\D/g, '');
+  if (digits.length === 10) return `+1${digits}`;
+  if (digits.length === 11 && digits.startsWith('1')) return `+${digits}`;
+  if (digits.startsWith('+')) return phone.replace(/[^\d+]/g, '');
+  return `+${digits}`;
+}
+
+async function sendTwilioSMS(to: string, body: string): Promise<boolean> {
+  const accountSid = process.env.TWILIO_ACCOUNT_SID;
+  const authToken = process.env.TWILIO_AUTH_TOKEN;
+  const from = process.env.TWILIO_PHONE_NUMBER;
+  if (!accountSid || !authToken || !from) {
+    console.error('[SMS] Twilio credentials not configured');
+    return false;
+  }
+  try {
+    const url = `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`;
+    const params = new URLSearchParams({ To: to, From: from, Body: body });
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Basic ' + Buffer.from(`${accountSid}:${authToken}`).toString('base64'),
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: params.toString(),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      console.error('[SMS] Twilio error:', data.message || data);
+      return false;
+    }
+    console.log(`[SMS] Sent to ${to}, SID: ${data.sid}`);
+    return true;
+  } catch (err: any) {
+    console.error('[SMS] Send failed:', err.message);
+    return false;
+  }
+}
+
 
 async function sendBrevoOtpEmail(recipientEmail: string, recipientName: string, otp: string) {
   const brevoApiKey = process.env.BREVO_API_KEY;
@@ -136,6 +184,88 @@ export async function setupAuth(app: Express) {
   app.set("trust proxy", 1);
   app.use(getSession());
 
+  app.post("/api/sms/send-verification", async (req, res) => {
+    try {
+      const { phoneNumber } = req.body;
+      if (!phoneNumber || !phoneNumber.trim()) {
+        return res.status(400).json({ message: "Phone number is required" });
+      }
+      const normalized = normalizePhone(phoneNumber.trim());
+      const digits = normalized.replace(/\D/g, '');
+      if (digits.length < 10 || digits.length > 15) {
+        return res.status(400).json({ message: "Please enter a valid phone number" });
+      }
+
+      const sendLimit = smsSendLimits.get(normalized);
+      if (sendLimit) {
+        if (Date.now() - sendLimit.windowStart < SMS_SEND_WINDOW) {
+          if (sendLimit.count >= SMS_SEND_LIMIT) {
+            return res.status(429).json({ message: "Too many code requests. Please wait 15 minutes before trying again." });
+          }
+        } else {
+          smsSendLimits.set(normalized, { count: 0, windowStart: Date.now() });
+        }
+      }
+
+      const existing = smsVerificationCodes.get(normalized);
+      if (existing && existing.expiresAt > Date.now() && (existing.expiresAt - Date.now()) > 4 * 60 * 1000) {
+        return res.status(429).json({ message: "A code was just sent. Please wait before requesting another." });
+      }
+
+      const code = crypto.randomInt(100000, 999999).toString();
+      smsVerificationCodes.set(normalized, { code, expiresAt: Date.now() + 5 * 60 * 1000, verified: false, attempts: 0 });
+
+      const limit = smsSendLimits.get(normalized);
+      if (limit) { limit.count++; } else { smsSendLimits.set(normalized, { count: 1, windowStart: Date.now() }); }
+
+      const sent = await sendTwilioSMS(normalized, `Your TurboAnswer verification code is: ${code}. It expires in 5 minutes.`);
+      if (!sent) {
+        smsVerificationCodes.delete(normalized);
+        return res.status(500).json({ message: "Failed to send verification code. Please check your phone number and try again." });
+      }
+
+      res.json({ message: "Verification code sent", expiresIn: 300 });
+    } catch (error: any) {
+      console.error("[SMS] Send verification error:", error);
+      res.status(500).json({ message: "Failed to send verification code" });
+    }
+  });
+
+  app.post("/api/sms/verify", async (req, res) => {
+    try {
+      const { phoneNumber, code } = req.body;
+      if (!phoneNumber || !code) {
+        return res.status(400).json({ message: "Phone number and code are required" });
+      }
+      const normalized = normalizePhone(phoneNumber.trim());
+      const entry = smsVerificationCodes.get(normalized);
+
+      if (!entry) {
+        return res.status(400).json({ message: "No verification code found. Please request a new one." });
+      }
+      if (Date.now() > entry.expiresAt) {
+        smsVerificationCodes.delete(normalized);
+        return res.status(400).json({ message: "Code has expired. Please request a new one." });
+      }
+      if (entry.attempts >= SMS_MAX_ATTEMPTS) {
+        smsVerificationCodes.delete(normalized);
+        return res.status(429).json({ message: "Too many failed attempts. Please request a new code." });
+      }
+      if (entry.code !== code.trim()) {
+        entry.attempts++;
+        const remaining = SMS_MAX_ATTEMPTS - entry.attempts;
+        return res.status(400).json({ message: `Incorrect code. ${remaining > 0 ? `${remaining} attempt${remaining > 1 ? 's' : ''} remaining.` : 'Please request a new code.'}` });
+      }
+
+      entry.verified = true;
+      entry.expiresAt = Date.now() + 15 * 60 * 1000;
+      res.json({ success: true, message: "Phone number verified" });
+    } catch (error: any) {
+      console.error("[SMS] Verify error:", error);
+      res.status(500).json({ message: "Verification failed" });
+    }
+  });
+
   app.post("/api/register", async (req, res) => {
     try {
       const { email, password, firstName, lastName, phoneNumber, inviteToken } = req.body;
@@ -155,6 +285,13 @@ export async function setupAuth(app: Express) {
       if (!phoneNumber || !phoneNumber.trim()) {
         return res.status(400).json({ message: "Phone number is required" });
       }
+
+      const normalizedPhone = normalizePhone(phoneNumber.trim());
+      const smsEntry = smsVerificationCodes.get(normalizedPhone);
+      if (!smsEntry || !smsEntry.verified || Date.now() > smsEntry.expiresAt) {
+        return res.status(400).json({ message: "Phone number must be verified before registering" });
+      }
+      smsVerificationCodes.delete(normalizedPhone);
 
       if (password.length < 6) {
         return res.status(400).json({ message: "Password must be at least 6 characters" });
