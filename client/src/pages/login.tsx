@@ -1,7 +1,6 @@
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { ArrowLeft, ShieldCheck, Lock } from "lucide-react";
-import ReCAPTCHA from "react-google-recaptcha";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,26 +9,15 @@ import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import TurboLogo from "@/components/TurboLogo";
 
-const RECAPTCHA_SITE_KEY =
-  (import.meta.env.VITE_RECAPTCHA_SITE_KEY as string) ||
-  "6Lc5a4ksAAAAANX1djxLGYr5J7-rU8E9abn8FdxK";
-
 export default function Login() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isLoading, setIsLoading] = useState(false);
-  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
-  const recaptchaRef = useRef<ReCAPTCHA>(null);
   const [formData, setFormData] = useState({ email: "", password: "" });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (!captchaToken) {
-      toast({ title: "Verification required", description: "Please complete the reCAPTCHA check before signing in.", variant: "destructive" });
-      return;
-    }
 
     setIsLoading(true);
 
@@ -41,7 +29,6 @@ export default function Login() {
         body: JSON.stringify({
           email: formData.email,
           password: formData.password,
-          captchaToken,
         }),
       });
 
@@ -80,13 +67,9 @@ export default function Login() {
         toast({ title: "Welcome back!", description: "You're now signed in to Turbo Answer." });
         setLocation("/chat");
       } else {
-        recaptchaRef.current?.reset();
-        setCaptchaToken(null);
         toast({ title: "Error", description: data.message || "Invalid credentials", variant: "destructive" });
       }
     } catch {
-      recaptchaRef.current?.reset();
-      setCaptchaToken(null);
       toast({ title: "Error", description: "Login failed. Please try again.", variant: "destructive" });
     } finally {
       setIsLoading(false);
@@ -144,19 +127,9 @@ export default function Login() {
               />
             </div>
 
-            <div className="flex justify-center py-1">
-              <ReCAPTCHA
-                ref={recaptchaRef}
-                sitekey={RECAPTCHA_SITE_KEY}
-                theme="dark"
-                onChange={(token) => setCaptchaToken(token)}
-                onExpired={() => setCaptchaToken(null)}
-              />
-            </div>
-
             <Button
               type="submit"
-              disabled={isLoading || !captchaToken}
+              disabled={isLoading}
               className="w-full bg-purple-600 hover:bg-purple-700 text-white disabled:opacity-50"
             >
               {isLoading ? "Signing In..." : "Sign In"}
@@ -190,10 +163,6 @@ export default function Login() {
                 <span>bcrypt Password Hashing</span>
               </div>
               <div className="w-px h-3 bg-gray-700" />
-              <div className="flex items-center gap-1.5">
-                <ShieldCheck size={11} className="text-purple-400" />
-                <span>reCAPTCHA Protected</span>
-              </div>
             </div>
           </div>
         </CardContent>

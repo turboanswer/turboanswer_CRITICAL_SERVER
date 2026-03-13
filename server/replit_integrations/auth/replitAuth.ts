@@ -4,60 +4,6 @@ import connectPg from "connect-pg-simple";
 import bcrypt from "bcryptjs";
 import { authStorage } from "./storage";
 
-const CAPTCHA_BLOCK_DURATION_MS = 5 * 60 * 1000;
-const captchaBlocks = new Map<string, number>();
-
-function getCaptchaBlock(ip: string): number | null {
-  const blockedUntil = captchaBlocks.get(ip);
-  if (!blockedUntil) return null;
-  if (Date.now() >= blockedUntil) {
-    captchaBlocks.delete(ip);
-    return null;
-  }
-  return blockedUntil;
-}
-
-async function verifyRecaptcha(token: string | undefined, action?: string, ip?: string): Promise<{ ok: boolean; blockedMinutes?: number }> {
-  if (ip) {
-    const blockedUntil = getCaptchaBlock(ip);
-    if (blockedUntil) {
-      const minutesLeft = Math.ceil((blockedUntil - Date.now()) / 60000);
-      console.warn(`[reCAPTCHA] IP ${ip} still blocked for ${minutesLeft}m — action=${action}`);
-      return { ok: false, blockedMinutes: minutesLeft };
-    }
-  }
-
-  const secret = process.env.RECAPTCHA_SECRET_KEY;
-  if (!secret) {
-    console.warn("[reCAPTCHA] RECAPTCHA_SECRET_KEY not set — skipping verification");
-    return { ok: true };
-  }
-  if (!token) {
-    console.warn("[reCAPTCHA] No token provided");
-    return { ok: false };
-  }
-  try {
-    const resp = await fetch(
-      `https://www.google.com/recaptcha/api/siteverify?secret=${secret}&response=${token}`,
-      { method: "POST" }
-    );
-    const data = (await resp.json()) as { success: boolean; "error-codes"?: string[] };
-
-    if (!data.success) {
-      console.warn(`[reCAPTCHA] Verification failed — action=${action} errors=${JSON.stringify(data["error-codes"])}`);
-      if (ip) {
-        captchaBlocks.set(ip, Date.now() + CAPTCHA_BLOCK_DURATION_MS);
-      }
-      return { ok: false };
-    }
-
-    console.log(`[reCAPTCHA] OK — action=${action}`);
-    return { ok: true };
-  } catch (err: any) {
-    console.error("[reCAPTCHA] Verification error:", err.message);
-    return { ok: false };
-  }
-}
 
 async function sendBrevoOtpEmail(recipientEmail: string, recipientName: string, otp: string) {
   const brevoApiKey = process.env.BREVO_API_KEY;
@@ -192,20 +138,10 @@ export async function setupAuth(app: Express) {
 
   app.post("/api/register", async (req, res) => {
     try {
-      const { email, password, firstName, lastName, phoneNumber, inviteToken, captchaToken } = req.body;
+      const { email, password, firstName, lastName, phoneNumber, inviteToken } = req.body;
 
       if (!email || !password) {
         return res.status(400).json({ message: "Email and password are required" });
-      }
-
-      const clientIp = req.ip || req.socket.remoteAddress || "unknown";
-      const captchaResult = await verifyRecaptcha(captchaToken, "register", clientIp);
-      if (!captchaResult.ok) {
-        const wait = captchaResult.blockedMinutes;
-        const msg = wait
-          ? `Too many attempts. Please wait ${wait} minute${wait > 1 ? "s" : ""} and try again.`
-          : "Security check failed. Please wait 5 minutes and try again.";
-        return res.status(403).json({ message: msg });
       }
 
       if (!firstName || !firstName.trim()) {
@@ -312,20 +248,10 @@ export async function setupAuth(app: Express) {
 
   app.post("/api/login", async (req, res) => {
     try {
-      const { email, password, captchaToken } = req.body;
+      const { email, password } = req.body;
 
       if (!email || !password) {
         return res.status(400).json({ message: "Email and password are required" });
-      }
-
-      const clientIp = req.ip || req.socket.remoteAddress || "unknown";
-      const captchaResult = await verifyRecaptcha(captchaToken, "login", clientIp);
-      if (!captchaResult.ok) {
-        const wait = captchaResult.blockedMinutes;
-        const msg = wait
-          ? `Too many attempts. Please wait ${wait} minute${wait > 1 ? "s" : ""} and try again.`
-          : "Security check failed. Please wait 5 minutes and try again.";
-        return res.status(403).json({ message: msg });
       }
 
       const user = await authStorage.getUserByEmail(email.toLowerCase());
