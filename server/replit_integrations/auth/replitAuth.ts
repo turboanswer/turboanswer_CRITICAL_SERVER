@@ -4,9 +4,30 @@ import connectPg from "connect-pg-simple";
 import bcrypt from "bcryptjs";
 import { authStorage } from "./storage";
 
-const RECAPTCHA_SCORE_THRESHOLD = 0.3;
+const RECAPTCHA_SCORE_THRESHOLD = 0.2;
+const CAPTCHA_BLOCK_DURATION_MS = 5 * 60 * 1000;
+const captchaBlocks = new Map<string, number>();
 
-async function verifyRecaptcha(token: string | undefined, action?: string): Promise<{ ok: boolean; score?: number }> {
+function getCaptchaBlock(ip: string): number | null {
+  const blockedUntil = captchaBlocks.get(ip);
+  if (!blockedUntil) return null;
+  if (Date.now() >= blockedUntil) {
+    captchaBlocks.delete(ip);
+    return null;
+  }
+  return blockedUntil;
+}
+
+async function verifyRecaptcha(token: string | undefined, action?: string, ip?: string): Promise<{ ok: boolean; score?: number; blockedMinutes?: number }> {
+  if (ip) {
+    const blockedUntil = getCaptchaBlock(ip);
+    if (blockedUntil) {
+      const minutesLeft = Math.ceil((blockedUntil - Date.now()) / 60000);
+      console.warn(`[reCAPTCHA] IP ${ip} still blocked for ${minutesLeft}m — action=${action}`);
+      return { ok: false, blockedMinutes: minutesLeft };
+    }
+  }
+
   const secret = process.env.RECAPTCHA_SECRET_KEY;
   if (!secret) {
     console.warn("[reCAPTCHA] RECAPTCHA_SECRET_KEY not set — skipping verification");
@@ -32,7 +53,10 @@ async function verifyRecaptcha(token: string | undefined, action?: string): Prom
     const passed = score >= RECAPTCHA_SCORE_THRESHOLD;
 
     if (!passed) {
-      console.warn(`[reCAPTCHA] LOW SCORE — action=${action} score=${score} threshold=${RECAPTCHA_SCORE_THRESHOLD} — ACCESS DENIED`);
+      console.warn(`[reCAPTCHA] LOW SCORE — action=${action} score=${score} threshold=${RECAPTCHA_SCORE_THRESHOLD} — BLOCKED 5 MIN`);
+      if (ip) {
+        captchaBlocks.set(ip, Date.now() + CAPTCHA_BLOCK_DURATION_MS);
+      }
     } else {
       console.log(`[reCAPTCHA] OK — action=${action} score=${score}`);
     }
@@ -183,9 +207,14 @@ export async function setupAuth(app: Express) {
         return res.status(400).json({ message: "Email and password are required" });
       }
 
-      const captchaResult = await verifyRecaptcha(captchaToken, "register");
+      const clientIp = req.ip || req.socket.remoteAddress || "unknown";
+      const captchaResult = await verifyRecaptcha(captchaToken, "register", clientIp);
       if (!captchaResult.ok) {
-        return res.status(403).json({ message: "Access denied: security check failed. Please try again." });
+        const wait = captchaResult.blockedMinutes;
+        const msg = wait
+          ? `Too many attempts. Please wait ${wait} minute${wait > 1 ? "s" : ""} and try again.`
+          : "Security check failed. Please wait 5 minutes and try again.";
+        return res.status(403).json({ message: msg });
       }
 
       if (!firstName || !firstName.trim()) {
@@ -298,9 +327,14 @@ export async function setupAuth(app: Express) {
         return res.status(400).json({ message: "Email and password are required" });
       }
 
-      const captchaResult = await verifyRecaptcha(captchaToken, "login");
+      const clientIp = req.ip || req.socket.remoteAddress || "unknown";
+      const captchaResult = await verifyRecaptcha(captchaToken, "login", clientIp);
       if (!captchaResult.ok) {
-        return res.status(403).json({ message: "Access denied: security check failed. Please try again." });
+        const wait = captchaResult.blockedMinutes;
+        const msg = wait
+          ? `Too many attempts. Please wait ${wait} minute${wait > 1 ? "s" : ""} and try again.`
+          : "Security check failed. Please wait 5 minutes and try again.";
+        return res.status(403).json({ message: msg });
       }
 
       const user = await authStorage.getUserByEmail(email.toLowerCase());
