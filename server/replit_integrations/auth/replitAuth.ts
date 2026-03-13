@@ -4,26 +4,43 @@ import connectPg from "connect-pg-simple";
 import bcrypt from "bcryptjs";
 import { authStorage } from "./storage";
 
-async function verifyRecaptcha(token: string | undefined): Promise<boolean> {
+const RECAPTCHA_SCORE_THRESHOLD = 0.5;
+
+async function verifyRecaptcha(token: string | undefined, action?: string): Promise<{ ok: boolean; score?: number }> {
   const secret = process.env.RECAPTCHA_SECRET_KEY;
   if (!secret) {
     console.warn("[reCAPTCHA] RECAPTCHA_SECRET_KEY not set — skipping verification");
-    return true;
+    return { ok: true };
   }
-  if (!token) return false;
+  if (!token) {
+    console.warn("[reCAPTCHA] No token provided");
+    return { ok: false };
+  }
   try {
     const resp = await fetch(
       `https://www.google.com/recaptcha/api/siteverify?secret=${secret}&response=${token}`,
       { method: "POST" }
     );
-    const data = (await resp.json()) as { success: boolean; score?: number; "error-codes"?: string[] };
-    if (!data.success) return false;
-    if (typeof data.score === "number") {
-      return data.score >= 0.5;
+    const data = (await resp.json()) as { success: boolean; score?: number; action?: string; "error-codes"?: string[] };
+
+    if (!data.success) {
+      console.warn(`[reCAPTCHA] Verification failed — action=${action} errors=${JSON.stringify(data["error-codes"])}`);
+      return { ok: false };
     }
-    return true;
-  } catch {
-    return false;
+
+    const score = data.score ?? 1;
+    const passed = score >= RECAPTCHA_SCORE_THRESHOLD;
+
+    if (!passed) {
+      console.warn(`[reCAPTCHA] LOW SCORE — action=${action} score=${score} threshold=${RECAPTCHA_SCORE_THRESHOLD} — ACCESS DENIED`);
+    } else {
+      console.log(`[reCAPTCHA] OK — action=${action} score=${score}`);
+    }
+
+    return { ok: passed, score };
+  } catch (err: any) {
+    console.error("[reCAPTCHA] Verification error:", err.message);
+    return { ok: false };
   }
 }
 
@@ -166,9 +183,9 @@ export async function setupAuth(app: Express) {
         return res.status(400).json({ message: "Email and password are required" });
       }
 
-      const captchaOk = await verifyRecaptcha(captchaToken);
-      if (!captchaOk) {
-        return res.status(400).json({ message: "reCAPTCHA verification failed. Please try again." });
+      const captchaResult = await verifyRecaptcha(captchaToken, "register");
+      if (!captchaResult.ok) {
+        return res.status(403).json({ message: "Access denied: security check failed. Please try again." });
       }
 
       if (!firstName || !firstName.trim()) {
@@ -281,9 +298,9 @@ export async function setupAuth(app: Express) {
         return res.status(400).json({ message: "Email and password are required" });
       }
 
-      const captchaOk = await verifyRecaptcha(captchaToken);
-      if (!captchaOk) {
-        return res.status(400).json({ message: "reCAPTCHA verification failed. Please try again." });
+      const captchaResult = await verifyRecaptcha(captchaToken, "login");
+      if (!captchaResult.ok) {
+        return res.status(403).json({ message: "Access denied: security check failed. Please try again." });
       }
 
       const user = await authStorage.getUserByEmail(email.toLowerCase());
