@@ -1,25 +1,29 @@
 import { useState, useRef, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
-import { X, Menu, Camera, Brain, Crown, CheckCircle, Star, Zap, Sparkles, Rocket, Settings, LogOut, Heart, MessageSquare, Copy, Users, Shield, FlaskConical, ArrowUp, Film, Phone, Mail, Clock, ImagePlus, Loader2, Plus } from "lucide-react";
+import { X, Menu, Camera, Brain, Crown, CheckCircle, Star, Zap, Sparkles, Rocket, Settings, LogOut, Heart, MessageSquare, Copy, Users, Shield, FlaskConical, ArrowUp, Film, Phone, Mail, Clock, ImagePlus, Loader2, Plus, Pencil, Trash2, Check } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import type { Conversation, Message } from "@shared/schema";
 import turboLogo from "@assets/file_000000007ff071f8a754520ac27c6ba4_1770423239509.png";
+import { useTheme } from "@/hooks/use-theme";
 
-const GEMINI_BG = "#08080F";
-const CARD_BG = "#111118";
-const INPUT_BG = "#16171F";
-const BORDER = "rgba(255,255,255,0.07)";
-const TEXT_MUTED = "rgba(255,255,255,0.45)";
-const TEXT_DIM = "rgba(255,255,255,0.75)";
+const DARK_BG = "#08080F";
+const DARK_CARD = "#111118";
+const DARK_INPUT = "#16171F";
 
 const CARD_STYLES = [
   { border: "1px solid rgba(66,133,244,0.35)", bg: "linear-gradient(135deg, rgba(66,133,244,0.08) 0%, #111118 100%)", dot: "#4285F4" },
   { border: "1px solid rgba(139,92,246,0.35)", bg: "linear-gradient(135deg, rgba(139,92,246,0.08) 0%, #111118 100%)", dot: "#8B5CF6" },
   { border: "1px solid rgba(20,184,166,0.35)", bg: "linear-gradient(135deg, rgba(20,184,166,0.08) 0%, #111118 100%)", dot: "#14B8A6" },
   { border: "1px solid rgba(251,146,60,0.35)", bg: "linear-gradient(135deg, rgba(251,146,60,0.08) 0%, #111118 100%)", dot: "#FB923C" },
+];
+const CARD_STYLES_LIGHT = [
+  { border: "1px solid rgba(66,133,244,0.3)", bg: "linear-gradient(135deg, rgba(66,133,244,0.07) 0%, #F8FBFF 100%)", dot: "#4285F4" },
+  { border: "1px solid rgba(139,92,246,0.3)", bg: "linear-gradient(135deg, rgba(139,92,246,0.07) 0%, #FAF8FF 100%)", dot: "#8B5CF6" },
+  { border: "1px solid rgba(20,184,166,0.3)", bg: "linear-gradient(135deg, rgba(20,184,166,0.07) 0%, #F8FFFD 100%)", dot: "#14B8A6" },
+  { border: "1px solid rgba(251,146,60,0.3)", bg: "linear-gradient(135deg, rgba(251,146,60,0.07) 0%, #FFFAF5 100%)", dot: "#FB923C" },
 ];
 
 function getGreeting() {
@@ -89,12 +93,28 @@ export default function MobileChatUI({
   entCoupon, setEntCoupon, entCouponApplied, setEntCouponApplied,
   toast, messagesEndRef, renderMessageContent, formatTimestamp,
 }: Props) {
+  const { theme } = useTheme();
+  const isDark = theme === "dark";
+  const GEMINI_BG = isDark ? DARK_BG : "#F8F9FC";
+  const CARD_BG = isDark ? DARK_CARD : "#FFFFFF";
+  const INPUT_BG = isDark ? DARK_INPUT : "#F0F1F8";
+  const DRAWER_BG = isDark ? "#12131A" : "#FFFFFF";
+  const BORDER = isDark ? "rgba(255,255,255,0.07)" : "rgba(0,0,0,0.08)";
+  const TEXT_MUTED = isDark ? "rgba(255,255,255,0.45)" : "rgba(0,0,0,0.45)";
+  const TEXT_DIM = isDark ? "rgba(255,255,255,0.75)" : "rgba(0,0,0,0.7)";
+  const TEXT_MAIN = isDark ? "rgba(255,255,255,0.9)" : "rgba(0,0,0,0.85)";
+  const TEXT_TS = isDark ? "rgba(255,255,255,0.2)" : "rgba(0,0,0,0.3)";
+  const ACTIVE_CARD_STYLES = isDark ? CARD_STYLES : CARD_STYLES_LIGHT;
+
   const [showDrawer, setShowDrawer] = useState(false);
   const [showSupportPanel, setShowSupportPanel] = useState(false);
   const [cameraImage, setCameraImage] = useState<string | null>(null);
   const [cameraImageFull, setCameraImageFull] = useState<string | null>(null);
   const [cameraQuestion, setCameraQuestion] = useState("");
   const [cameraProcessing, setCameraProcessing] = useState(false);
+  const [renamingId, setRenamingId] = useState<number | null>(null);
+  const [renameValue, setRenameValue] = useState("");
+  const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
@@ -119,6 +139,29 @@ export default function MobileChatUI({
       setCurrentConversationId(conv.id);
       queryClient.invalidateQueries({ queryKey: ["/api/conversations"] });
       setShowDrawer(false);
+    },
+  });
+
+  const renameMutation = useMutation({
+    mutationFn: async ({ id, title }: { id: number; title: string }) => {
+      const res = await apiRequest("PATCH", `/api/conversations/${id}`, { title });
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/conversations"] });
+      setRenamingId(null);
+      setRenameValue("");
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: number) => {
+      await apiRequest("DELETE", `/api/conversations/${id}`);
+    },
+    onSuccess: (_, deletedId) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/conversations"] });
+      setDeleteConfirmId(null);
+      if (currentConversationId === deletedId) setCurrentConversationId(null);
     },
   });
 
@@ -184,7 +227,7 @@ export default function MobileChatUI({
   };
 
   return (
-    <div className="flex flex-col" style={{ position: "fixed", inset: 0, background: GEMINI_BG, overflow: "hidden", overscrollBehavior: "none", touchAction: "pan-y" }}>
+    <div className="flex flex-col" style={{ position: "fixed", inset: 0, background: GEMINI_BG, overflow: "hidden", overscrollBehavior: "none", touchAction: "pan-y", color: TEXT_MAIN }}>
 
       {/* Hidden camera input */}
       <input
@@ -199,11 +242,11 @@ export default function MobileChatUI({
       {/* Camera analyze modal */}
       {cameraImage && (
         <div className="fixed inset-0 z-50 flex flex-col" style={{ background: "#000" }}>
-          <div className="flex items-center justify-between px-4 py-3" style={{ background: "#0D0D14", borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
-            <button onClick={() => { setCameraImage(null); setCameraImageFull(null); setCameraQuestion(""); }} className="text-white/60 hover:text-white">
+          <div className="flex items-center justify-between px-4 py-3" style={{ background: isDark ? "#0D0D14" : "#FFFFFF", borderBottom: `1px solid ${BORDER}` }}>
+            <button onClick={() => { setCameraImage(null); setCameraImageFull(null); setCameraQuestion(""); }} style={{ color: TEXT_DIM }}>
               <X className="h-5 w-5" />
             </button>
-            <span className="text-white font-semibold text-sm">AI Scanner</span>
+            <span className="font-semibold text-sm" style={{ color: TEXT_MAIN }}>AI Scanner</span>
             <div className="w-8" />
           </div>
 
@@ -220,12 +263,12 @@ export default function MobileChatUI({
                 placeholder="e.g. What does this say? How much is the total? Translate this..."
                 rows={2}
                 className="w-full rounded-2xl px-3 py-2.5 text-sm resize-none outline-none"
-                style={{ background: INPUT_BG, border: "1px solid rgba(66,133,244,0.2)", color: "rgba(255,255,255,0.9)", minHeight: "64px" }}
+                style={{ background: INPUT_BG, border: "1px solid rgba(66,133,244,0.2)", color: TEXT_MAIN, minHeight: "64px" }}
               />
             </div>
           </div>
 
-          <div className="px-4 py-3" style={{ background: "#0D0D14", borderTop: "1px solid rgba(255,255,255,0.06)", paddingBottom: "max(12px, env(safe-area-inset-bottom))" }}>
+          <div className="px-4 py-3" style={{ background: isDark ? "#0D0D14" : "#FFFFFF", borderTop: `1px solid ${BORDER}`, paddingBottom: "max(12px, env(safe-area-inset-bottom))" }}>
             <button
               onClick={handleCameraAnalyze}
               disabled={cameraProcessing}
@@ -250,7 +293,7 @@ export default function MobileChatUI({
       {/* Left drawer */}
       <div
         className="fixed top-0 left-0 h-full w-72 z-50 flex flex-col transition-transform duration-300 ease-in-out"
-        style={{ background: "#12131A", borderRight: `1px solid ${BORDER}`, transform: showDrawer ? "translateX(0)" : "translateX(-100%)" }}
+        style={{ background: DRAWER_BG, borderRight: `1px solid ${BORDER}`, transform: showDrawer ? "translateX(0)" : "translateX(-100%)" }}
       >
         {/* Drawer header */}
         <div className="px-4 pt-12 pb-4 border-b" style={{ borderColor: BORDER, background: "linear-gradient(180deg, rgba(66,133,244,0.06) 0%, transparent 100%)" }}>
@@ -260,7 +303,7 @@ export default function MobileChatUI({
               {firstName[0]?.toUpperCase() || "U"}
             </div>
             <div className="min-w-0">
-              <p className="text-white font-semibold text-sm truncate">{user?.firstName ? `${user.firstName}` : "My Account"}</p>
+              <p className="font-semibold text-sm truncate" style={{ color: TEXT_MAIN }}>{user?.firstName ? `${user.firstName}` : "My Account"}</p>
               <p className="text-xs truncate" style={{ color: TEXT_MUTED }}>{user?.email}</p>
             </div>
           </div>
@@ -284,24 +327,96 @@ export default function MobileChatUI({
             <>
               <p className="text-xs font-medium px-2 mb-2" style={{ color: TEXT_MUTED }}>Recent</p>
               {conversations.slice(0, 20).map((conv) => (
-                <button
-                  key={conv.id}
-                  onClick={() => { setCurrentConversationId(conv.id); setShowDrawer(false); }}
-                  className="w-full text-left px-3 py-2.5 rounded-xl text-sm transition-colors flex items-center gap-2"
-                  style={{
-                    color: conv.id === currentConversationId ? "white" : TEXT_DIM,
-                    background: conv.id === currentConversationId ? "rgba(66,133,244,0.12)" : "transparent",
-                  }}
-                >
-                  <MessageSquare className="h-3.5 w-3.5 flex-shrink-0 opacity-60" />
-                  <span className="truncate">{conv.title || "New Chat"}</span>
-                </button>
+                <div key={conv.id} className="group relative rounded-xl mb-0.5" style={{ background: conv.id === currentConversationId ? "rgba(66,133,244,0.12)" : "transparent" }}>
+                  {renamingId === conv.id ? (
+                    <div className="flex items-center gap-1.5 px-3 py-2">
+                      <input
+                        autoFocus
+                        value={renameValue}
+                        onChange={(e) => setRenameValue(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" && renameValue.trim()) renameMutation.mutate({ id: conv.id, title: renameValue.trim() });
+                          if (e.key === "Escape") { setRenamingId(null); setRenameValue(""); }
+                        }}
+                        className="flex-1 text-sm rounded-lg px-2 py-1 outline-none min-w-0"
+                        style={{ background: INPUT_BG, color: TEXT_MAIN, border: `1px solid rgba(66,133,244,0.4)` }}
+                      />
+                      <button
+                        onClick={() => { if (renameValue.trim()) renameMutation.mutate({ id: conv.id, title: renameValue.trim() }); }}
+                        className="flex-shrink-0 p-1 rounded-lg text-green-400 hover:text-green-300"
+                      >
+                        <Check className="h-3.5 w-3.5" />
+                      </button>
+                      <button
+                        onClick={() => { setRenamingId(null); setRenameValue(""); }}
+                        className="flex-shrink-0 p-1 rounded-lg"
+                        style={{ color: TEXT_MUTED }}
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => { setCurrentConversationId(conv.id); setShowDrawer(false); }}
+                        className="flex-1 text-left px-3 py-2.5 text-sm flex items-center gap-2 min-w-0"
+                        style={{ color: conv.id === currentConversationId ? (isDark ? "white" : "#1a1a2e") : TEXT_DIM }}
+                      >
+                        <MessageSquare className="h-3.5 w-3.5 flex-shrink-0 opacity-60" />
+                        <span className="truncate">{conv.title || "New Chat"}</span>
+                      </button>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); setRenamingId(conv.id); setRenameValue(conv.title || ""); }}
+                        className="flex-shrink-0 p-1.5 rounded-lg transition-opacity"
+                        style={{ color: TEXT_MUTED, opacity: 0.6 }}
+                        title="Rename"
+                      >
+                        <Pencil className="h-3 w-3" />
+                      </button>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); setDeleteConfirmId(conv.id); }}
+                        className="flex-shrink-0 p-1.5 rounded-lg transition-opacity mr-1"
+                        style={{ color: "rgba(239,68,68,0.6)" }}
+                        title="Delete"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </button>
+                    </div>
+                  )}
+                </div>
               ))}
             </>
           ) : (
             <p className="text-xs text-center py-4" style={{ color: TEXT_MUTED }}>No conversations yet</p>
           )}
         </div>
+
+        {/* Delete confirmation dialog */}
+        {deleteConfirmId !== null && (
+          <div className="absolute inset-0 z-60 flex items-center justify-center p-6" style={{ background: "rgba(0,0,0,0.7)" }}>
+            <div className="rounded-2xl p-5 w-full max-w-xs" style={{ background: DRAWER_BG, border: `1px solid ${BORDER}` }}>
+              <p className="font-semibold text-sm mb-1" style={{ color: TEXT_MAIN }}>Delete conversation?</p>
+              <p className="text-xs mb-4" style={{ color: TEXT_MUTED }}>Are you really sure you want to delete this? This cannot be undone.</p>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setDeleteConfirmId(null)}
+                  className="flex-1 py-2 rounded-xl text-sm font-medium"
+                  style={{ background: INPUT_BG, color: TEXT_DIM }}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => deleteMutation.mutate(deleteConfirmId!)}
+                  disabled={deleteMutation.isPending}
+                  className="flex-1 py-2 rounded-xl text-sm font-semibold text-white"
+                  style={{ background: "linear-gradient(135deg, #ef4444, #dc2626)" }}
+                >
+                  {deleteMutation.isPending ? "Deleting…" : "Delete"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Drawer footer */}
         <div className="px-3 pb-8 border-t pt-3 space-y-1" style={{ borderColor: BORDER }}>
@@ -344,19 +459,19 @@ export default function MobileChatUI({
       </div>
 
       {/* Header */}
-      <header className="flex items-center justify-between px-3 shrink-0" style={{ paddingTop: "max(10px, env(safe-area-inset-top))", paddingBottom: "8px", borderBottom: "1px solid rgba(66,133,244,0.1)", background: "linear-gradient(180deg, rgba(66,133,244,0.05) 0%, transparent 100%)" }}>
-        <button onClick={() => setShowDrawer(true)} className="w-9 h-9 flex items-center justify-center rounded-full transition-colors" style={{ background: "rgba(255,255,255,0.05)" }}>
-          <Menu className="h-4 w-4 text-white/70" />
+      <header className="flex items-center justify-between px-3 shrink-0" style={{ paddingTop: "max(10px, env(safe-area-inset-top))", paddingBottom: "8px", borderBottom: `1px solid rgba(66,133,244,0.1)`, background: isDark ? "linear-gradient(180deg, rgba(66,133,244,0.05) 0%, transparent 100%)" : "linear-gradient(180deg, rgba(66,133,244,0.04) 0%, transparent 100%)" }}>
+        <button onClick={() => setShowDrawer(true)} className="w-9 h-9 flex items-center justify-center rounded-full transition-colors" style={{ background: isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.05)" }}>
+          <Menu className="h-4 w-4" style={{ color: TEXT_DIM }} />
         </button>
 
         <div className="flex items-center gap-1.5">
           <img src={turboLogo} alt="Turbo" className="w-5 h-5 rounded-md object-cover" />
-          <span className="text-white font-semibold text-sm tracking-tight">TurboAnswer</span>
+          <span className="font-semibold text-sm tracking-tight" style={{ color: TEXT_MAIN }}>TurboAnswer</span>
         </div>
 
         <div className="flex items-center gap-1">
           <Select value={selectedAIModel} onValueChange={handleModelChange}>
-            <SelectTrigger className="h-7 text-[10px] rounded-full border-0 px-2.5" style={{ background: "rgba(255,255,255,0.06)", color: TEXT_DIM, minWidth: "60px" }}>
+            <SelectTrigger className="h-7 text-[10px] rounded-full border-0 px-2.5" style={{ background: isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.05)", color: TEXT_DIM, minWidth: "60px" }}>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -406,10 +521,10 @@ export default function MobileChatUI({
                   key={i}
                   onClick={() => setMessageContent(s.prompt)}
                   className="rounded-2xl p-3 text-left transition-all active:scale-95"
-                  style={{ background: CARD_STYLES[i].bg, border: CARD_STYLES[i].border }}
+                  style={{ background: ACTIVE_CARD_STYLES[i].bg, border: ACTIVE_CARD_STYLES[i].border }}
                 >
                   <div className="flex items-center gap-1.5 mb-1.5">
-                    <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: CARD_STYLES[i].dot }} />
+                    <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: ACTIVE_CARD_STYLES[i].dot }} />
                     <span className="text-base">{s.icon}</span>
                   </div>
                   <p className="text-xs font-medium leading-snug" style={{ color: TEXT_DIM }}>{s.text}</p>
@@ -437,11 +552,11 @@ export default function MobileChatUI({
                       {renderMessageContent(msg.content, msg.role)}
                     </div>
                   ) : (
-                    <div className="text-sm leading-relaxed break-words" style={{ color: "rgba(255,255,255,0.87)" }}>
+                    <div className="text-sm leading-relaxed break-words" style={{ color: TEXT_MAIN }}>
                       {renderMessageContent(msg.content, msg.role)}
                     </div>
                   )}
-                  <p className="text-[10px] mt-1 px-1" style={{ color: "rgba(255,255,255,0.2)" }}>
+                  <p className="text-[10px] mt-1 px-1" style={{ color: TEXT_TS }}>
                     {formatTimestamp(msg.timestamp)}
                   </p>
                 </div>
@@ -452,7 +567,7 @@ export default function MobileChatUI({
             {isTyping && (
               <div className="flex gap-3 justify-start">
                 <img src={turboLogo} alt="Turbo" className="w-7 h-7 rounded-full object-cover flex-shrink-0 mt-0.5" />
-                <div className="flex items-center gap-1.5 px-4 py-3 rounded-2xl" style={{ background: CARD_BG }}>
+                <div className="flex items-center gap-1.5 px-4 py-3 rounded-2xl" style={{ background: CARD_BG, border: `1px solid ${BORDER}` }}>
                   {[0, 150, 300].map((delay) => (
                     <div key={delay} className="w-2 h-2 rounded-full bg-blue-400 animate-pulse" style={{ animationDelay: `${delay}ms` }} />
                   ))}
@@ -470,9 +585,9 @@ export default function MobileChatUI({
         {/* Support contact - compact */}
         <div className="relative">
           {showSupportPanel && (
-            <div className="absolute bottom-full mb-2 left-0 right-0 rounded-2xl p-4 z-30" style={{ background: "#1C1D26", border: `1px solid ${BORDER}` }}>
+            <div className="absolute bottom-full mb-2 left-0 right-0 rounded-2xl p-4 z-30" style={{ background: isDark ? "#1C1D26" : "#FFFFFF", border: `1px solid ${BORDER}`, boxShadow: "0 4px 20px rgba(0,0,0,0.15)" }}>
               <div className="flex items-center justify-between mb-3">
-                <p className="text-sm font-semibold text-white">Contact Support</p>
+                <p className="text-sm font-semibold" style={{ color: TEXT_MAIN }}>Contact Support</p>
                 <button onClick={() => setShowSupportPanel(false)} style={{ color: TEXT_MUTED }}><X className="h-4 w-4" /></button>
               </div>
               <div className="space-y-2">
@@ -493,7 +608,7 @@ export default function MobileChatUI({
           )}
 
           {/* Input bar */}
-          <div className="flex items-end gap-2 px-3 py-2.5 rounded-3xl" style={{ background: INPUT_BG, border: "1px solid rgba(66,133,244,0.2)", boxShadow: "0 0 20px rgba(66,133,244,0.05)" }}>
+          <div className="flex items-end gap-2 px-3 py-2.5 rounded-3xl" style={{ background: INPUT_BG, border: `1px solid ${isDark ? "rgba(66,133,244,0.2)" : "rgba(66,133,244,0.25)"}`, boxShadow: "0 0 20px rgba(66,133,244,0.05)" }}>
             <button
               onClick={() => cameraInputRef.current?.click()}
               className="flex-shrink-0 mb-0.5 w-8 h-8 rounded-full flex items-center justify-center transition-all active:scale-95"
@@ -511,7 +626,7 @@ export default function MobileChatUI({
               placeholder="Ask Turbo..."
               rows={1}
               className="flex-1 bg-transparent text-sm resize-none outline-none py-0.5"
-              style={{ color: "rgba(255,255,255,0.9)", minHeight: "22px", maxHeight: "112px" }}
+              style={{ color: TEXT_MAIN, minHeight: "22px", maxHeight: "112px" }}
             />
 
             <button

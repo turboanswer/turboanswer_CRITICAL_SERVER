@@ -549,6 +549,24 @@ function downloadAAB(){
     }
   });
 
+  // Rename a conversation
+  app.patch("/api/conversations/:id", isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const id = parseInt(req.params.id);
+      const { title } = req.body;
+      if (!title || typeof title !== "string" || !title.trim()) {
+        return res.status(400).json({ message: "Title is required" });
+      }
+      const conversation = await storage.getConversation(id);
+      if (!conversation) return res.status(404).json({ message: "Conversation not found" });
+      const updated = await storage.updateConversation(id, { title: title.trim() });
+      res.json(updated);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   // Delete a single conversation
   app.delete("/api/conversations/:id", isAuthenticated, async (req: any, res) => {
     try {
