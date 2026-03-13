@@ -13,7 +13,7 @@ import { Shield, AlertCircle } from "lucide-react";
 
 const RECAPTCHA_SITE_KEY =
   (import.meta.env.VITE_RECAPTCHA_SITE_KEY as string) ||
-  "6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI";
+  "6Lc5a4ksAAAAANX1djxLGYr5J7-rU8E9abn8FdxK";
 
 export default function Register() {
   const [, setLocation] = useLocation();
