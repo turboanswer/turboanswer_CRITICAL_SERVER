@@ -32,6 +32,18 @@ input, textarea, form {
   --destructive-foreground: hsl(0, 0%, 98%);
   --ring: hsl(217, 91%, 60%);
   --radius: 0.75rem;
+  /* Chat page */
+  --chat-outer-bg: #f9fafb;
+  --chat-header-bg: #ffffff;
+  --chat-header-border: #e5e7eb;
+  --chat-msg-bg: #f9fafb;
+  --chat-input-bg: #ffffff;
+  --chat-input-border: #e5e7eb;
+  --chat-text: #111827;
+  --chat-text-muted: #6b7280;
+  --chat-bubble-ai-bg: #ffffff;
+  --chat-bubble-ai-border: #e5e7eb;
+  --chat-bubble-ai-text: #1f2937;
 }
 
 .dark {
@@ -55,6 +67,18 @@ input, textarea, form {
   --destructive-foreground: hsl(0, 0%, 98%);
   --ring: hsl(217, 91%, 60%);
   --radius: 0.75rem;
+  /* Chat page */
+  --chat-outer-bg: #000000;
+  --chat-header-bg: rgba(0,0,0,0.95);
+  --chat-header-border: #1f2937;
+  --chat-msg-bg: #030014;
+  --chat-input-bg: rgba(3,0,20,0.9);
+  --chat-input-border: rgba(99,102,241,0.1);
+  --chat-text: #f3f4f6;
+  --chat-text-muted: #9ca3af;
+  --chat-bubble-ai-bg: rgba(39,39,42,0.6);
+  --chat-bubble-ai-border: rgba(255,255,255,0.06);
+  --chat-bubble-ai-text: #f3f4f6;
 }
 
 body {

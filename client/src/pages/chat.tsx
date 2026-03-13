@@ -426,9 +426,9 @@ export default function Chat() {
   }
 
   return (
-    <div className={`flex flex-col h-[100dvh] ${isDark ? 'bg-black' : 'bg-gray-50'}`}>
+    <div className="flex flex-col h-[100dvh]" style={{ background: 'var(--chat-outer-bg)' }}>
       {/* Header */}
-      <header className={`${isDark ? 'bg-black/95 border-gray-800' : 'bg-white border-gray-200'} border-b px-3 sm:px-5 py-2.5 relative z-40 shrink-0`}>
+      <header className="border-b px-3 sm:px-5 py-2.5 relative z-40 shrink-0" style={{ background: 'var(--chat-header-bg)', borderColor: 'var(--chat-header-border)' }}>
         <div className="flex items-center justify-between gap-2">
           <Link href="/">
             <div className="flex items-center gap-2 sm:gap-3 min-w-0 cursor-pointer group">
@@ -721,7 +721,7 @@ export default function Chat() {
       )}
 
       {/* Chat messages area with space background */}
-      <div className={`flex-1 overflow-y-auto relative z-10 ${isDark ? 'bg-[#030014]' : 'bg-gray-50'}`}>
+      <div className="flex-1 overflow-y-auto relative z-10" style={{ background: 'var(--chat-msg-bg)' }}>
         {/* Space background effects */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           {isDark ? (
@@ -776,13 +776,10 @@ export default function Chat() {
               )}
 
               <div className={`min-w-0 ${message.role === 'user' ? 'max-w-[80%] sm:max-w-lg' : 'max-w-[85%] sm:max-w-2xl'}`}>
-                <div className={`px-4 py-3 text-sm sm:text-base leading-relaxed break-words ${
-                  message.role === 'user'
-                    ? 'bg-blue-500 text-white rounded-2xl rounded-br-md'
-                    : isDark
-                    ? 'bg-zinc-800/80 text-zinc-100 rounded-2xl rounded-bl-md border border-zinc-700/50'
-                    : 'bg-white text-gray-800 rounded-2xl rounded-bl-md border border-gray-200 shadow-sm'
-                }`}>
+                <div
+                  className={`px-4 py-3 text-sm sm:text-base leading-relaxed break-words ${message.role === 'user' ? 'bg-blue-500 text-white rounded-2xl rounded-br-md' : 'rounded-2xl rounded-bl-md'}`}
+                  style={message.role !== 'user' ? { background: 'var(--chat-bubble-ai-bg)', color: 'var(--chat-bubble-ai-text)', border: '1px solid var(--chat-bubble-ai-border)' } : undefined}
+                >
                   {renderMessageContent(message.content, message.role)}
                 </div>
                 {showTimestampsPref && (
@@ -822,7 +819,7 @@ export default function Chat() {
       </div>
 
       {/* Input area - Space themed */}
-      <div className={`${isDark ? 'bg-[#030014]/90 backdrop-blur-xl border-indigo-500/10' : 'bg-white border-gray-200'} border-t p-3 sm:p-4 shrink-0 relative overflow-hidden`}>
+      <div className="border-t p-3 sm:p-4 shrink-0 relative overflow-hidden" style={{ background: 'var(--chat-input-bg)', borderColor: 'var(--chat-input-border)', backdropFilter: isDark ? 'blur(12px)' : 'none' }}>
         {isDark && (
           <div className="absolute inset-0 pointer-events-none">
             <div className="absolute top-0 left-1/4 w-64 h-16 bg-indigo-600/5 rounded-full blur-[40px]" />

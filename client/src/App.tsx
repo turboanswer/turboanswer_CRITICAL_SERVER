@@ -66,6 +66,7 @@ function AuthenticatedRouter() {
       <Route path="/video-studio" component={VideoStudio} />
       <Route path="/code-studio" component={CodeStudio} />
       <Route path="/beta" component={BetaApply} />
+      <Route path="/forgot-password" component={ForgotPassword} />
       <Route component={NotFound} />
     </Switch>
   );
