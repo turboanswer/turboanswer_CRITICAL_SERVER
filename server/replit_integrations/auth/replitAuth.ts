@@ -291,7 +291,6 @@ export async function setupAuth(app: Express) {
       if (!smsEntry || !smsEntry.verified || Date.now() > smsEntry.expiresAt) {
         return res.status(400).json({ message: "Phone number must be verified before registering" });
       }
-      smsVerificationCodes.delete(normalizedPhone);
 
       if (password.length < 6) {
         return res.status(400).json({ message: "Password must be at least 6 characters" });
@@ -359,6 +358,8 @@ export async function setupAuth(app: Express) {
         canBanUsers: grantAdmin,
         isBetaTester,
       });
+
+      smsVerificationCodes.delete(normalizedPhone);
 
       if (validatedInviteId) {
         try {
