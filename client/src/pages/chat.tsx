@@ -1274,7 +1274,7 @@ export default function Chat() {
                 <Zap className="text-white h-8 w-8" />
               </div>
               <h2 className={`text-xl font-bold mb-1 ${isDark ? 'text-white' : 'text-gray-900'}`}>Daily Limit Reached</h2>
-              <p className={isDark ? 'text-zinc-400 text-sm' : 'text-gray-500 text-sm'}>You've used all 50 free questions for today</p>
+              <p className={isDark ? 'text-zinc-400 text-sm' : 'text-gray-500 text-sm'}>You've used all 25 free questions for today</p>
             </div>
             <div className="relative space-y-3 mb-5">
               <div className={`p-4 rounded-xl text-center ${isDark ? 'bg-zinc-800/50' : 'bg-gray-50'}`}>

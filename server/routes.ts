@@ -734,7 +734,7 @@ function downloadAAB(){
   });
 
   // Send a message and get AI response
-  const FREE_DAILY_LIMIT = 50;
+  const FREE_DAILY_LIMIT = 25;
 
   app.get("/api/daily-usage", isAuthenticated, async (req: any, res) => {
     try {
@@ -794,7 +794,7 @@ function downloadAAB(){
           }
           if (used >= FREE_DAILY_LIMIT) {
             return res.status(429).json({
-              message: "You've reached your daily limit of 50 free questions. Upgrade to Pro for unlimited questions!",
+              message: "You've reached your daily limit of 25 free questions. Upgrade to Pro for unlimited questions!",
               code: "DAILY_LIMIT_REACHED",
               used,
               limit: FREE_DAILY_LIMIT,
