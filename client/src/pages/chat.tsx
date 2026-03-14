@@ -213,12 +213,16 @@ export default function Chat() {
           responseStyle: responseStylePref, responseTone: responseTonePref,
         }),
       });
+      if (res.status === 429) {
+        let data: any = {};
+        try { data = await res.json(); } catch {}
+        if (data.code === "DAILY_LIMIT_REACHED" || (data.message && data.message.includes("daily limit"))) {
+          throw { isDailyLimit: true, message: data.message };
+        }
+      }
       const data = await res.json();
       if (!res.ok) {
-        const err: any = new Error(data.message || "Failed to send message");
-        err.code = data.code;
-        err.status = res.status;
-        throw err;
+        throw new Error(data.message || "Failed to send message");
       }
       return data;
     },
@@ -232,11 +236,11 @@ export default function Chat() {
     },
     onError: (error: any) => {
       setIsTyping(false);
-      if (error?.code === "DAILY_LIMIT_REACHED") {
+      if (error?.isDailyLimit) {
         setShowDailyLimitModal(true);
         return;
       }
-      toast({ title: "Error", description: error.message || "Failed to send message", variant: "destructive" });
+      toast({ title: "Error", description: error?.message || "Failed to send message", variant: "destructive" });
     },
   });
 
