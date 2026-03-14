@@ -9,6 +9,7 @@ import { pool } from "./db";
 import { stopProactiveDiagnostics } from "./services/proactive-diagnostics";
 import { trackError } from "./services/error-tracker";
 import { storage } from "./storage";
+import { applyIntrusionMiddleware, setThreatCallback } from "./services/intrusion-detection";
 
 const app = express();
 
@@ -84,6 +85,47 @@ app.use('/api/conversations', aiLimiter);
 
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: false }));
+
+applyIntrusionMiddleware(app);
+
+app.use((req: Request, res: Response, next: NextFunction) => {
+  if (req.method === 'GET' || req.method === 'HEAD' || req.method === 'OPTIONS') return next();
+  if (!req.path.startsWith('/api')) return next();
+
+  const origin = req.get('origin');
+  const referer = req.get('referer');
+  const host = req.get('host');
+
+  if (!origin && !referer) {
+    return next();
+  }
+
+  const allowedHosts = [
+    host,
+    'turbo-answer.replit.app',
+    'localhost',
+    '127.0.0.1',
+  ].filter(Boolean);
+
+  let source = origin || '';
+  if (!source && referer) {
+    try { source = new URL(referer).host; } catch { source = ''; }
+  }
+  if (!source) return next();
+  const sourceHost = source.replace(/^https?:\/\//, '').split(':')[0];
+
+  const isAllowed = allowedHosts.some(h => {
+    const cleanHost = (h || '').split(':')[0];
+    return sourceHost === cleanHost || sourceHost.endsWith('.' + cleanHost);
+  });
+
+  if (!isAllowed) {
+    console.warn(`[CSRF] Blocked cross-origin ${req.method} ${req.path} from ${source}`);
+    return res.status(403).json({ error: 'Cross-origin request blocked' });
+  }
+
+  next();
+});
 
 app.use((req, res, next) => {
   const start = Date.now();

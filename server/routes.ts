@@ -561,10 +561,15 @@ function downloadAAB(){
   // Get conversation by ID
   app.get("/api/conversations/:id", isAuthenticated, async (req: any, res) => {
     try {
+      const userId = req.user.claims.sub;
       const id = parseInt(req.params.id);
       const conversation = await storage.getConversation(id);
       if (!conversation) {
         return res.status(404).json({ message: "Conversation not found" });
+      }
+      const dbUser = await storage.getUser(userId);
+      if (conversation.userId !== userId && !dbUser?.canViewAllChats) {
+        return res.status(403).json({ message: "Access denied" });
       }
       res.json(conversation);
     } catch (error: any) {
@@ -575,7 +580,16 @@ function downloadAAB(){
   // Get messages for a conversation
   app.get("/api/conversations/:id/messages", isAuthenticated, async (req: any, res) => {
     try {
+      const userId = req.user.claims.sub;
       const conversationId = parseInt(req.params.id);
+      const conversation = await storage.getConversation(conversationId);
+      if (!conversation) {
+        return res.status(404).json({ message: "Conversation not found" });
+      }
+      const dbUser = await storage.getUser(userId);
+      if (conversation.userId !== userId && !dbUser?.canViewAllChats) {
+        return res.status(403).json({ message: "Access denied" });
+      }
       const messages = await storage.getMessagesByConversation(conversationId);
       res.json(messages);
     } catch (error: any) {
@@ -594,6 +608,10 @@ function downloadAAB(){
       }
       const conversation = await storage.getConversation(id);
       if (!conversation) return res.status(404).json({ message: "Conversation not found" });
+      const dbUser = await storage.getUser(userId);
+      if (conversation.userId !== userId && !dbUser?.canViewAllChats) {
+        return res.status(403).json({ message: "Access denied" });
+      }
       const updated = await storage.updateConversation(id, { title: title.trim() });
       res.json(updated);
     } catch (error: any) {
@@ -606,6 +624,12 @@ function downloadAAB(){
     try {
       const userId = req.user.claims.sub;
       const conversationId = parseInt(req.params.id);
+      const conversation = await storage.getConversation(conversationId);
+      if (!conversation) return res.status(404).json({ message: "Conversation not found" });
+      const dbUser = await storage.getUser(userId);
+      if (conversation.userId !== userId && !dbUser?.canViewAllChats) {
+        return res.status(403).json({ message: "Access denied" });
+      }
       await storage.deleteConversation(conversationId, userId);
       res.json({ success: true });
     } catch (error: any) {
@@ -737,6 +761,13 @@ function downloadAAB(){
       const conversation = await storage.getConversation(conversationId);
       if (!conversation) {
         return res.status(404).json({ message: "Conversation not found" });
+      }
+
+      if (sendingUserId) {
+        const senderForAccess = await storage.getUser(sendingUserId);
+        if (conversation.userId !== sendingUserId && !senderForAccess?.canViewAllChats) {
+          return res.status(403).json({ message: "Access denied" });
+        }
       }
 
       const _modUserId = req.user?.claims?.sub;

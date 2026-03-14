@@ -167,7 +167,17 @@ export function getSession() {
     tableName: "sessions",
   });
   return session({
-    secret: process.env.SESSION_SECRET || "turbo-answer-secret-key-change-in-production",
+    secret: (() => {
+      const secret = process.env.SESSION_SECRET;
+      if (!secret) {
+        if (process.env.NODE_ENV === 'production') {
+          throw new Error('SESSION_SECRET environment variable is required in production');
+        }
+        console.warn('[Auth] WARNING: SESSION_SECRET not set — using random secret (sessions will not persist across restarts)');
+        return crypto.randomBytes(32).toString('hex');
+      }
+      return secret;
+    })(),
     store: sessionStore,
     resave: false,
     saveUninitialized: false,
