@@ -280,7 +280,7 @@ export async function setupAuth(app: Express) {
 
   app.post("/api/register", async (req, res) => {
     try {
-      const { email, password, firstName, lastName, phoneNumber, inviteToken } = req.body;
+      const { email, password, firstName, lastName, inviteToken } = req.body;
 
       if (!email || !password) {
         return res.status(400).json({ message: "Email and password are required" });
@@ -315,7 +315,7 @@ export async function setupAuth(app: Express) {
       let validatedInviteId: number | null = null;
       if (inviteToken && !isAdminEmail) {
         try {
-          const { db } = await import('../db');
+          const { db } = await import('../../db');
           const { adminInviteTokens } = await import('@shared/schema');
           const { eq } = await import('drizzle-orm');
           const [tokenRow] = await db.select().from(adminInviteTokens).where(eq(adminInviteTokens.token, inviteToken));
@@ -337,7 +337,7 @@ export async function setupAuth(app: Express) {
       // Check if this email has an approved beta application
       let isBetaTester = false;
       try {
-        const { db } = await import('../db');
+        const { db } = await import('../../db');
         const { betaApplications } = await import('@shared/schema');
         const { eq, and } = await import('drizzle-orm');
         const [approvedApp] = await db.select().from(betaApplications)
@@ -353,7 +353,6 @@ export async function setupAuth(app: Express) {
         password: hashedPassword,
         firstName: firstName.trim(),
         lastName: lastName.trim(),
-        phoneNumber: phoneNumber.trim(),
         isEmployee: grantAdmin,
         employeeRole: grantAdmin ? "super_admin" : "basic",
         canViewAllChats: grantAdmin,
@@ -361,11 +360,9 @@ export async function setupAuth(app: Express) {
         isBetaTester,
       });
 
-      smsVerificationCodes.delete(normalizedPhone);
-
       if (validatedInviteId) {
         try {
-          const { db } = await import('../db');
+          const { db } = await import('../../db');
           const { adminInviteTokens } = await import('@shared/schema');
           const { eq, sql: sqlExpr } = await import('drizzle-orm');
           await db.update(adminInviteTokens)
