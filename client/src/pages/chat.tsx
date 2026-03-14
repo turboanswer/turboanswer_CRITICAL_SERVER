@@ -869,15 +869,34 @@ export default function Chat() {
           {/* Typing indicator */}
           {isTyping && (
             <div className="flex items-end gap-2 sm:gap-3 mb-4 sm:mb-5">
-              <img src={turboLogo} alt="AI" className="w-7 h-7 sm:w-8 sm:h-8 rounded-full object-cover flex-shrink-0" />
-              <div className={`px-4 py-3 rounded-2xl rounded-bl-md ${isDark ? 'bg-zinc-800/80 border border-zinc-700/50' : 'bg-white border border-gray-200 shadow-sm'}`}>
-                <div className="flex items-center space-x-2">
-                  <div className="flex space-x-1">
-                    <div className={`w-2 h-2 bg-blue-400 rounded-full ${animationsPref ? 'animate-pulse' : 'opacity-80'}`} style={{ animationDelay: '0ms' }} />
-                    <div className={`w-2 h-2 bg-blue-400 rounded-full ${animationsPref ? 'animate-pulse' : 'opacity-60'}`} style={{ animationDelay: '150ms' }} />
-                    <div className={`w-2 h-2 bg-blue-400 rounded-full ${animationsPref ? 'animate-pulse' : 'opacity-40'}`} style={{ animationDelay: '300ms' }} />
+              <div className="relative flex-shrink-0">
+                <img src={turboLogo} alt="AI" className="w-7 h-7 sm:w-8 sm:h-8 rounded-full object-cover" />
+                <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-green-400 border-2 animate-pulse" style={{ borderColor: isDark ? '#18181b' : '#fff' }} />
+              </div>
+              <div className={`px-4 py-3 rounded-2xl rounded-bl-md relative overflow-hidden ${isDark ? 'bg-zinc-800/80 border border-zinc-700/50' : 'bg-white border border-gray-200 shadow-sm'}`}>
+                <style>{`
+                  @keyframes turbo-bounce { 0%,80%,100% { transform: scale(0.6); opacity: 0.4; } 40% { transform: scale(1.2); opacity: 1; } }
+                  @keyframes turbo-shimmer { 0% { transform: translateX(-100%); } 100% { transform: translateX(200%); } }
+                  @keyframes turbo-glow { 0%,100% { box-shadow: 0 0 8px rgba(99,102,241,0.3); } 50% { box-shadow: 0 0 16px rgba(168,85,247,0.5); } }
+                  @keyframes turbo-gradient-text { 0% { background-position: 0% center; } 100% { background-position: 200% center; } }
+                `}</style>
+                <div className="absolute inset-0 overflow-hidden pointer-events-none" style={{ animation: animationsPref ? 'turbo-glow 2s ease-in-out infinite' : 'none' }}>
+                  <div className="absolute inset-0" style={{ background: 'linear-gradient(90deg, transparent 0%, rgba(139,92,246,0.08) 50%, transparent 100%)', animation: animationsPref ? 'turbo-shimmer 2s ease-in-out infinite' : 'none' }} />
+                </div>
+                <div className="flex items-center gap-2.5 relative z-10">
+                  <div className="flex gap-1">
+                    {[
+                      { color: '#818cf8', delay: '0s' },
+                      { color: '#a78bfa', delay: '0.15s' },
+                      { color: '#c084fc', delay: '0.3s' },
+                      { color: '#e879f9', delay: '0.45s' },
+                    ].map((dot, i) => (
+                      <div key={i} className="w-2 h-2 rounded-full" style={{ backgroundColor: dot.color, animation: animationsPref ? `turbo-bounce 1.4s ease-in-out ${dot.delay} infinite` : 'none', opacity: animationsPref ? 1 : 1 - i * 0.15 }} />
+                    ))}
                   </div>
-                  <span className={`text-xs sm:text-sm ${isDark ? 'text-zinc-400' : 'text-gray-400'}`}>Thinking...</span>
+                  <span className={`text-xs sm:text-sm font-medium ${isDark ? 'text-zinc-400' : 'text-gray-500'}`} style={{ background: animationsPref ? 'linear-gradient(90deg, #818cf8, #c084fc, #818cf8)' : 'none', backgroundSize: '200% auto', WebkitBackgroundClip: animationsPref ? 'text' : 'unset', WebkitTextFillColor: animationsPref ? 'transparent' : 'inherit', animation: animationsPref ? 'turbo-gradient-text 3s linear infinite' : 'none' }}>
+                    Generating response...
+                  </span>
                 </div>
               </div>
             </div>

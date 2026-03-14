@@ -594,14 +594,37 @@ export default function MobileChatUI({
               </div>
             ))}
 
-            {/* Typing indicator */}
             {isTyping && (
               <div className="flex gap-3 justify-start">
-                <img src={turboLogo} alt="Turbo" className="w-7 h-7 rounded-full object-cover flex-shrink-0 mt-0.5" />
-                <div className="flex items-center gap-1.5 px-4 py-3 rounded-2xl" style={{ background: CARD_BG, border: `1px solid ${BORDER}` }}>
-                  {[0, 150, 300].map((delay, idx) => (
-                    <div key={delay} className={`w-2 h-2 rounded-full bg-blue-400 ${animationsPref ? 'animate-pulse' : ''}`} style={{ animationDelay: `${delay}ms`, opacity: animationsPref ? 1 : 1 - idx * 0.2 }} />
-                  ))}
+                <div className="relative flex-shrink-0 mt-0.5">
+                  <img src={turboLogo} alt="Turbo" className="w-7 h-7 rounded-full object-cover" />
+                  <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-green-400 border-2 animate-pulse" style={{ borderColor: isDark ? '#0f0f14' : '#fff' }} />
+                </div>
+                <div className="relative overflow-hidden px-4 py-3 rounded-2xl" style={{ background: CARD_BG, border: `1px solid ${BORDER}` }}>
+                  <style>{`
+                    @keyframes turbo-bounce { 0%,80%,100% { transform: scale(0.6); opacity: 0.4; } 40% { transform: scale(1.2); opacity: 1; } }
+                    @keyframes turbo-shimmer { 0% { transform: translateX(-100%); } 100% { transform: translateX(200%); } }
+                    @keyframes turbo-glow { 0%,100% { box-shadow: 0 0 8px rgba(99,102,241,0.3); } 50% { box-shadow: 0 0 16px rgba(168,85,247,0.5); } }
+                    @keyframes turbo-gradient-text { 0% { background-position: 0% center; } 100% { background-position: 200% center; } }
+                  `}</style>
+                  <div className="absolute inset-0 overflow-hidden pointer-events-none" style={{ animation: animationsPref ? 'turbo-glow 2s ease-in-out infinite' : 'none' }}>
+                    <div className="absolute inset-0" style={{ background: 'linear-gradient(90deg, transparent 0%, rgba(139,92,246,0.08) 50%, transparent 100%)', animation: animationsPref ? 'turbo-shimmer 2s ease-in-out infinite' : 'none' }} />
+                  </div>
+                  <div className="flex items-center gap-2.5 relative z-10">
+                    <div className="flex gap-1">
+                      {[
+                        { color: '#818cf8', delay: '0s' },
+                        { color: '#a78bfa', delay: '0.15s' },
+                        { color: '#c084fc', delay: '0.3s' },
+                        { color: '#e879f9', delay: '0.45s' },
+                      ].map((dot, i) => (
+                        <div key={i} className="w-2 h-2 rounded-full" style={{ backgroundColor: dot.color, animation: animationsPref ? `turbo-bounce 1.4s ease-in-out ${dot.delay} infinite` : 'none', opacity: animationsPref ? 1 : 1 - i * 0.15 }} />
+                      ))}
+                    </div>
+                    <span className="text-xs font-medium" style={{ color: isDark ? '#a1a1aa' : '#6b7280', background: animationsPref ? 'linear-gradient(90deg, #818cf8, #c084fc, #818cf8)' : 'none', backgroundSize: '200% auto', WebkitBackgroundClip: animationsPref ? 'text' : 'unset', WebkitTextFillColor: animationsPref ? 'transparent' : 'inherit', animation: animationsPref ? 'turbo-gradient-text 3s linear infinite' : 'none' }}>
+                      Generating response...
+                    </span>
+                  </div>
                 </div>
               </div>
             )}
