@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import TurboLogo from "@/components/TurboLogo";
-import { Shield, AlertCircle, Phone } from "lucide-react";
+import { Shield, AlertCircle } from "lucide-react";
 
 export default function Register() {
   const [, setLocation] = useLocation();
@@ -24,7 +24,6 @@ export default function Register() {
     email: "",
     firstName: "",
     lastName: "",
-    phoneNumber: "",
     password: "",
     confirmPassword: "",
   });
@@ -71,7 +70,6 @@ export default function Register() {
           password: formData.password,
           firstName: formData.firstName || undefined,
           lastName: formData.lastName || undefined,
-          phoneNumber: formData.phoneNumber || undefined,
           ...(inviteToken && inviteValid ? { inviteToken } : {}),
         }),
       });
@@ -167,21 +165,6 @@ export default function Register() {
                 value={formData.email}
                 onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
                 required
-                className="bg-gray-800 border-gray-700 text-white placeholder-gray-400"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="phoneNumber" className="text-white flex items-center gap-2">
-                <Phone size={14} />
-                Phone Number (Optional)
-              </Label>
-              <Input
-                id="phoneNumber"
-                type="tel"
-                placeholder="e.g. +1 (555) 000-0000"
-                value={formData.phoneNumber}
-                onChange={(e) => setFormData(prev => ({ ...prev, phoneNumber: e.target.value }))}
                 className="bg-gray-800 border-gray-700 text-white placeholder-gray-400"
               />
             </div>
