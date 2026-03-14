@@ -204,11 +204,23 @@ export default function Chat() {
 
   const sendMessageMutation = useMutation({
     mutationFn: async ({ content, convId }: { content: string; convId: number }) => {
-      const response = await apiRequest("POST", `/api/conversations/${convId}/messages`, {
-        content, selectedModel: selectedAIModel, language: currentLanguage,
-        responseStyle: responseStylePref, responseTone: responseTonePref,
+      const res = await fetch(`/api/conversations/${convId}/messages`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          content, selectedModel: selectedAIModel, language: currentLanguage,
+          responseStyle: responseStylePref, responseTone: responseTonePref,
+        }),
       });
-      return response.json();
+      const data = await res.json();
+      if (!res.ok) {
+        const err: any = new Error(data.message || "Failed to send message");
+        err.code = data.code;
+        err.status = res.status;
+        throw err;
+      }
+      return data;
     },
     onSuccess: (_data, { convId }) => {
       queryClient.invalidateQueries({ queryKey: ["/api/conversations", convId, "messages"] });
@@ -220,12 +232,11 @@ export default function Chat() {
     },
     onError: (error: any) => {
       setIsTyping(false);
-      const msg = error?.message || "";
-      if (msg.includes("DAILY_LIMIT_REACHED") || msg.includes("daily limit")) {
+      if (error?.code === "DAILY_LIMIT_REACHED") {
         setShowDailyLimitModal(true);
         return;
       }
-      toast({ title: "Error", description: msg || "Failed to send message", variant: "destructive" });
+      toast({ title: "Error", description: error.message || "Failed to send message", variant: "destructive" });
     },
   });
 
