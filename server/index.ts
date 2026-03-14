@@ -1,6 +1,8 @@
 import express, { type Request, Response, NextFunction } from "express";
 import compression from "compression";
 import rateLimit from "express-rate-limit";
+import cookieParser from "cookie-parser";
+import crypto from "crypto";
 import path from "path";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
@@ -85,43 +87,59 @@ app.use('/api/conversations', aiLimiter);
 
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: false }));
+app.use(cookieParser());
 
 applyIntrusionMiddleware(app);
+
+const CSRF_COOKIE = '_csrf_token';
+const CSRF_HEADER = 'x-csrf-token';
+const csrfCookieOptions = {
+  httpOnly: false,
+  secure: process.env.NODE_ENV === 'production' || !!process.env.REPL_SLUG,
+  sameSite: 'strict' as const,
+  maxAge: 7 * 24 * 60 * 60 * 1000,
+  path: '/',
+};
+
+app.use((req: Request, res: Response, next: NextFunction) => {
+  if (!req.cookies?.[CSRF_COOKIE]) {
+    const token = crypto.randomBytes(32).toString('hex');
+    res.cookie(CSRF_COOKIE, token, csrfCookieOptions);
+  }
+  next();
+});
+
+app.get('/api/csrf-token', (req: Request, res: Response) => {
+  let token = req.cookies?.[CSRF_COOKIE];
+  if (!token) {
+    token = crypto.randomBytes(32).toString('hex');
+    res.cookie(CSRF_COOKIE, token, csrfCookieOptions);
+  }
+  res.json({ token });
+});
+
+const CSRF_EXEMPT_PATHS = [
+  '/api/paypal/webhook',
+  '/api/widget/',
+];
 
 app.use((req: Request, res: Response, next: NextFunction) => {
   if (req.method === 'GET' || req.method === 'HEAD' || req.method === 'OPTIONS') return next();
   if (!req.path.startsWith('/api')) return next();
 
-  const origin = req.get('origin');
-  const referer = req.get('referer');
-  const host = req.get('host');
+  if (CSRF_EXEMPT_PATHS.some(p => req.path.startsWith(p))) return next();
 
-  if (!origin && !referer) {
-    return next();
+  const cookieToken = req.cookies?.[CSRF_COOKIE];
+  const headerToken = req.get(CSRF_HEADER);
+
+  if (!cookieToken || !headerToken) {
+    console.warn(`[CSRF] Missing token on ${req.method} ${req.path}`);
+    return res.status(403).json({ error: 'CSRF token missing' });
   }
 
-  const allowedHosts = [
-    host,
-    'turbo-answer.replit.app',
-    'localhost',
-    '127.0.0.1',
-  ].filter(Boolean);
-
-  let source = origin || '';
-  if (!source && referer) {
-    try { source = new URL(referer).host; } catch { source = ''; }
-  }
-  if (!source) return next();
-  const sourceHost = source.replace(/^https?:\/\//, '').split(':')[0];
-
-  const isAllowed = allowedHosts.some(h => {
-    const cleanHost = (h || '').split(':')[0];
-    return sourceHost === cleanHost || sourceHost.endsWith('.' + cleanHost);
-  });
-
-  if (!isAllowed) {
-    console.warn(`[CSRF] Blocked cross-origin ${req.method} ${req.path} from ${source}`);
-    return res.status(403).json({ error: 'Cross-origin request blocked' });
+  if (cookieToken !== headerToken) {
+    console.warn(`[CSRF] Token mismatch on ${req.method} ${req.path}`);
+    return res.status(403).json({ error: 'CSRF token invalid' });
   }
 
   next();

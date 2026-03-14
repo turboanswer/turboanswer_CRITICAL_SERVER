@@ -7,6 +7,54 @@ async function throwIfResNotOk(res: Response) {
   }
 }
 
+function getCsrfToken(): string {
+  const match = document.cookie.match(/(^|;\s*)_csrf_token=([^;]*)/);
+  return match ? decodeURIComponent(match[2]) : '';
+}
+
+let csrfInitPromise: Promise<void> | null = null;
+
+async function initCsrfToken(): Promise<void> {
+  if (getCsrfToken()) return;
+  try {
+    const res = await originalFetch('/api/csrf-token', { credentials: 'include' });
+    if (res.ok) await res.json();
+  } catch {}
+}
+
+function ensureCsrfInit(): Promise<void> {
+  if (!csrfInitPromise) {
+    csrfInitPromise = initCsrfToken();
+  }
+  return csrfInitPromise;
+}
+
+const MUTATING_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
+const originalFetch = window.fetch.bind(window);
+
+window.fetch = async function(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+  const method = (init?.method || 'GET').toUpperCase();
+
+  if (MUTATING_METHODS.has(method)) {
+    const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
+    const isSameOrigin = url.startsWith('/') || url.startsWith(window.location.origin);
+
+    if (isSameOrigin) {
+      await ensureCsrfInit();
+      const token = getCsrfToken();
+      if (token) {
+        const headers = new Headers(init?.headers);
+        if (!headers.has('x-csrf-token')) {
+          headers.set('x-csrf-token', token);
+        }
+        init = { ...init, headers };
+      }
+    }
+  }
+
+  return originalFetch(input, init);
+};
+
 export async function apiRequest(
   method: string,
   url: string,
