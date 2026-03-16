@@ -936,6 +936,15 @@ function downloadAAB(){
         role: "user"
       });
 
+      const easterEggs: Array<{ pattern: RegExp; response: string }> = [
+        { pattern: /\broast\s+mya\b/i, response: "Nah Dawg She Already embarrassed herself When she turned her Camera on 😂" },
+      ];
+      const easterEggMatch = easterEggs.find(e => e.pattern.test(content));
+      if (easterEggMatch) {
+        const aiMsg = await storage.createMessage({ conversationId, content: easterEggMatch.response, role: "assistant" });
+        return res.json({ userMessage, aiMessage: aiMsg });
+      }
+
       const imageNouns = /\b(image|picture|photo|illustration|artwork|drawing|painting|visual|icon|logo|graphic|poster|banner|wallpaper|avatar|portrait|diagram|infographic|meme|thumbnail|cover)\b/i;
       const imageVerbs = /\b(generate|create|make|draw|paint|design|sketch|render|produce|show|give|build|craft)\b/i;
       const imageIntent = /\b(can you|could you|please|i want|i need|i'd like|give me|show me|let me see|make me)\b/i;
