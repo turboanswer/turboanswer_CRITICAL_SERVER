@@ -31,15 +31,29 @@ async function initPayPal() {
 
 app.use(compression());
 
+app.disable('x-powered-by');
+
+app.use((req, res, next) => {
+  const allowed = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'];
+  if (!allowed.includes(req.method)) {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+  next();
+});
+
 app.use((_req, res, next) => {
   res.setHeader("X-Frame-Options", "DENY");
   res.setHeader("X-Content-Type-Options", "nosniff");
   res.setHeader("X-XSS-Protection", "1; mode=block");
   res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
-  res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
+  res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=(), payment=(), usb=(), magnetometer=(), gyroscope=(), accelerometer=()");
+  res.setHeader("X-Permitted-Cross-Domain-Policies", "none");
+  res.setHeader("Cross-Origin-Opener-Policy", "same-origin");
+  res.setHeader("Cross-Origin-Resource-Policy", "same-origin");
+  res.setHeader("Cross-Origin-Embedder-Policy", "credentialless");
   res.setHeader(
     "Strict-Transport-Security",
-    "max-age=31536000; includeSubDomains; preload"
+    "max-age=63072000; includeSubDomains; preload"
   );
   if (process.env.NODE_ENV === "production") {
     res.setHeader(
@@ -53,6 +67,11 @@ app.use((_req, res, next) => {
         "connect-src 'self' wss: https://generativelanguage.googleapis.com https://api.openai.com https://api.anthropic.com https://api.paypal.com https://api-m.paypal.com https://api.brevo.com https://resend.com https://wttr.in https://api.open-meteo.com",
         "media-src 'self' blob:",
         "worker-src 'self' blob:",
+        "object-src 'none'",
+        "base-uri 'self'",
+        "form-action 'self' https://www.paypal.com https://api-m.paypal.com",
+        "frame-ancestors 'none'",
+        "upgrade-insecure-requests",
       ].join("; ")
     );
   }
@@ -70,8 +89,15 @@ const apiLimiter = rateLimit({
 
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 30,
+  max: 10,
   message: { error: 'Too many login attempts. Please try again later.' },
+  skipSuccessfulRequests: true,
+});
+
+const registerLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 5,
+  message: { error: 'Too many registration attempts. Please try again later.' },
 });
 
 const aiLimiter = rateLimit({
@@ -80,13 +106,31 @@ const aiLimiter = rateLimit({
   message: { error: 'AI rate limit reached. Please wait a moment.' },
 });
 
+const passwordResetLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  message: { error: 'Too many password reset requests. Please try again later.' },
+});
+
+const sensitiveApiLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 10,
+  message: { error: 'Too many requests. Please slow down.' },
+});
+
 app.use(apiLimiter);
 app.use('/api/auth/login', authLimiter);
-app.use('/api/auth/register', authLimiter);
+app.use('/api/auth/register', registerLimiter);
+app.use('/api/auth/forgot-password', passwordResetLimiter);
+app.use('/api/auth/reset-password', passwordResetLimiter);
 app.use('/api/conversations', aiLimiter);
+app.use('/api/analyze-image', sensitiveApiLimiter);
+app.use('/api/trial', sensitiveApiLimiter);
+app.use('/api/checkout', sensitiveApiLimiter);
+app.use('/api/admin', sensitiveApiLimiter);
 
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: false }));
+app.use(express.json({ limit: '5mb' }));
+app.use(express.urlencoded({ extended: false, limit: '1mb' }));
 app.use(cookieParser());
 
 applyIntrusionMiddleware(app);
@@ -200,12 +244,13 @@ process.on('unhandledRejection', (reason: any) => {
 
   app.use((err: any, req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
-    const message = err.message || "Internal Server Error";
-    console.error(`[Error] ${status}: ${message}`);
+    const internalMessage = err.message || "Internal Server Error";
+    console.error(`[Error] ${status}: ${internalMessage}`);
     if (status >= 500) {
-      trackError('routeError', message, { stack: err.stack, route: req.path });
+      trackError('routeError', internalMessage, { stack: err.stack, route: req.path });
     }
-    res.status(status).json({ message });
+    const safeMessage = status >= 500 ? "Internal Server Error" : internalMessage;
+    res.status(status).json({ message: safeMessage });
   });
 
   if (app.get("env") === "development") {

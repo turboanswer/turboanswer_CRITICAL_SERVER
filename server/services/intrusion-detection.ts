@@ -70,13 +70,26 @@ const INJECTION_PATTERNS = [
   /('\s*(OR|AND)\s*'[^']*'\s*=\s*'[^']*')/i,
   /('\s*(OR|AND)\s+\d+\s*=\s*\d+)/i,
   /\b(DROP\s+TABLE|DELETE\s+FROM|TRUNCATE\s+TABLE|ALTER\s+TABLE)\b/i,
+  /\b(INSERT\s+INTO|UPDATE\s+\w+\s+SET)\b/i,
+  /\b(EXEC\s*\(|EXECUTE\s+)/i,
+  /\b(WAITFOR\s+DELAY|BENCHMARK\s*\(|SLEEP\s*\()/i,
+  /\b(INTO\s+(OUT|DUMP)FILE)/i,
+  /\b(INFORMATION_SCHEMA|pg_catalog|pg_tables|sys\.objects)\b/i,
   /<script[\s>]/i,
   /javascript\s*:/i,
-  /\bon(error|load|click|mouseover)\s*=/i,
+  /\bon(error|load|click|mouseover|focus|blur|submit)\s*=/i,
   /\beval\s*\(/i,
   /document\.(cookie|write|location)/i,
-  /(\.\.\/){2,}|(\/etc\/passwd|\/proc\/self|\/windows\/system32)/i,
-  /\b(cmd\.exe|powershell|bash|sh)\b/i,
+  /window\.(location|open)\s*[=(]/i,
+  /(\.\.\/){2,}|(\.\.\\){2,}/i,
+  /(\/etc\/(passwd|shadow|hosts)|\/proc\/(self|version)|\/windows\/system32)/i,
+  /\b(cmd\.exe|powershell|bash\s+-[ci])\b/i,
+  /(%00|%0d%0a|%0a|%0d)/i,
+  /\{\{.*\}\}|\$\{.*\}/,
+  /<\s*(iframe|object|embed|applet|form|meta|link)\b/i,
+  /\bdata\s*:\s*text\/html/i,
+  /\bimport\s*\(.*\)/i,
+  /\brequire\s*\(.*\)/i,
 ];
 
 function checkInjection(str: string): boolean {
@@ -162,6 +175,41 @@ export function applyIntrusionMiddleware(app: any) {
         severity: 'critical', blocked: true, simulated: false,
       });
       if (onCriticalThreat) onCriticalThreat('security_breach', `Injection attack from ${ip}`);
+      res.status(403).json({ error: 'Request blocked.' });
+      return;
+    }
+
+    const BLOCKED_PATHS = [
+      /\.(env|git|svn|htaccess|htpasswd|DS_Store|bak|old|orig|swp|sql|log|ini|conf|cfg|yml|yaml|toml|xml|php|asp|aspx|jsp|cgi|pl)$/i,
+      /\/(\.git|\.svn|\.env|\.aws|\.ssh|\.docker|\.kube|\.npm|\.vscode|node_modules|vendor|wp-admin|wp-content|wp-includes|phpmyadmin|adminer|phpinfo|debug|trace|test|backup|dump)\b/i,
+      /\/\.(well-known\/)?acme-challenge/i,
+      /\/(config|configuration|settings|setup|install|database|db|mysql|mssql|oracle|redis|mongo|elastic|kibana)\.(json|yaml|yml|xml|ini|conf|cfg|php|py|js|rb)$/i,
+    ];
+    if (BLOCKED_PATHS.some(p => p.test(req.path))) {
+      data.notFounds.push(t);
+      addEvent({
+        timestamp: new Date(), type: 'scanning', ip,
+        details: `Blocked path probe: ${req.method} ${req.path}`,
+        severity: 'medium', blocked: true, simulated: false,
+      });
+      if (data.notFounds.length > 10) {
+        data.blocked = true;
+        data.blockedAt = new Date();
+      }
+      res.status(404).json({ error: 'Not found' });
+      return;
+    }
+
+    const BLOCKED_UA = /\b(sqlmap|nikto|nmap|dirbuster|gobuster|wfuzz|ffuf|nuclei|burpsuite|havij|acunetix|nessus|openvas|w3af|arachni|skipfish|masscan|zap|owasp)\b/i;
+    const userAgent = req.get('user-agent') || '';
+    if (BLOCKED_UA.test(userAgent)) {
+      data.blocked = true;
+      data.blockedAt = new Date();
+      addEvent({
+        timestamp: new Date(), type: 'scanning', ip,
+        details: `Blocked hacking tool UA: ${userAgent.substring(0, 80)}`,
+        severity: 'high', blocked: true, simulated: false,
+      });
       res.status(403).json({ error: 'Request blocked.' });
       return;
     }

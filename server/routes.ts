@@ -300,7 +300,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.get('/api/system/lockdown-status', (req, res) => {
-    res.json({ active: lockdownActive, activatedAt: lockdownActivatedAt, scenario: lockdownScenario, restoredAt: lockdownRestoredAt });
+    res.json({ active: lockdownActive });
   });
 
   app.post('/api/admin/lockdown/activate', isAdmin, async (req: any, res) => {
@@ -556,7 +556,7 @@ function downloadAAB(){
       const conversations = await storage.getConversationsByUser(userId);
       res.json(conversations);
     } catch (error: any) {
-      res.status(500).json({ message: error.message });
+      res.status(500).json({ message: "Something went wrong. Please try again." });
     }
   });
 
@@ -575,7 +575,7 @@ function downloadAAB(){
       }
       res.json(conversation);
     } catch (error: any) {
-      res.status(500).json({ message: error.message });
+      res.status(500).json({ message: "Something went wrong. Please try again." });
     }
   });
 
@@ -595,7 +595,7 @@ function downloadAAB(){
       const messages = await storage.getMessagesByConversation(conversationId);
       res.json(messages);
     } catch (error: any) {
-      res.status(500).json({ message: error.message });
+      res.status(500).json({ message: "Something went wrong. Please try again." });
     }
   });
 
@@ -617,7 +617,7 @@ function downloadAAB(){
       const updated = await storage.updateConversation(id, { title: title.trim() });
       res.json(updated);
     } catch (error: any) {
-      res.status(500).json({ message: error.message });
+      res.status(500).json({ message: "Something went wrong. Please try again." });
     }
   });
 
@@ -636,7 +636,7 @@ function downloadAAB(){
       await storage.deleteConversation(conversationId, userId, isPrivileged);
       res.json({ success: true });
     } catch (error: any) {
-      res.status(500).json({ message: error.message });
+      res.status(500).json({ message: "Something went wrong. Please try again." });
     }
   });
 
@@ -647,12 +647,12 @@ function downloadAAB(){
       await storage.deleteAllConversations(userId);
       res.json({ success: true });
     } catch (error: any) {
-      res.status(500).json({ message: error.message });
+      res.status(500).json({ message: "Something went wrong. Please try again." });
     }
   });
 
   // Visual AI analysis endpoint
-  app.post("/api/analyze-image", async (req: any, res) => {
+  app.post("/api/analyze-image", isAuthenticated, async (req: any, res) => {
     try {
       const { imageData, query } = req.body;
       
@@ -666,7 +666,7 @@ function downloadAAB(){
       res.json(analysis);
     } catch (error: any) {
       console.error("Image analysis error:", error);
-      res.status(500).json({ message: error.message || "Failed to analyze image" });
+      res.status(500).json({ message: "Failed to analyze image" });
     }
   });
 
@@ -1013,7 +1013,7 @@ function downloadAAB(){
       });
     } catch (error: any) {
       console.error("Error in message route:", error);
-      res.status(500).json({ message: error.message });
+      res.status(500).json({ message: "Something went wrong. Please try again." });
     }
   });
 
@@ -1085,7 +1085,7 @@ function downloadAAB(){
       res.json({ url: result.approvalUrl });
     } catch (error: any) {
       console.error('[PayPal Checkout] ERROR:', error.message);
-      res.status(500).json({ error: error.message || 'Checkout failed. Please try again.' });
+      res.status(500).json({ error: 'Checkout failed. Please try again.' });
     }
   });
 
@@ -1438,7 +1438,14 @@ function downloadAAB(){
   app.post('/api/paypal/webhook', async (req: any, res) => {
     try {
       const event = req.body;
-      const eventType: string = event?.event_type || '';
+      if (!event || typeof event !== 'object' || !event.event_type || !event.id) {
+        return res.status(400).json({ error: 'Invalid webhook payload' });
+      }
+      const ALLOWED_EVENTS = ['BILLING.SUBSCRIPTION.PAYMENT.FAILED', 'BILLING.SUBSCRIPTION.ACTIVATED', 'BILLING.SUBSCRIPTION.CANCELLED', 'BILLING.SUBSCRIPTION.SUSPENDED', 'PAYMENT.SALE.COMPLETED'];
+      const eventType: string = event.event_type;
+      if (!ALLOWED_EVENTS.includes(eventType)) {
+        return res.status(200).json({ received: true, ignored: true });
+      }
       console.log(`[PayPal Webhook] Received event: ${eventType}`);
 
       if (eventType === 'BILLING.SUBSCRIPTION.PAYMENT.FAILED') {
@@ -1571,7 +1578,7 @@ function downloadAAB(){
       res.json({ url: result.approvalUrl, subscriptionId: result.subscriptionId });
     } catch (error: any) {
       console.error('[Addon] Create subscription error:', error.message);
-      res.status(500).json({ error: error.message || 'Failed to create add-on subscription' });
+      res.status(500).json({ error: 'Failed to create add-on subscription' });
     }
   });
 
@@ -1591,7 +1598,7 @@ function downloadAAB(){
       res.status(400).json({ error: `Subscription not active (status: ${details.status})` });
     } catch (error: any) {
       console.error('[Addon] Confirm subscription error:', error.message);
-      res.status(500).json({ error: error.message || 'Failed to confirm add-on subscription' });
+      res.status(500).json({ error: 'Failed to confirm add-on subscription' });
     }
   });
 
@@ -1610,7 +1617,7 @@ function downloadAAB(){
       res.json({ success: true, message: 'Code Studio add-on cancelled.' });
     } catch (error: any) {
       console.error('[Addon] Cancel error:', error.message);
-      res.status(500).json({ error: error.message || 'Failed to cancel add-on' });
+      res.status(500).json({ error: 'Failed to cancel add-on' });
     }
   });
 
@@ -1637,7 +1644,7 @@ function downloadAAB(){
       res.json({ success: true, enabled: !!enabled, message: enabled ? 'Weekly digest enabled' : 'Weekly digest disabled' });
     } catch (error: any) {
       console.error('[WeeklyDigest]', error.message);
-      res.status(500).json({ error: error.message || 'Failed to update weekly digest preference' });
+      res.status(500).json({ error: 'Failed to update weekly digest preference' });
     }
   });
 
@@ -1673,7 +1680,7 @@ function downloadAAB(){
       res.json({ success: true, message: 'Code Studio activated! Enjoy your free access.' });
     } catch (error: any) {
       console.error('[PromoCode] Apply error:', error.message);
-      res.status(500).json({ error: error.message || 'Failed to apply promo code' });
+      res.status(500).json({ error: 'Failed to apply promo code' });
     }
   });
 
@@ -1683,7 +1690,7 @@ function downloadAAB(){
       const codes = await storage.getAllPromoCodes();
       res.json(codes);
     } catch (error: any) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: "Something went wrong. Please try again." });
     }
   });
 
@@ -1705,7 +1712,7 @@ function downloadAAB(){
       if (error.message?.includes('unique')) {
         return res.status(400).json({ error: 'A promo code with this name already exists' });
       }
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: "Something went wrong. Please try again." });
     }
   });
 
@@ -1723,7 +1730,7 @@ function downloadAAB(){
       const promo = await storage.updatePromoCode(id, updates);
       res.json(promo);
     } catch (error: any) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: "Something went wrong. Please try again." });
     }
   });
 
@@ -1733,7 +1740,7 @@ function downloadAAB(){
       await storage.deletePromoCode(id);
       res.json({ success: true });
     } catch (error: any) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ error: "Something went wrong. Please try again." });
     }
   });
 
@@ -1836,7 +1843,7 @@ function downloadAAB(){
       res.json({ message: `User banned ${durationText}`, user: { id: user.id, name: user.firstName || user.email || user.id } });
     } catch (error: any) {
       console.error('Ban user error:', error);
-      res.status(500).json({ message: error.message || 'Failed to ban user' });
+      res.status(500).json({ message: 'Failed to ban user' });
     }
   });
 
@@ -1848,7 +1855,7 @@ function downloadAAB(){
       res.json({ message: 'User unbanned successfully', user: { id: user.id, name: user.firstName || user.email || user.id } });
     } catch (error: any) {
       console.error('Unban user error:', error);
-      res.status(500).json({ message: error.message || 'Failed to unban user' });
+      res.status(500).json({ message: 'Failed to unban user' });
     }
   });
 
@@ -1876,7 +1883,7 @@ function downloadAAB(){
       res.json({ message: 'User flagged successfully', user: { id: user.id, name: user.firstName || user.email || user.id } });
     } catch (error: any) {
       console.error('Flag user error:', error);
-      res.status(500).json({ message: error.message || 'Failed to flag user' });
+      res.status(500).json({ message: 'Failed to flag user' });
     }
   });
 
@@ -1888,7 +1895,7 @@ function downloadAAB(){
       res.json({ message: 'User unflagged successfully', user: { id: user.id, name: user.firstName || user.email || user.id } });
     } catch (error: any) {
       console.error('Unflag user error:', error);
-      res.status(500).json({ message: error.message || 'Failed to unflag user' });
+      res.status(500).json({ message: 'Failed to unflag user' });
     }
   });
 
@@ -1929,7 +1936,7 @@ function downloadAAB(){
       });
     } catch (error: any) {
       console.error('Suspend user error:', error);
-      res.status(500).json({ message: error.message || 'Failed to suspend user' });
+      res.status(500).json({ message: 'Failed to suspend user' });
     }
   });
 
@@ -1954,7 +1961,7 @@ function downloadAAB(){
       });
     } catch (error: any) {
       console.error('Unsuspend user error:', error);
-      res.status(500).json({ message: error.message || 'Failed to unsuspend user' });
+      res.status(500).json({ message: 'Failed to unsuspend user' });
     }
   });
 
@@ -2009,7 +2016,7 @@ function downloadAAB(){
       res.json({ message: 'User account deleted successfully' });
     } catch (error: any) {
       console.error('[Admin Delete] Error:', error.message);
-      res.status(500).json({ message: error.message || 'Failed to delete user account' });
+      res.status(500).json({ message: 'Failed to delete user account' });
     }
   });
 
@@ -2418,21 +2425,23 @@ function downloadAAB(){
         const count = await storage.getUserCount();
         results.push({ check: 'Database Connection', status: 'pass', details: `Connected, ${count} users found` });
       } catch (e: any) {
-        results.push({ check: 'Database Connection', status: 'fail', details: e.message });
+        console.error('[Diagnostics] DB check failed:', e.message);
+        results.push({ check: 'Database Connection', status: 'fail', details: 'Database connection failed' });
       }
 
       try {
         const plans = await ensureSubscriptionPlans();
-        results.push({ check: 'PayPal Plans', status: 'pass', details: `Pro: ${plans.pro}, Research: ${plans.research}, Enterprise: ${plans.enterprise}` });
+        results.push({ check: 'PayPal Plans', status: 'pass', details: 'Plans configured' });
       } catch (e: any) {
-        results.push({ check: 'PayPal Plans', status: 'fail', details: e.message });
+        console.error('[Diagnostics] PayPal check failed:', e.message);
+        results.push({ check: 'PayPal Plans', status: 'fail', details: 'PayPal plans check failed' });
       }
 
       try {
-        if (!process.env.GEMINI_API_KEY) throw new Error('GEMINI_API_KEY not set');
-        results.push({ check: 'AI API Key', status: 'pass', details: 'GEMINI_API_KEY is configured' });
+        if (!process.env.GEMINI_API_KEY) throw new Error('Not configured');
+        results.push({ check: 'AI API Key', status: 'pass', details: 'Configured' });
       } catch (e: any) {
-        results.push({ check: 'AI API Key', status: 'fail', details: e.message });
+        results.push({ check: 'AI API Key', status: 'fail', details: 'Not configured' });
       }
 
       try {
@@ -2448,7 +2457,8 @@ function downloadAAB(){
           results.push({ check: 'Orphaned Enterprise Users', status: 'pass', details: 'No orphaned enterprise subscriptions found' });
         }
       } catch (e: any) {
-        results.push({ check: 'Orphaned Enterprise Users', status: 'fail', details: e.message });
+        console.error('[Diagnostics] Enterprise check failed:', e.message);
+        results.push({ check: 'Orphaned Enterprise Users', status: 'fail', details: 'Check failed' });
       }
 
       try {
@@ -2463,15 +2473,16 @@ function downloadAAB(){
           results.push({ check: 'Stuck Subscriptions', status: 'pass', details: 'No inconsistent subscription states found' });
         }
       } catch (e: any) {
-        results.push({ check: 'Stuck Subscriptions', status: 'fail', details: e.message });
+        console.error('[Diagnostics] Stuck subs check failed:', e.message);
+        results.push({ check: 'Stuck Subscriptions', status: 'fail', details: 'Check failed' });
       }
 
       try {
         const memUsage = process.memoryUsage();
         const heapPercent = Math.round((memUsage.heapUsed / memUsage.heapTotal) * 100);
-        results.push({ check: 'Memory Usage', status: heapPercent > 90 ? 'warn' : 'pass', details: `Heap: ${heapPercent}% used (${Math.round(memUsage.heapUsed / 1024 / 1024)}MB / ${Math.round(memUsage.heapTotal / 1024 / 1024)}MB)` });
+        results.push({ check: 'Memory Usage', status: heapPercent > 90 ? 'warn' : 'pass', details: `Heap: ${heapPercent}% used` });
       } catch (e: any) {
-        results.push({ check: 'Memory Usage', status: 'fail', details: e.message });
+        results.push({ check: 'Memory Usage', status: 'fail', details: 'Check failed' });
       }
 
       const adminUserId = req.user.claims.sub;
@@ -2621,7 +2632,7 @@ function downloadAAB(){
 
     } catch (error: any) {
       console.error("Document analysis error:", error);
-      res.status(500).json({ message: error.message });
+      res.status(500).json({ message: "Something went wrong. Please try again." });
     }
   });
 
@@ -2631,7 +2642,7 @@ function downloadAAB(){
       const options = getAnalysisOptions();
       res.json(options);
     } catch (error: any) {
-      res.status(500).json({ message: error.message });
+      res.status(500).json({ message: "Something went wrong. Please try again." });
     }
   });
 
@@ -2644,7 +2655,7 @@ function downloadAAB(){
         maxSize: "10MB"
       });
     } catch (error: any) {
-      res.status(500).json({ message: error.message });
+      res.status(500).json({ message: "Something went wrong. Please try again." });
     }
   });
 
@@ -2657,7 +2668,7 @@ function downloadAAB(){
       const report = formatWeatherReport(weatherData);
       res.json({ weather: weatherData, report });
     } catch (error: any) {
-      res.status(500).json({ message: error.message });
+      res.status(500).json({ message: "Something went wrong. Please try again." });
     }
   });
 
@@ -2678,7 +2689,7 @@ function downloadAAB(){
         throw new Error(locationInfo.reason?.message || 'Location not found');
       }
     } catch (error: any) {
-      res.status(500).json({ message: error.message });
+      res.status(500).json({ message: "Something went wrong. Please try again." });
     }
   });
 
@@ -3177,7 +3188,7 @@ ${template.bodyText.split('\n').map(line => {
       res.json({ success: true, message: `${template.statusText} email sent to ${recipientEmail}`, emailId: brevoResult.messageId });
     } catch (error: any) {
       console.error('Email send error:', error);
-      res.status(500).json({ error: error.message || 'Failed to send email' });
+      res.status(500).json({ error: 'Failed to send email' });
     }
   });
 

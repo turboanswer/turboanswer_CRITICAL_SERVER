@@ -66,8 +66,8 @@ async function checkAIService(): Promise<DiagnosticResult> {
   }
   try {
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models?key=${process.env.GEMINI_API_KEY}`,
-      { method: 'GET', signal: AbortSignal.timeout(8000) }
+      `https://generativelanguage.googleapis.com/v1beta/models`,
+      { method: 'GET', headers: { 'x-goog-api-key': process.env.GEMINI_API_KEY! }, signal: AbortSignal.timeout(8000) }
     );
     if (response.ok) {
       return { check: 'AI Engine (Gemini)', status: 'pass', details: 'Gemini API accessible and key valid', timestamp: ts };

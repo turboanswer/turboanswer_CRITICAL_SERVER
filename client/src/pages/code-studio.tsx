@@ -1106,12 +1106,11 @@ export default function CodeStudio() {
           <div style={{ flex: 1, position: "relative", overflow: "hidden" }}>
             {rightPanel === "preview" ? (
               previewUrl ? (
-                // URL-based preview: NO sandbox = full browser API access
-                // localStorage, fetch, WebSockets, IndexedDB, geolocation all work
                 <iframe
                   key={previewUrl}
                   src={previewUrl}
                   style={{ position: "absolute", inset: 0, width: "100%", height: "100%", border: "none", background: "#fff" }}
+                  sandbox="allow-scripts allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox allow-downloads"
                   title="App Preview"
                 />
               ) : livePreview ? (
