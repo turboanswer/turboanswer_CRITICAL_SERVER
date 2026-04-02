@@ -6,8 +6,8 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useAuth } from "@/hooks/use-auth";
 import { ThemeProvider } from "@/hooks/use-theme";
-import { Loader2 } from "lucide-react";
 import Chat from "@/pages/chat";
+import turboLogo from "@assets/file_000000007ff071f8a754520ac27c6ba4_1770423239509.png";
 import AISettings from "@/pages/ai-settings";
 import Subscribe from "@/pages/subscribe";
 import NotFound from "@/pages/not-found";
@@ -139,8 +139,33 @@ function AppContent() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-black">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+      <div className="flex flex-col items-center justify-center min-h-screen bg-[#0a0a0a] relative overflow-hidden">
+        <style>{`
+          @keyframes splash-fade-in { 0% { opacity: 0; transform: scale(0.92); } 100% { opacity: 1; transform: scale(1); } }
+          @keyframes splash-text-fade { 0% { opacity: 0; transform: translateY(8px); } 100% { opacity: 1; transform: translateY(0); } }
+          @keyframes splash-dot-pulse { 0%, 100% { opacity: 0.3; } 50% { opacity: 1; } }
+          @keyframes splash-ring { 0% { transform: scale(0.8); opacity: 0.6; } 100% { transform: scale(2.5); opacity: 0; } }
+        `}</style>
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 rounded-full" style={{ background: 'radial-gradient(circle, rgba(99,102,241,0.08) 0%, transparent 70%)', animation: 'splash-ring 2.5s ease-out infinite' }} />
+        </div>
+        <div className="flex flex-col items-center gap-5 relative z-10" style={{ animation: 'splash-fade-in 0.6s ease-out forwards' }}>
+          <div className="relative">
+            <div className="absolute inset-0 rounded-full blur-xl" style={{ background: 'radial-gradient(circle, rgba(99,102,241,0.2) 0%, transparent 70%)', transform: 'scale(1.5)' }} />
+            <img src={turboLogo} alt="TurboAnswer" className="w-16 h-16 rounded-2xl object-cover relative z-10" style={{ boxShadow: '0 0 30px rgba(99,102,241,0.15)' }} />
+          </div>
+          <div className="flex flex-col items-center gap-2" style={{ animation: 'splash-text-fade 0.6s ease-out 0.2s both' }}>
+            <h1 className="text-xl font-semibold text-white tracking-tight">TurboAnswer</h1>
+          </div>
+          <div className="flex gap-1.5 mt-2" style={{ animation: 'splash-text-fade 0.6s ease-out 0.4s both' }}>
+            {[0, 1, 2].map(i => (
+              <div key={i} className="w-1.5 h-1.5 rounded-full bg-zinc-500" style={{ animation: `splash-dot-pulse 1.2s ease-in-out ${i * 0.2}s infinite` }} />
+            ))}
+          </div>
+        </div>
+        <div className="absolute bottom-8 flex flex-col items-center gap-1" style={{ animation: 'splash-text-fade 0.8s ease-out 0.6s both' }}>
+          <p className="text-[11px] text-zinc-600 tracking-wide">By TurboAnswer Inc.</p>
+        </div>
       </div>
     );
   }
