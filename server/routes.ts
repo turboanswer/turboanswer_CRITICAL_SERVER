@@ -89,7 +89,7 @@ const TIER_LABELS: Record<string, string> = { free: 'Free', pro: 'Pro', research
 const TIER_PRICES: Record<string, string> = { pro: '$6.99/mo', research: '$30.00/mo', enterprise: '$100.00/mo' };
 const TIER_PERKS: Record<string, string[]> = {
   pro:        ['Unlimited daily questions', 'Advanced AI models (Gemini 3.1 Pro)', 'Priority response speed', 'Full Code Studio access'],
-  research:   ['Everything in Pro', 'Claude Opus & GPT-4o access', 'AI Video Generation', 'Deep research mode with citations'],
+  research:   ['Everything in Pro', 'Claude Sonnet 4 & GPT-4o access', 'AI Video Generation', 'Deep research mode with citations'],
   enterprise: ['Everything in Research', 'Team access with shared enterprise code', 'Dedicated support', 'Highest priority processing'],
 };
 
@@ -3789,29 +3789,42 @@ ${CSS_FOUNDATION}
         ? `\n\nWEB-RESEARCHED FEATURES — you MUST implement ALL of these in the app (found from real production apps on the web):\n${discoveredFeatures.map((f, i) => `${i + 1}. ${f}`).join('\n')}\n\nEvery single feature above must be present and working in the final app. This makes it a professional-grade, production-quality app that rivals the best apps on the market.`
         : '';
 
-      const systemPrompt = `You are Turbo Code, a world-class senior UI engineer at a top Silicon Valley company. You build FULLY FUNCTIONAL, professional-grade web apps. You are completing an HTML document that has already started. Your output will be appended directly after "<title>". 
+      const systemPrompt = `You are Turbo Code, a world-class senior UI engineer. You build FULLY FUNCTIONAL web apps as a single HTML file. You are completing an HTML document that has already started. Your output will be appended directly after "<title>".
 
 You must output ONLY the continuation of the HTML — starting with the app title, then </title>, then complete <style>, complete <body>, and closing </html>. No markdown, no explanation, just raw HTML.
 
-CRITICAL JAVASCRIPT RULES — every single one must be followed:
-1. EVERY button MUST have a working onclick handler that actually does something — NO placeholder functions, NO empty handlers
-2. EVERY form MUST submit and process data — validate inputs, show errors, save to localStorage
-3. EVERY list, table, or grid MUST be populated from localStorage data and update live when items change
-4. EVERY modal, dialog, or panel MUST open and close correctly
-5. EVERY filter, search, or sort control MUST actually filter/search/sort the displayed data in real time
-6. EVERY chart or visualization MUST render actual data using canvas or inline SVG — no placeholder images
-7. EVERY settings or preferences control MUST persist to localStorage and apply immediately
-8. ALL data MUST be saved to localStorage and restored on page load — the app must remember everything between sessions
-9. NO functions defined but never called. NO "TODO" comments. NO stub implementations.
-10. Test every feature mentally before writing — if a button doesn't DO something visible, add what it should do
+ARCHITECTURE (MANDATORY — follow this exact pattern):
+\`\`\`
+const App = {
+  state: { /* all app data here */ },
+  init() { this.load(); this.bind(); this.render(); },
+  load() { const s = localStorage.getItem('appData'); if (s) this.state = JSON.parse(s); },
+  save() { localStorage.setItem('appData', JSON.stringify(this.state)); },
+  bind() { /* attach ALL event listeners here using addEventListener, NOT inline onclick */ },
+  render() { /* update ALL DOM from this.state — this is the ONLY place you touch innerHTML */ },
+  // ... other methods
+};
+document.addEventListener('DOMContentLoaded', () => App.init());
+\`\`\`
+
+CRITICAL RULES:
+1. Use addEventListener in bind() for ALL interactions — never use inline onclick/onsubmit in HTML
+2. Every user action must: update this.state → call this.save() → call this.render()
+3. render() must rebuild ALL dynamic content from this.state every time — never manually tweak DOM
+4. All data persists to localStorage via save() and restores via load()
+5. Keep scope realistic: build 3-5 core features that work perfectly rather than 20 broken ones
+6. Forms must validate inputs and show clear error/success feedback
+7. Lists/tables must support add, edit/delete, and filter/search if appropriate
+8. Modals: use a single reusable modal pattern (show/hide with a class toggle)
+9. Charts: use canvas with real data from state — no placeholder images
+10. NO "TODO", NO empty handlers, NO console.log-only functions, NO stub code
 
 UI RULES:
-- Use the foundation CSS classes already defined: .card, .btn, .btn-primary, .btn-secondary, .input-field, .container, .badge, .gradient-text, .animate-fadeInUp
-- The <style> tag must only add app-specific styles — do NOT redefine foundation variables
-- Dark glassmorphism aesthetic with gradient accents and smooth hover transitions
-- Responsive design that works on mobile${featureContext}${designContext}
-
-ARCHITECTURE: Use a single JavaScript class or module pattern with an init() function called on DOMContentLoaded. Keep state in a single object, save to localStorage on every change, render from state.`;
+- Use the foundation CSS classes: .card, .btn, .btn-primary, .btn-secondary, .input-field, .container, .badge
+- Add app-specific styles only — do NOT redefine foundation CSS variables
+- Dark glassmorphism design, gradient accents, smooth transitions
+- Mobile responsive with flexbox/grid
+- Focus on making the core features polished and fully interactive${featureContext}${designContext}`;
 
       const userMessage = `Build this app: ${prompt.trim()}
 
@@ -3831,10 +3844,9 @@ IMPORTANT:
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'x-api-key': anthropicKey, 'anthropic-version': '2023-06-01' },
             body: JSON.stringify({
-              model: 'claude-opus-4-5',
+              model: 'claude-sonnet-4-20250514',
               max_tokens: maxTokens,
               system: systemPrompt,
-              // Prefill the assistant response to force raw HTML output — Claude continues from here
               messages: [
                 { role: 'user', content: userMessage },
                 { role: 'assistant', content: HTML_PREFIX },
@@ -3852,9 +3864,9 @@ IMPORTANT:
       }
 
       async function callGemini(model: string, maxTokens: number, timeoutMs: number): Promise<string | null> {
-        const geminiPrompt = `You are Turbo Code, a world-class senior UI engineer. Build a complete, FULLY FUNCTIONAL, professional-grade web app as a single self-contained HTML file.
+        const geminiPrompt = `You are Turbo Code, a world-class senior UI engineer. Build a complete, FULLY FUNCTIONAL web app as a single self-contained HTML file.
 
-IMPORTANT: Output ONLY the raw HTML starting with <!DOCTYPE html>. No markdown fences, no explanation, no preamble.
+Output ONLY raw HTML starting with <!DOCTYPE html>. No markdown fences, no explanation.
 
 The HTML MUST include this exact CSS at the top of the <style> tag:
 <style>
@@ -3864,17 +3876,26 @@ ${CSS_FOUNDATION}
 
 Build this: ${prompt.trim()}${featureContext}${designContext}
 
-CRITICAL JAVASCRIPT RULES (ALL must be followed):
-1. EVERY button MUST have a working onclick that actually does something — NO empty handlers, NO stubs
-2. EVERY form MUST validate, process, and save data to localStorage
-3. EVERY list/table MUST load from localStorage on startup and update instantly
-4. EVERY modal MUST open and close correctly
-5. EVERY search/filter MUST filter the displayed data in real time
-6. EVERY chart MUST render actual data with canvas or SVG
-7. ALL app state MUST persist to localStorage and restore on page load
-8. NO "TODO" comments, NO placeholder functions, NO broken features
-9. Use DOMContentLoaded init pattern: const App = { state: {}, init() {...}, render() {...}, save() { localStorage.setItem('app',JSON.stringify(this.state)); } }
-10. Start output with <!DOCTYPE html> immediately`;
+MANDATORY ARCHITECTURE — use this exact pattern:
+const App = {
+  state: { /* all data */ },
+  init() { this.load(); this.bind(); this.render(); },
+  load() { const s = localStorage.getItem('appData'); if(s) this.state = JSON.parse(s); },
+  save() { localStorage.setItem('appData', JSON.stringify(this.state)); },
+  bind() { /* ALL addEventListener calls here — NO inline onclick in HTML */ },
+  render() { /* rebuild ALL dynamic content from this.state */ },
+};
+document.addEventListener('DOMContentLoaded', () => App.init());
+
+RULES:
+1. Use addEventListener in bind() — NEVER inline onclick/onsubmit in HTML
+2. Every action: update state → save() → render()
+3. render() rebuilds all dynamic DOM from state every time
+4. Keep scope realistic: 3-5 core features that work perfectly
+5. Forms validate and show feedback, lists support CRUD, modals toggle with class
+6. Charts use canvas with real data, no placeholder images
+7. NO "TODO", NO stubs, NO empty handlers
+8. Start output with <!DOCTYPE html>`;
 
         try {
           const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
@@ -4253,12 +4274,10 @@ Rules:
 
 User: ${message}`;
 
-      // Try fast models first, then heavier ones, then Claude as last resort
-      let reply = await callModel('gemini-2.0-flash', 4096, 20000)
-        ?? await callModel('gemini-3.1-pro-preview', 8192, 45000)
-        ?? await callModel('gemini-2.0-flash-lite', 4096, 12000);
+      let reply = await callModel('gemini-2.0-flash', chatPrompt, 4096, 20000)
+        ?? await callModel('gemini-3.1-pro-preview', chatPrompt, 8192, 45000)
+        ?? await callModel('gemini-2.0-flash-lite', chatPrompt, 4096, 12000);
 
-      // Claude fallback if all Gemini models fail
       if (!reply) {
         const anthropicKey = process.env.AI_INTEGRATIONS_ANTHROPIC_API_KEY || process.env.ANTHROPIC_API_KEY;
         const anthropicBase = process.env.AI_INTEGRATIONS_ANTHROPIC_BASE_URL || 'https://api.anthropic.com';
@@ -4267,7 +4286,7 @@ User: ${message}`;
             const r = await fetch(`${anthropicBase}/v1/messages`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json', 'x-api-key': anthropicKey, 'anthropic-version': '2023-06-01' },
-              body: JSON.stringify({ model: 'claude-opus-4-5', max_tokens: 2048, messages: [{ role: 'user', content: chatPrompt }] }),
+              body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 4096, messages: [{ role: 'user', content: chatPrompt }] }),
               signal: AbortSignal.timeout(30000),
             });
             if (r.ok) { const d: any = await r.json(); reply = d.content?.[0]?.text || null; }

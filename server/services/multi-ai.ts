@@ -88,7 +88,7 @@ async function callClaude(prompt: string, maxTokens: number, temperature: number
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        model: 'claude-opus-4-5',
+        model: 'claude-sonnet-4-20250514',
         max_tokens: maxTokens,
         temperature,
         messages: [{ role: 'user', content: prompt }],
@@ -105,7 +105,7 @@ async function callClaude(prompt: string, maxTokens: number, temperature: number
     const data: any = await response.json();
     const text = data.content?.[0]?.text;
     if (text) {
-      console.log(`[Claude] claude-opus-4-5 responded`);
+      console.log(`[Claude] claude-sonnet-4 responded`);
       return text;
     }
     return null;
@@ -197,7 +197,7 @@ export async function generateAIResponse(
         console.log(`[AI] Research/simple → Gemini Flash Lite`);
         return await callGemini(fullPrompt, 'gemini-3.1-flash-lite-preview', 2000, 0.4, geminiApiKey);
       } else {
-        // Complex queries → Claude Opus 4.5 primary, Gemini 3.1 Pro fallback
+        // Complex queries → Claude Sonnet 4 primary, Gemini 3.1 Pro fallback
         const systemPrompt = `You are Turbo Answer Research, powered by Claude and Gemini. Give expert-level responses. Answer directly, use structure (headings, bullets) for complex topics, calibrate length to the question. Never discuss your own state or feelings. Only mention TurboAnswer was developed by Tiago Tschantret if directly asked.${behaviorInstruction ? ' ' + behaviorInstruction : ''}${languageInstruction ? ' ' + languageInstruction : ''}${additionalContext}`;
         const fullPrompt = recentHistory ? `${systemPrompt}\n\nContext:\n${recentHistory}\n\nUser: ${enhancedMessage}` : `${systemPrompt}\n\nUser: ${enhancedMessage}`;
 

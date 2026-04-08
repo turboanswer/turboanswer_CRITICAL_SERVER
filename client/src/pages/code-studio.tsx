@@ -623,7 +623,7 @@ export default function CodeStudio() {
           <p style={{ color: C.muted, fontSize: 14, marginBottom: 28 }}>AI-powered IDE — describe your app, get production-quality code in seconds</p>
           <div style={{ background: C.panel, border: `1px solid ${C.border}`, borderRadius: 16, padding: 20, marginBottom: 20, textAlign: "left" }}>
             <div style={{ fontSize: 11, fontWeight: 700, color: "#10b981", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 14 }}>What you get</div>
-            {["Web-researched features from real apps — built in automatically", "Claude Opus 4.5 + Gemini 3.1 Pro build professional apps", "Monaco editor (VS Code engine) with multi-file support", "Live preview + auto-deploy to a public URL", "Run Python, JS, TypeScript, Java, Go, Rust & more"].map(f => (
+            {["Web-researched features from real apps — built in automatically", "Claude Sonnet 4 + Gemini 3.1 Pro build professional apps", "Monaco editor (VS Code engine) with multi-file support", "Live preview + auto-deploy to a public URL", "Run Python, JS, TypeScript, Java, Go, Rust & more"].map(f => (
               <div key={f} style={{ display: "flex", alignItems: "flex-start", gap: 10, marginBottom: 10 }}>
                 <Check style={{ width: 15, height: 15, color: "#10b981", marginTop: 1, flexShrink: 0 }} />
                 <span style={{ color: C.text, fontSize: 13 }}>{f}</span>
@@ -812,7 +812,7 @@ export default function CodeStudio() {
             </div>
             <div style={{ flex: 1 }}>
               <div style={{ fontSize: 12, fontWeight: 700, color: C.text }}>Turbo Code Agent</div>
-              <div style={{ fontSize: 10, color: C.muted }}>Claude Opus 4.5 + Gemini 3.1 Pro</div>
+              <div style={{ fontSize: 10, color: C.muted }}>Claude Sonnet 4 + Gemini 3.1 Pro</div>
             </div>
             <div style={{ fontSize: 10, color: "#7c3aed", background: "rgba(124,58,237,0.1)", border: "1px solid rgba(124,58,237,0.2)", padding: "2px 7px", borderRadius: 4, fontWeight: 600 }}>AI</div>
           </div>

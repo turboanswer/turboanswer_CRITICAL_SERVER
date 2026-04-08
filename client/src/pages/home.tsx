@@ -112,7 +112,7 @@ export default function Home() {
                 </div>
 
                 <p className="text-gray-300 mb-6 leading-relaxed max-w-xl">
-                  One subscription. Up to <strong className="text-white">5 team members</strong>. Every AI model — <strong className="text-white">Gemini 3.1 Pro</strong>, <strong style={{ color: "#EA4335" }}>Claude Opus</strong>, and <strong style={{ color: "#10b981" }}>ChatGPT-4o</strong> — all working together. Plus <strong style={{ color: "#FBBC05" }}>Code Studio FREE</strong>, AI Video Studio, and everything in Research.
+                  One subscription. Up to <strong className="text-white">5 team members</strong>. Every AI model — <strong className="text-white">Gemini 3.1 Pro</strong>, <strong style={{ color: "#EA4335" }}>Claude Sonnet 4</strong>, and <strong style={{ color: "#10b981" }}>ChatGPT-4o</strong> — all working together. Plus <strong style={{ color: "#FBBC05" }}>Code Studio FREE</strong>, AI Video Studio, and everything in Research.
                 </p>
 
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-7">
@@ -281,7 +281,7 @@ export default function Home() {
                 plans: ["Free", "Pro", "Research", "Enterprise"],
               },
               {
-                name: "Claude Opus", company: "Anthropic", color: "#EA4335",
+                name: "Claude Sonnet 4", company: "Anthropic", color: "#EA4335",
                 tag: "Deep Reasoning", icon: <span className="text-xl">🧠</span>,
                 desc: "The best model for complex reasoning, long-form writing, and code architecture. Research & Enterprise.",
                 plans: ["Research", "Enterprise"],
