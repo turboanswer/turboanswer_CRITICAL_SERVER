@@ -705,7 +705,7 @@ export default function MobileChatUI({
             <div className="text-center mb-5">
               <div className="w-14 h-14 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center mx-auto mb-4"><Crown className="text-white h-7 w-7" /></div>
               <h2 className="text-xl font-bold mb-1 text-white">Upgrade to Pro</h2>
-              <p className="text-zinc-400 text-sm">Unlock Gemini 3.1 Flash</p>
+              <p className="text-zinc-400 text-sm">Unlock Advanced AI</p>
             </div>
             <div className="text-center mb-1">
               <div className="inline-flex items-center gap-1.5 bg-green-500/15 border border-green-500/30 text-green-400 text-xs font-semibold px-3 py-1 rounded-full mb-3">
@@ -718,7 +718,7 @@ export default function MobileChatUI({
               <p className="text-xs mt-1 text-zinc-500">after free trial</p>
             </div>
             <ul className="space-y-3 mb-6">
-              {["7 days free — cancel anytime", "Gemini 3.1 Flash - advanced reasoning", "Priority response speed", "Everything in Free included"].map((text, i) => (
+              {["7 days free — cancel anytime", "Advanced AI model — deeper reasoning", "Priority response speed", "Everything in Free included"].map((text, i) => (
                 <li key={i} className="flex items-center gap-3">
                   <CheckCircle className="w-4 h-4 flex-shrink-0 text-green-400" />
                   <span className={`text-sm ${i === 0 ? "font-semibold text-green-400" : "text-zinc-200"}`}>{text}</span>
@@ -751,7 +751,7 @@ export default function MobileChatUI({
             <div className="text-center mb-5">
               <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-full flex items-center justify-center mx-auto mb-4"><Brain className="text-white h-7 w-7" /></div>
               <h2 className="text-xl font-bold mb-1 text-white">Upgrade to Research</h2>
-              <p className="text-zinc-400 text-sm">Claude + Gemini · Maximum Intelligence · AI Video Studio</p>
+              <p className="text-zinc-400 text-sm">10 AI Models · Maximum Intelligence · AI Video Studio</p>
             </div>
             <div className="flex h-1 rounded-full overflow-hidden mb-4">
               {["#4285F4","#EA4335","#FBBC05","#34A853"].map((c,i) => <div key={i} className="flex-1" style={{background:c}} />)}
@@ -767,7 +767,7 @@ export default function MobileChatUI({
               <p className="text-xs mt-1 text-zinc-500">after free trial</p>
             </div>
             <ul className="space-y-3 mb-6">
-              {["7 days free — cancel anytime", "🤖 Claude + Gemini — dual AI powerhouse", "🎬 AI Video Studio (Google Veo 3.1)", "💻 Code Studio — build apps with one prompt", "Everything in Pro + Free included"].map((text, i) => (
+              {["7 days free — cancel anytime", "🤖 10 AI models — GPT-4o, Claude, Mistral & more", "🎬 AI Video Studio (Google Veo 3.1)", "💻 Code Studio — build apps with one prompt", "Everything in Pro + Free included"].map((text, i) => (
                 <li key={i} className="flex items-center gap-3">
                   <CheckCircle className="w-4 h-4 text-green-400 flex-shrink-0" />
                   <span className={`text-sm ${i === 0 ? "font-semibold text-green-400" : "text-zinc-200"}`}>{text}</span>
@@ -800,7 +800,7 @@ export default function MobileChatUI({
             <div className="text-center mb-5">
               <div className="w-14 h-14 bg-gradient-to-br from-amber-500 to-orange-500 rounded-full flex items-center justify-center mx-auto mb-4"><Crown className="text-white h-7 w-7" /></div>
               <h2 className="text-xl font-bold mb-1 text-white">Upgrade to Enterprise</h2>
-              <p className="text-zinc-400 text-sm">Claude + Gemini · Research for up to 5 team members</p>
+              <p className="text-zinc-400 text-sm">10 AI Models · Research for up to 5 team members</p>
             </div>
             <div className="text-center mb-1">
               <div className="inline-flex items-center gap-1.5 bg-green-500/15 border border-green-500/30 text-green-400 text-xs font-semibold px-3 py-1 rounded-full mb-3">
@@ -832,7 +832,7 @@ export default function MobileChatUI({
               </button>
             </div>
             <ul className="space-y-3 mb-6">
-              {["7 days free — cancel anytime", "🤖 Claude + Gemini — dual AI powerhouse", "🎬 AI Video Studio (Google Veo 3.1)", "All Research features included", "Shareable 6-digit team code (up to 5 members)", "Save 44% vs 5 individual Research plans"].map((text, i) => (
+              {["7 days free — cancel anytime", "🤖 10 AI models — GPT-4o, Claude, Mistral & more", "🎬 AI Video Studio (Google Veo 3.1)", "All Research features included", "Shareable 6-digit team code (up to 5 members)", "Save 44% vs 5 individual Research plans"].map((text, i) => (
                 <li key={i} className="flex items-center gap-3">
                   <CheckCircle className="w-4 h-4 text-green-400 flex-shrink-0" />
                   <span className={`text-sm ${i === 0 ? "font-semibold text-green-400" : "text-zinc-200"}`}>{text}</span>
@@ -915,7 +915,7 @@ export default function MobileChatUI({
               </div>
               {[
                 { icon: <Sparkles className="w-4 h-4 text-yellow-400" />, title: "Unlimited Questions", desc: "No daily caps — ask as much as you want" },
-                { icon: <Brain className="w-4 h-4 text-purple-400" />, title: "Advanced AI Models", desc: "Access Gemini 3.1 Pro & more" },
+                { icon: <Brain className="w-4 h-4 text-purple-400" />, title: "Advanced AI Models", desc: "10 AI models working together" },
                 { icon: <Zap className="w-4 h-4 text-cyan-400" />, title: "Priority Speed", desc: "Faster responses, always" },
               ].map((item, i) => (
                 <div key={i} className="flex items-center gap-3 p-3 rounded-xl bg-zinc-800/50">

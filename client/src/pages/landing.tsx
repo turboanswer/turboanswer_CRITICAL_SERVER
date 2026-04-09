@@ -156,13 +156,13 @@ export default function LandingPage() {
   const appUrl = typeof window !== "undefined" ? window.location.origin : "";
 
   const features = [
-    { icon: <Brain className="h-6 w-6" />, title: "Multi-Model AI Chat", desc: "Powered by Gemini 3.1 Flash Lite, Gemini 3.1 Flash, and Gemini 3.1 Pro for intelligent conversations on any topic.", color: "blue", glow: "rgba(59,130,246,0.3)" },
+    { icon: <Brain className="h-6 w-6" />, title: "Multi-Model AI Chat", desc: "Powered by 10 different AI models working together — GPT-4o, Claude, Mistral, Llama, DeepSeek, and more for intelligent conversations on any topic.", color: "blue", glow: "rgba(59,130,246,0.3)" },
     { icon: <FileText className="h-6 w-6" />, title: "Document Analysis", desc: "Upload any document and get instant summaries, key insights, and detailed answers. Supports TXT, CSV, JSON, and more.", color: "green", glow: "rgba(34,197,94,0.3)" },
     { icon: <ImageIcon className="h-6 w-6" />, title: "AI Image Generation", desc: "Create stunning images from text descriptions using DALL-E 3. Generate art, designs, and visuals instantly.", color: "pink", glow: "rgba(236,72,153,0.3)" },
     { icon: <Globe className="h-6 w-6" />, title: "100+ Languages", desc: "Chat in any language with automatic detection and native-quality responses. Supports over 100 languages worldwide.", color: "purple", glow: "rgba(168,85,247,0.3)" },
     { icon: <Camera className="h-6 w-6" />, title: "Camera Vision", desc: "Point your camera at anything and get instant AI analysis. Identify objects, read text, solve problems visually.", color: "cyan", glow: "rgba(6,182,212,0.3)" },
     { icon: <Zap className="h-6 w-6" />, title: "Ultra-Fast Responses", desc: "Get answers in under a second with our optimized AI pipeline. No waiting, no lag, just instant intelligence.", color: "yellow", glow: "rgba(234,179,8,0.3)" },
-    { icon: <Search className="h-6 w-6" />, title: "Always-On Gemini 3.1 Pro", desc: "Research tier maxes out every response with Gemini 3.1 Pro — comprehensive, expert-level depth on every question, automatically.", color: "indigo", glow: "rgba(99,102,241,0.3)" },
+    { icon: <Search className="h-6 w-6" />, title: "10-Agent Multi-Model Research", desc: "Research tier runs 10 specialist AI agents — each powered by a different model — then synthesizes into one expert-level answer.", color: "indigo", glow: "rgba(99,102,241,0.3)" },
     { icon: <Palette className="h-6 w-6" />, title: "Dark & Light Themes", desc: "Switch between dark and light themes instantly. Your preference is saved and remembered across sessions.", color: "rose", glow: "rgba(244,63,94,0.3)" },
     { icon: <Shield className="h-6 w-6" />, title: "Privacy & Security", desc: "Your conversations stay private. Secure authentication, encrypted data, and no data selling. Ever.", color: "emerald", glow: "rgba(16,185,129,0.3)" },
     { icon: <QrCode className="h-6 w-6" />, title: "Mobile Ready", desc: "Works perfectly on any device. Scan a QR code to instantly open TurboAnswer on your phone or tablet.", color: "violet", glow: "rgba(139,92,246,0.3)" },
@@ -306,7 +306,7 @@ export default function LandingPage() {
               <span className={isDark ? 'text-white' : 'text-gray-900'} style={{ background: "linear-gradient(90deg, #a78bfa, #22d3ee)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
                 Code Studio
               </span>
-              <span className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Antigravity · Gemini 3.1 Pro · Research</span>
+              <span className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Antigravity · Multi-Model AI · Research</span>
               <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${isDark ? 'bg-indigo-500/20 text-indigo-300' : 'bg-indigo-100 text-indigo-600'}`}>NEW</span>
             </div>
           </div>
@@ -436,7 +436,7 @@ export default function LandingPage() {
             Describe any app. Watch it appear.
           </p>
           <p className="text-base text-white/50 mb-12 max-w-xl mx-auto">
-            Google's agent-first AI IDE, powered by Gemini 3.1 Pro — now inside TurboAnswer Research.
+            AI-powered IDE with 10 models — build full apps from a single prompt, inside TurboAnswer Research.
           </p>
 
           {/* Feature cards — bright colored, floating */}
@@ -445,7 +445,7 @@ export default function LandingPage() {
               {icon:'🚀', label:'One-Prompt Build', sub:'Describe → Done', color:'#4285F4'},
               {icon:'⚡', label:'Live Preview', sub:'Instant feedback', color:'#EA4335'},
               {icon:'🌐', label:'Deploy Instantly', sub:'Public URL in 1 click', color:'#FBBC05'},
-              {icon:'🧠', label:'Gemini 3.1 Pro', sub:'Maximum intelligence', color:'#34A853'},
+              {icon:'🧠', label:'10 AI Models', sub:'Maximum intelligence', color:'#34A853'},
             ].map((f,i) => (
               <div key={i} className="rounded-2xl p-4 text-center" style={{
                 background: `${f.color}18`,
@@ -582,7 +582,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Gemini 3.1 Pro Spotlight Banner */}
+      {/* 10-Model Research Spotlight Banner */}
       <section className="py-16 sm:py-24 px-4 relative z-10 overflow-hidden">
         {isDark && (
           <div className="absolute inset-0 pointer-events-none">
@@ -591,32 +591,29 @@ export default function LandingPage() {
         )}
         <div className="max-w-6xl mx-auto relative z-10">
           <div className={`rounded-3xl border-2 overflow-hidden relative ${isDark ? 'border-indigo-500/30 bg-gradient-to-br from-indigo-950/60 via-slate-950/80 to-violet-950/60' : 'border-indigo-300 bg-gradient-to-br from-indigo-50 via-white to-violet-50 shadow-2xl shadow-indigo-100'}`}>
-            {/* Top shimmer line */}
             <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-indigo-400 to-transparent" />
-            {/* Subtle grid pattern overlay */}
             {isDark && <div className="absolute inset-0 opacity-[0.03]" style={{backgroundImage: 'linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)', backgroundSize: '40px 40px'}} />}
 
             <div className="p-8 sm:p-12 lg:p-16">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-                {/* Left: text */}
                 <div>
                   <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-indigo-500/15 border border-indigo-500/30 text-indigo-400 text-xs font-bold tracking-widest uppercase mb-6">
-                    <Cpu className="h-3.5 w-3.5" /> Google's Most Advanced Model
+                    <Cpu className="h-3.5 w-3.5" /> 10 AI Models · 10 Expert Perspectives
                   </div>
                   <h2 className="text-3xl sm:text-5xl font-black mb-5 leading-tight">
-                    <span className="bg-gradient-to-r from-indigo-400 via-violet-400 to-cyan-400 bg-clip-text text-transparent">Gemini 3.1 Pro</span>
+                    <span className="bg-gradient-to-r from-indigo-400 via-violet-400 to-cyan-400 bg-clip-text text-transparent">10 AI Brains.</span>
                     <br />
-                    <span className={isDark ? 'text-white' : 'text-gray-900'}>is here.</span>
+                    <span className={isDark ? 'text-white' : 'text-gray-900'}>One answer.</span>
                   </h2>
                   <p className={`text-lg mb-8 leading-relaxed ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
-                    The most capable AI model available on TurboAnswer. Powered by Google's flagship Gemini 3.1 Pro, the Research plan gives you access to the same intelligence used by professionals, researchers, and enterprises worldwide.
+                    The Research plan doesn't use one AI model — it uses ten. GPT-4o, Claude, Mistral, Llama, DeepSeek, Qwen, Perplexity, and more. Each analyzes your question from a different expert angle, then synthesizes into one comprehensive answer no single model could produce.
                   </p>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-8">
                     {[
-                      { icon: <Microscope className="h-4 w-4 text-indigo-400" />, label: "Always Maximum Depth", desc: "Every answer uses full Gemini 3.1 Pro power" },
-                      { icon: <Brain className="h-4 w-4 text-violet-400" />, label: "Advanced Reasoning", desc: "Solves complex, multi-step problems" },
-                      { icon: <Layers className="h-4 w-4 text-cyan-400" />, label: "1M Token Context", desc: "Analyze entire books & codebases" },
-                      { icon: <BarChart3 className="h-4 w-4 text-indigo-400" />, label: "Expert Analysis", desc: "Research-grade depth on any topic" },
+                      { icon: <Microscope className="h-4 w-4 text-indigo-400" />, label: "10 Expert Agents", desc: "Technical, business, security, UX & more" },
+                      { icon: <Brain className="h-4 w-4 text-violet-400" />, label: "10 Different Models", desc: "GPT-4o, Claude, Mistral, Llama, DeepSeek..." },
+                      { icon: <Layers className="h-4 w-4 text-cyan-400" />, label: "Parallel Analysis", desc: "All 10 run simultaneously for speed" },
+                      { icon: <BarChart3 className="h-4 w-4 text-indigo-400" />, label: "Unified Synthesis", desc: "One answer combining every perspective" },
                     ].map((f, i) => (
                       <div key={i} className={`flex items-start gap-3 rounded-xl p-3.5 border ${isDark ? 'bg-white/[0.04] border-white/[0.06]' : 'bg-white/80 border-indigo-100 shadow-sm'}`}>
                         <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${isDark ? 'bg-indigo-500/15' : 'bg-indigo-50'}`}>{f.icon}</div>
@@ -637,13 +634,12 @@ export default function LandingPage() {
                   <p className={`text-xs mt-3 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>No credit card charged during trial · Cancel anytime</p>
                 </div>
 
-                {/* Right: capability cards */}
                 <div className="space-y-3">
                   {[
-                    { title: "Expert Depth on Every Response", body: "No toggle needed. Every question on the Research plan automatically uses Gemini 3.1 Pro at full power — thorough, structured, expert-level answers every time.", badge: "Always On", color: "indigo" },
-                    { title: "Superior Coding & Math", body: "Tackles complex algorithms, debugging, architecture design, and advanced mathematics with near-human accuracy and clear explanations.", badge: "Pro-Level", color: "violet" },
-                    { title: "Long Document Mastery", body: "Upload entire PDFs, legal contracts, or research papers and get precise, detailed analysis. 1 million token context means nothing gets missed.", badge: "Unmatched", color: "cyan" },
-                    { title: "Creative & Strategic Thinking", body: "From business strategy to creative writing, Gemini 3.1 Pro produces work that's nuanced, structured, and remarkably human.", badge: "All Domains", color: "blue" },
+                    { title: "10 Models, 10 Perspectives", body: "Every complex question is analyzed by GPT-4o, Claude Sonnet 4, Mistral Large, Llama 3.1, DeepSeek V3, Qwen 2.5, Perplexity Sonar, Nemotron, Command R+, and Gemini — all working in parallel.", badge: "Unique", color: "indigo" },
+                    { title: "Expert Depth on Every Response", body: "Technical architect, business strategist, security analyst, UX researcher, data scientist, innovation lead, risk assessor, and more — each powered by a different AI brain.", badge: "Always On", color: "violet" },
+                    { title: "Superior Coding & Math", body: "Tackles complex algorithms, debugging, architecture design, and advanced mathematics with near-human accuracy and clear explanations.", badge: "Pro-Level", color: "cyan" },
+                    { title: "Creative & Strategic Thinking", body: "From business strategy to creative writing, 10 different AI perspectives produce work that's nuanced, structured, and remarkably comprehensive.", badge: "All Domains", color: "blue" },
                   ].map((c, i) => (
                     <div key={i} className={`rounded-2xl p-5 border transition-all hover:scale-[1.01] ${isDark ? 'bg-white/[0.03] border-white/[0.07] hover:border-indigo-500/30' : 'bg-white border-gray-200 shadow-sm hover:border-indigo-300 hover:shadow-md'}`}>
                       <div className="flex items-start justify-between gap-3 mb-1.5">
@@ -702,7 +698,7 @@ export default function LandingPage() {
                   <span className={`text-sm ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>/month</span>
                 </div>
               </div>
-              <div className={`text-sm mb-5 font-medium ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>Gemini 3.1 Flash Lite</div>
+              <div className={`text-sm mb-5 font-medium ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>TurboAnswer AI</div>
               <ul className="space-y-3 mb-7">
                 {["AI chat conversations", "Document analysis", "100+ languages", "Dark & light themes", "Mobile access"].map((item, i) => (
                   <li key={i} className={`flex items-center gap-2.5 text-sm ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
@@ -745,7 +741,7 @@ export default function LandingPage() {
 
                 <div className="mt-4 mb-5 inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-indigo-500/15 border border-indigo-500/30">
                   <Cpu className="h-3.5 w-3.5 text-indigo-400" />
-                  <span className="text-xs font-bold text-indigo-400 tracking-wide">GEMINI 3.1 PRO — FLAGSHIP MODEL</span>
+                  <span className="text-xs font-bold text-indigo-400 tracking-wide">10 AI MODELS — MULTI-AGENT RESEARCH</span>
                 </div>
 
                 <ul className="space-y-3 mb-7">
@@ -780,9 +776,9 @@ export default function LandingPage() {
 
                   {[
                     { text: "Everything in Pro", sub: null },
-                    { text: "Gemini 3.1 Pro model", sub: "Google's most capable AI" },
-                    { text: "Always-on maximum depth", sub: "No toggle — every reply at full power" },
-                    { text: "1M token context window", sub: "Analyze entire books & codebases" },
+                    { text: "10 AI models in parallel", sub: "GPT-4o, Claude, Mistral, Llama, DeepSeek & more" },
+                    { text: "10 expert perspectives", sub: "Technical, business, security, UX, data, innovation..." },
+                    { text: "Synthesized answers", sub: "One comprehensive answer from 10 different brains" },
                     { text: "Advanced reasoning & math", sub: "Solves complex multi-step problems" },
                     { text: "Priority queue access", sub: "Always fast, never throttled" },
                     { text: "Extended long-form responses", sub: "Full-depth answers, no truncation" },
@@ -829,9 +825,9 @@ export default function LandingPage() {
                   <Check className="h-3 w-3" /> 7-day free trial
                 </div>
               </div>
-              <div className={`text-sm mb-5 font-medium ${isDark ? 'text-purple-400' : 'text-purple-600'}`}>Gemini 3.1 Flash</div>
+              <div className={`text-sm mb-5 font-medium ${isDark ? 'text-purple-400' : 'text-purple-600'}`}>TurboAnswer Pro AI</div>
               <ul className="space-y-3 mb-7">
-                {["Everything in Free", "Gemini 3.1 Flash model", "Faster responses", "Priority processing", "AI image generation", "Advanced analysis"].map((item, i) => (
+                {["Everything in Free", "Advanced AI model", "Faster responses", "Priority processing", "AI image generation", "Advanced analysis"].map((item, i) => (
                   <li key={i} className={`flex items-center gap-2.5 text-sm ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
                     <div className="w-5 h-5 rounded-full bg-purple-500/20 flex items-center justify-center flex-shrink-0">
                       <Check className="h-3 w-3 text-purple-400" />

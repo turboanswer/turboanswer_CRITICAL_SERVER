@@ -112,12 +112,12 @@ export default function Home() {
                 </div>
 
                 <p className="text-gray-300 mb-6 leading-relaxed max-w-xl">
-                  One subscription. Up to <strong className="text-white">5 team members</strong>. Every AI model — <strong className="text-white">Gemini 3.1 Pro</strong>, <strong style={{ color: "#EA4335" }}>Claude Sonnet 4</strong>, and <strong style={{ color: "#10b981" }}>ChatGPT-4o</strong> — all working together. Plus <strong style={{ color: "#FBBC05" }}>Code Studio FREE</strong>, AI Video Studio, and everything in Research.
+                  One subscription. Up to <strong className="text-white">5 team members</strong>. <strong className="text-white">10 AI models</strong> — <strong style={{ color: "#EA4335" }}>Claude</strong>, <strong style={{ color: "#10b981" }}>GPT-4o</strong>, <strong className="text-white">Mistral</strong>, <strong style={{ color: "#FBBC05" }}>Llama</strong>, <strong className="text-white">DeepSeek</strong> & more — all working together. Plus <strong style={{ color: "#FBBC05" }}>Code Studio FREE</strong>, AI Video Studio, and everything in Research.
                 </p>
 
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-7">
                   {[
-                    { icon: "⚡", text: "All AI Models (Gemini + Claude + GPT-4o)", color: "#4285F4" },
+                    { icon: "⚡", text: "10 AI Models (GPT-4o + Claude + Mistral + Llama...)", color: "#4285F4" },
                     { icon: "👥", text: "Up to 5 team members", color: "#FBBC05" },
                     { icon: "💻", text: "Code Studio FREE ($15/mo value)", color: "#34A853" },
                     { icon: "🎬", text: "AI Video Studio (Veo 3.1)", color: "#8b5cf6" },
@@ -200,7 +200,7 @@ export default function Home() {
                 </h1>
                 <p className="text-xl font-semibold text-white/90 mb-2">Build Full Apps from One Sentence</p>
                 <p className="text-gray-400 mb-1 max-w-lg leading-relaxed">
-                  Type your idea in plain English. Gemini 3.1 Pro + Claude design, write, and ship your entire app — HTML, CSS, JS — in under 30 seconds.
+                  Type your idea in plain English. Our multi-model AI designs, writes, and ships your entire app — HTML, CSS, JS — in under 30 seconds.
                 </p>
                 <p className="text-sm mb-5" style={{ color: "#a78bfa" }}>
                   Complexity pricing · Simple $0.35 · Standard $0.75 · Complex $1.50 · {isEnterprise ? "$15/mo FREE with Enterprise" : "$15/mo after trial"}
@@ -250,7 +250,7 @@ export default function Home() {
             <div className="mt-8 pt-6 border-t border-white/[0.06] grid grid-cols-2 md:grid-cols-4 gap-4">
               {[
                 { step: "1", icon: "💬", title: "Describe It", desc: "Plain English prompt", color: "#8b5cf6" },
-                { step: "2", icon: "🧠", title: "AI Builds It", desc: "Gemini 3.1 Pro + Claude architect your app", color: "#4285F4" },
+                { step: "2", icon: "🧠", title: "AI Builds It", desc: "10 AI models architect your app together", color: "#4285F4" },
                 { step: "3", icon: "⚡", title: "Code Appears", desc: "Watch it build live", color: "#a78bfa" },
                 { step: "4", icon: "🚀", title: "Go Live", desc: "Instant public URL", color: "#22d3ee" },
               ].map(({ step, icon, title, desc, color }) => (
@@ -275,8 +275,8 @@ export default function Home() {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {[
               {
-                name: "Gemini 3.1 Pro", company: "Google", color: "#4285F4",
-                tag: "Speed + Research", icon: <GoogleG className="w-6 h-6" />,
+                name: "Multi-Model Research", company: "TurboAnswer", color: "#4285F4",
+                tag: "10 Models · 10 Experts", icon: <GoogleG className="w-6 h-6" />,
                 desc: "Ultra-fast responses, real-time search, and deep research. Powers Free, Pro, and all tiers.",
                 plans: ["Free", "Pro", "Research", "Enterprise"],
               },
@@ -358,7 +358,7 @@ export default function Home() {
               <div className="absolute top-0 right-0 w-24 h-24 rounded-full opacity-10 blur-2xl" style={{ background: "#4285F4" }} />
               <div className="flex items-center gap-2 mb-3">
                 <Camera className="h-8 w-8 text-blue-400" />
-                <span className="text-[10px] px-2 py-0.5 rounded-full font-bold" style={{ background: "rgba(66,133,244,0.15)", color: "#4285F4", border: "1px solid rgba(66,133,244,0.3)" }}>Free · Gemini Vision</span>
+                <span className="text-[10px] px-2 py-0.5 rounded-full font-bold" style={{ background: "rgba(66,133,244,0.15)", color: "#4285F4", border: "1px solid rgba(66,133,244,0.3)" }}>Free · AI Vision</span>
               </div>
               <h3 className="text-lg font-bold text-white mb-1">{tr.nav.aiScanner}</h3>
               <p className="text-sm text-gray-400">Scan docs, receipts & images — AI reads them</p>

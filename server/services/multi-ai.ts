@@ -15,36 +15,36 @@ import { runMultiAgentResearch } from "./multi-agent";
 export const AI_MODELS: Record<string, Record<string, any>> = {
   pro: {
     "gemini-pro": {
-      name: "Gemini Flash",
+      name: "TurboAnswer Pro",
       provider: "google",
-      description: "Fast, powerful model for detailed responses and complex tasks",
+      description: "Advanced AI model for detailed responses and complex tasks",
       maxTokens: 8000,
       temperature: 0.3,
     },
   },
   research: {
     "claude-research": {
-      name: "10-Agent Research",
+      name: "10-Agent Multi-Model Research",
       provider: "multi-agent",
-      description: "10 AI experts analyze your question from different angles — technical, business, security, UX, data, innovation, risk, implementation, academic, and contrarian perspectives — then synthesize into one comprehensive answer",
+      description: "10 different AI models (GPT-4o, Claude, Mistral, Llama, DeepSeek & more) analyze your question from 10 expert perspectives, then synthesize into one comprehensive answer",
       maxTokens: 16000,
       temperature: 0.1,
     },
   },
   enterprise: {
     "enterprise-research": {
-      name: "10-Agent Research",
+      name: "10-Agent Multi-Model Research",
       provider: "multi-agent",
-      description: "10 AI experts analyze your question from every angle — enterprise-grade multi-perspective intelligence",
+      description: "10 different AI models analyze your question from every angle — enterprise-grade multi-perspective intelligence for teams",
       maxTokens: 16000,
       temperature: 0.1,
     },
   },
   free: {
     "gemini-flash": {
-      name: "Gemini Flash Lite",
+      name: "TurboAnswer AI",
       provider: "google",
-      description: "Fast free model for everyday questions",
+      description: "Fast AI model for everyday questions",
       maxTokens: 4000,
       temperature: 0.4,
     },

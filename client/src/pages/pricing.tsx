@@ -24,7 +24,7 @@ const plans: PricingPlan[] = [
     period: 'forever',
     description: 'Get started with basic AI conversations',
     features: [
-      'Google Gemini 3.1 Flash Lite',
+      'TurboAnswer AI',
       'Voice commands',
       'Unlimited conversations',
       'Community support',
@@ -36,9 +36,9 @@ const plans: PricingPlan[] = [
     name: 'Pro',
     price: '$6.99',
     period: 'per month',
-    description: 'Advanced AI with Gemini 3.1 Flash power',
+    description: 'Advanced AI with deeper reasoning power',
     features: [
-      'Google Gemini Flash Pro',
+      'Advanced Pro AI model',
       'Advanced AI reasoning',
       'Superior code analysis',
       'Enhanced problem solving',
@@ -53,7 +53,7 @@ const plans: PricingPlan[] = [
     name: 'Research',
     price: '$30',
     period: 'per month',
-    description: 'Antigravity · Gemini 3.1 Pro · Maximum Intelligence · AI Video Studio',
+    description: '10 AI Models · Multi-Agent Research · AI Video Studio',
     features: [
       '⚡ Antigravity — AI builds full apps from a prompt',
       '🎬 AI Video Studio (Google Veo 3.1)',
@@ -69,7 +69,7 @@ const plans: PricingPlan[] = [
     name: 'Enterprise',
     price: '$100',
     period: 'per month',
-    description: 'Antigravity · Gemini 3.1 Pro · Research for up to 5 team members — save 44%',
+    description: '10 AI Models · Multi-Agent Research for up to 5 team members — save 44%',
     features: [
       '⚡ Antigravity — AI builds full apps from a prompt',
       '🎬 AI Video Studio (Google Veo 3.1)',
@@ -473,7 +473,7 @@ export default function Pricing() {
               <p style={{ color: '#94a3b8', fontSize: '14px', lineHeight: '1.6', marginBottom: '16px' }}>
                 A full AI-powered IDE you can add to any plan. Build complete apps with one prompt, run code in 10+ languages, get a live preview, and deploy to a public URL.
               </p>
-              {['AI generates full apps from a single prompt', 'Monaco editor — VS Code engine', 'Live preview for HTML/CSS/JS', 'Run Python, JS, Java, Go, Rust & more', 'Deploy projects to a public URL', 'Gemini 3.1 Pro AI code assistance'].map(f => (
+              {['AI generates full apps from a single prompt', 'Monaco editor — VS Code engine', 'Live preview for HTML/CSS/JS', 'Run Python, JS, Java, Go, Rust & more', 'Deploy projects to a public URL', 'Multi-model AI code assistance'].map(f => (
                 <div key={f} style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
                   <span style={{ color: '#34A853', fontSize: '14px' }}>✓</span>
                   <span style={{ color: '#cbd5e1', fontSize: '14px' }}>{f}</span>

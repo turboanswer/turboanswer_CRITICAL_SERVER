@@ -88,7 +88,7 @@ ${bodyText.split('\n').map(line => {
 const TIER_LABELS: Record<string, string> = { free: 'Free', pro: 'Pro', research: 'Research', enterprise: 'Enterprise' };
 const TIER_PRICES: Record<string, string> = { pro: '$6.99/mo', research: '$30.00/mo', enterprise: '$100.00/mo' };
 const TIER_PERKS: Record<string, string[]> = {
-  pro:        ['Unlimited daily questions', 'Advanced AI models (Gemini 3.1 Pro)', 'Priority response speed', 'Full Code Studio access'],
+  pro:        ['Unlimited daily questions', 'Advanced Pro AI model', 'Priority response speed', 'Full Code Studio access'],
   research:   ['Everything in Pro', '10-Agent Multi-Perspective Research', 'AI Video Generation', 'Deep analysis from 10 expert AI agents'],
   enterprise: ['Everything in Research', 'Team access with shared enterprise code', 'Dedicated support', 'Highest priority processing'],
 };
@@ -3489,7 +3489,7 @@ ${template.bodyText.split('\n').map(line => {
         userMessageId = userMsg.id;
       }
 
-      const systemPrompt = `You are Turbo Answer Research, powered by Gemini 3.1 Pro. You provide thorough, well-structured, deeply researched answers. Always:
+      const systemPrompt = `You are Turbo Answer Research. You provide thorough, well-structured, deeply researched answers. Always:
 - Give comprehensive, detailed responses with clear structure
 - Use headings and bullet points for complex topics
 - Include relevant context, nuances, and examples
@@ -4269,7 +4269,7 @@ For CHAT/QUESTION: {"intent":"chat"}`;
 
       // Step 2: Chat response
       const contextBlock = code ? `\n\nCurrent code in editor (${language || 'unknown'}):\n\`\`\`${language || ''}\n${code.slice(0, 4000)}\n\`\`\`` : '';
-      const chatPrompt = `You are Turbo Code, an elite AI coding assistant powered by Gemini 3.1 Pro inside TurboAnswer Code Studio. You help users write, debug, optimize, and understand code.
+      const chatPrompt = `You are Turbo Code, an elite AI coding assistant inside TurboAnswer Code Studio. You help users write, debug, optimize, and understand code.
 
 Rules:
 - Give complete, working code examples — never snippets with "..." placeholders

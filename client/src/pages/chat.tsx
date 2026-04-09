@@ -659,7 +659,7 @@ export default function Chat() {
               <span className={`text-xs sm:text-sm font-semibold truncate ${isDark ? 'text-white' : 'text-purple-900'}`}>
                 Code Studio — build full apps from a single prompt
               </span>
-              <span className={`hidden md:inline text-xs truncate ${isDark ? 'text-gray-400' : 'text-purple-500'}`}>Powered by Claude + Gemini</span>
+              <span className={`hidden md:inline text-xs truncate ${isDark ? 'text-gray-400' : 'text-purple-500'}`}>Powered by 10 AI Models</span>
             </div>
             {!isNativeMobile && (
             <Link href="/code-studio">
@@ -941,7 +941,7 @@ export default function Chat() {
                 <Crown className="text-white h-7 w-7" />
               </div>
               <h2 className={`text-xl font-bold mb-1 ${isDark ? 'text-white' : 'text-gray-900'}`}>Upgrade to Pro</h2>
-              <p className={isDark ? 'text-zinc-400 text-sm' : 'text-gray-500 text-sm'}>Unlock Gemini 3.1 Flash</p>
+              <p className={isDark ? 'text-zinc-400 text-sm' : 'text-gray-500 text-sm'}>Unlock Advanced AI</p>
             </div>
             <div className="text-center mb-1">
               <div className="inline-flex items-center gap-1.5 bg-green-500/15 border border-green-500/30 text-green-400 text-xs font-semibold px-3 py-1 rounded-full mb-3">
@@ -954,7 +954,7 @@ export default function Chat() {
               <p className={`text-xs mt-1 ${isDark ? 'text-zinc-500' : 'text-gray-400'}`}>after free trial</p>
             </div>
             <ul className="space-y-3 mb-6">
-              {["7 days free — cancel anytime", "Gemini 3.1 Flash - advanced reasoning", "Priority response speed", "Everything in Free included"].map((text, i) => (
+              {["7 days free — cancel anytime", "Advanced AI model — deeper reasoning", "Priority response speed", "Everything in Free included"].map((text, i) => (
                 <li key={i} className="flex items-center gap-3">
                   <CheckCircle className={`w-4 h-4 flex-shrink-0 ${i === 0 ? 'text-green-400' : 'text-green-400'}`} />
                   <span className={`text-sm ${i === 0 ? 'font-semibold text-green-400' : isDark ? 'text-zinc-200' : 'text-gray-700'}`}>{text}</span>
@@ -1000,7 +1000,7 @@ export default function Chat() {
                 <Brain className="text-white h-7 w-7" />
               </div>
               <h2 className={`text-xl font-bold mb-1 ${isDark ? 'text-white' : 'text-gray-900'}`}>Upgrade to Research</h2>
-              <p className={isDark ? 'text-zinc-400 text-sm' : 'text-gray-500 text-sm'}>Claude + Gemini · Maximum Intelligence · AI Video Studio</p>
+              <p className={isDark ? 'text-zinc-400 text-sm' : 'text-gray-500 text-sm'}>10 AI Models · Maximum Intelligence · AI Video Studio</p>
             </div>
             {/* Google color bar */}
             <div className="flex h-1 rounded-full overflow-hidden mb-4">
@@ -1017,7 +1017,7 @@ export default function Chat() {
               <p className={`text-xs mt-1 ${isDark ? 'text-zinc-500' : 'text-gray-400'}`}>after free trial</p>
             </div>
             <ul className="space-y-3 mb-6">
-              {["7 days free — cancel anytime", "🤖 Claude + Gemini — dual AI powerhouse", "🎬 AI Video Studio (Google Veo 3.1)", "💻 Code Studio — build apps with one prompt", "Everything in Pro + Free included"].map((text, i) => (
+              {["7 days free — cancel anytime", "🤖 10 AI models — GPT-4o, Claude, Mistral & more", "🎬 AI Video Studio (Google Veo 3.1)", "💻 Code Studio — build apps with one prompt", "Everything in Pro + Free included"].map((text, i) => (
                 <li key={i} className="flex items-center gap-3">
                   <CheckCircle className="w-4 h-4 text-green-400 flex-shrink-0" />
                   <span className={`text-sm ${i === 0 ? 'font-semibold text-green-400' : isDark ? 'text-zinc-200' : 'text-gray-700'}`}>{text}</span>
@@ -1062,7 +1062,7 @@ export default function Chat() {
                 <Crown className="text-white h-7 w-7" />
               </div>
               <h2 className={`text-xl font-bold mb-1 ${isDark ? 'text-white' : 'text-gray-900'}`}>Upgrade to Enterprise</h2>
-              <p className={isDark ? 'text-zinc-400 text-sm' : 'text-gray-500 text-sm'}>Claude + Gemini · Research for up to 5 team members</p>
+              <p className={isDark ? 'text-zinc-400 text-sm' : 'text-gray-500 text-sm'}>10 AI Models · Research for up to 5 team members</p>
             </div>
             <div className="text-center mb-1">
               <div className="inline-flex items-center gap-1.5 bg-green-500/15 border border-green-500/30 text-green-400 text-xs font-semibold px-3 py-1 rounded-full mb-3">
@@ -1119,7 +1119,7 @@ export default function Chat() {
               </div>
             </div>
             <ul className="space-y-3 mb-6">
-              {["7 days free — cancel anytime", "🤖 Claude + Gemini — dual AI powerhouse", "🎬 AI Video Studio (Google Veo 3.1)", "All Research features included", "Shareable 6-digit team code (up to 5 members)", "Save 44% vs 5 individual Research plans"].map((text, i) => (
+              {["7 days free — cancel anytime", "🤖 10 AI models — GPT-4o, Claude, Mistral & more", "🎬 AI Video Studio (Google Veo 3.1)", "All Research features included", "Shareable 6-digit team code (up to 5 members)", "Save 44% vs 5 individual Research plans"].map((text, i) => (
                 <li key={i} className="flex items-center gap-3">
                   <CheckCircle className="w-4 h-4 text-green-400 flex-shrink-0" />
                   <span className={`text-sm ${i === 0 ? 'font-semibold text-green-400' : isDark ? 'text-zinc-200' : 'text-gray-700'}`}>{text}</span>
@@ -1221,7 +1221,7 @@ export default function Chat() {
                     <div className="flex items-start gap-3">
                       <div className="w-8 h-8 bg-blue-500/20 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5"><Brain className="w-4 h-4 text-blue-400" /></div>
                       <div>
-                        <p className={`font-medium text-sm ${isDark ? 'text-white' : 'text-gray-900'}`}>Gemini 3.1 Pro Research</p>
+                        <p className={`font-medium text-sm ${isDark ? 'text-white' : 'text-gray-900'}`}>10-Agent Multi-Model Research</p>
                         <p className={`text-xs mt-0.5 ${isDark ? 'text-zinc-400' : 'text-gray-500'}`}>Select "Research $30" to unlock maximum depth on every response</p>
                       </div>
                     </div>
@@ -1230,8 +1230,8 @@ export default function Chat() {
                     <div className="flex items-start gap-3">
                       <div className="w-8 h-8 bg-purple-500/20 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5"><Zap className="w-4 h-4 text-purple-400" /></div>
                       <div>
-                        <p className={`font-medium text-sm ${isDark ? 'text-white' : 'text-gray-900'}`}>Gemini 3.1 Flash Included</p>
-                        <p className={`text-xs mt-0.5 ${isDark ? 'text-zinc-400' : 'text-gray-500'}`}>You also get access to Gemini 3.1 Flash for fast, detailed answers</p>
+                        <p className={`font-medium text-sm ${isDark ? 'text-white' : 'text-gray-900'}`}>Advanced AI Included</p>
+                        <p className={`text-xs mt-0.5 ${isDark ? 'text-zinc-400' : 'text-gray-500'}`}>You also get access to our Pro AI model for fast, detailed answers</p>
                       </div>
                     </div>
                   </div>
@@ -1241,7 +1241,7 @@ export default function Chat() {
                   <div className="flex items-start gap-3">
                     <div className="w-8 h-8 bg-purple-500/20 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5"><Brain className="w-4 h-4 text-purple-400" /></div>
                     <div>
-                      <p className={`font-medium text-sm ${isDark ? 'text-white' : 'text-gray-900'}`}>Gemini 3.1 Flash Model</p>
+                      <p className={`font-medium text-sm ${isDark ? 'text-white' : 'text-gray-900'}`}>Advanced Pro AI Model</p>
                       <p className={`text-xs mt-0.5 ${isDark ? 'text-zinc-400' : 'text-gray-500'}`}>Select "Pro $6.99" from the model dropdown for smarter answers</p>
                     </div>
                   </div>
@@ -1292,7 +1292,7 @@ export default function Chat() {
               </div>
               {[
                 { icon: <Sparkles className="w-4 h-4 text-yellow-400" />, title: "Unlimited Questions", desc: "No daily caps — ask as much as you want" },
-                { icon: <Brain className="w-4 h-4 text-purple-400" />, title: "Advanced AI Models", desc: "Access Gemini 3.1 Pro & more" },
+                { icon: <Brain className="w-4 h-4 text-purple-400" />, title: "Advanced AI Models", desc: "10 AI models working together" },
                 { icon: <Zap className="w-4 h-4 text-cyan-400" />, title: "Priority Speed", desc: "Faster responses, always" },
               ].map((item, i) => (
                 <div key={i} className={`flex items-center gap-3 p-3 rounded-xl ${isDark ? 'bg-zinc-800/50' : 'bg-gray-50'}`}>
@@ -1359,7 +1359,7 @@ export default function Chat() {
             </div>
             <div className="relative space-y-3 mb-5">
               {[
-                { icon: <Zap className="w-4 h-4 text-yellow-400" />, title: "Faster Responses", desc: "Priority speed with Gemini 3.1 Flash" },
+                { icon: <Zap className="w-4 h-4 text-yellow-400" />, title: "Faster Responses", desc: "Priority speed with advanced AI" },
                 { icon: <Brain className="w-4 h-4 text-purple-400" />, title: "Advanced Reasoning", desc: "More accurate, detailed answers" },
                 { icon: <Sparkles className="w-4 h-4 text-pink-400" />, title: "Pro-Level Intelligence", desc: "Access our most powerful free model" },
               ].map((item, i) => (

@@ -70,7 +70,7 @@ function EnterpriseLock() {
         <h2 className="text-2xl font-black text-white mb-3">Enterprise Exclusive</h2>
         <p className="text-gray-400 mb-6">Turbo Media Studio is available exclusively on the Enterprise plan ($100/month).</p>
         <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-5 mb-6 text-left space-y-2">
-          {["CapCut-style photo & video editing","Real-time filter previews (10 presets + manual)","Text overlays with custom styles","Timeline-based clip management","Gemini AI: auto-captions & style suggestions","Export as high-quality PNG or WebM video"].map((f, i) => (
+          {["CapCut-style photo & video editing","Real-time filter previews (10 presets + manual)","Text overlays with custom styles","Timeline-based clip management","AI: auto-captions & style suggestions","Export as high-quality PNG or WebM video"].map((f, i) => (
             <div key={i} className="flex items-center gap-2 text-sm text-gray-300">
               <div className="w-4 h-4 rounded-full bg-pink-500/20 flex items-center justify-center flex-shrink-0">
                 <Crown className="h-2.5 w-2.5 text-pink-400" />
@@ -358,7 +358,7 @@ export default function MediaEditor() {
               <Scissors className="h-4 w-4 text-white" />
             </div>
             <span className="font-black text-white text-sm">Turbo Studio</span>
-            <span className="text-xs text-gray-600 hidden sm:block">CapCut-style editor powered by Gemini</span>
+            <span className="text-xs text-gray-600 hidden sm:block">CapCut-style editor powered by AI</span>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -599,12 +599,12 @@ export default function MediaEditor() {
             {activeTab === 'ai' && (
               <>
                 <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-3">
-                  <p className="text-xs text-gray-500 leading-relaxed">Gemini AI analyzes your current frame and suggests captions, filter styles, and scene descriptions.</p>
+                  <p className="text-xs text-gray-500 leading-relaxed">AI analyzes your current frame and suggests captions, filter styles, and scene descriptions.</p>
                 </div>
 
                 <Button onClick={() => aiMutation.mutate()} disabled={!currentItem || aiMutation.isPending}
                   className="w-full bg-gradient-to-r from-violet-600 to-pink-600 hover:from-violet-500 hover:to-pink-500 font-bold text-xs">
-                  {aiMutation.isPending ? <><Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" />Analyzing...</> : <><Sparkles className="h-3.5 w-3.5 mr-1.5" />Analyze with Gemini</>}
+                  {aiMutation.isPending ? <><Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" />Analyzing...</> : <><Sparkles className="h-3.5 w-3.5 mr-1.5" />Analyze with AI</>}
                 </Button>
 
                 {aiResult && (

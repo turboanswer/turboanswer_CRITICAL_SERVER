@@ -110,7 +110,7 @@ export default function WidgetDemo() {
               <CardTitle className="text-lg">🧠 Mega Fusion AI</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-gray-400">Powered by 20+ AI models including GPT-4, Claude, and Gemini for maximum intelligence.</p>
+              <p className="text-gray-400">Powered by 10 AI models including GPT-4o, Claude, Mistral, Llama, and DeepSeek for maximum intelligence.</p>
             </CardContent>
           </Card>
 

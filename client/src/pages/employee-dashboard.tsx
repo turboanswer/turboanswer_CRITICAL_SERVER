@@ -1755,7 +1755,7 @@ function CommandCenter({
               {[
                 { name: 'Database', key: 'database', icon: Database },
                 { name: 'PayPal', key: 'paypal', icon: CreditCard },
-                { name: 'AI (Gemini)', key: 'ai', icon: Brain },
+                { name: 'AI Models', key: 'ai', icon: Brain },
               ].map(({ name, key, icon: Icon }) => {
                 const s = svc?.[key as keyof typeof svc];
                 const col = statusColor(s);

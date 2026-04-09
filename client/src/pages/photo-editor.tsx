@@ -90,7 +90,7 @@ export default function AIScanner() {
           <span className="font-semibold text-base">AI Scanner</span>
         </div>
         <span className={`ml-auto text-xs px-2 py-0.5 rounded-full ${isDark ? "bg-blue-500/15 text-blue-400" : "bg-blue-50 text-blue-600"} border ${isDark ? "border-blue-500/30" : "border-blue-200"}`}>
-          Powered by Gemini
+          Powered by AI
         </span>
       </div>
 

@@ -19,7 +19,7 @@ const PLANS = [
     border: 'border-zinc-700',
     icon: <Bot className="h-5 w-5 text-zinc-400" />,
     features: [
-      'Gemini 3.1 Flash Lite',
+      'TurboAnswer AI',
       'Basic AI responses',
       'Voice commands',
       'Unlimited conversations',
@@ -38,7 +38,7 @@ const PLANS = [
     border: 'border-purple-500/40',
     icon: <Zap className="h-5 w-5 text-purple-400" />,
     features: [
-      'Gemini 3.1 Flash (faster Pro model)',
+      'Advanced Pro AI model',
       'Advanced AI reasoning',
       'Superior code analysis',
       'Image Studio (Google AI)',
@@ -59,7 +59,7 @@ const PLANS = [
     border: 'border-indigo-400/50',
     icon: <Sparkles className="h-5 w-5 text-indigo-300" />,
     features: [
-      'Gemini 3.1 Pro (most powerful)',
+      '10 AI models (GPT-4o, Claude, Mistral & more)',
       'AI Video Studio — powered by Google Veo',
       'Deep expert-level responses',
       'Image Studio (Google AI)',
